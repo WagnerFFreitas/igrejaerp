@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - ADJPA ERP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0f9ff;
+        }
+        .success {
+            background: #10b981;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        a {
+            display: inline-block;
+            background: #4f46e5;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        a:hover {
+            background: #4338ca;
+        }
+        .info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="success">
+        <h1>✅ Servidor Vite Funcionando!</h1>
+        <p>O servidor de desenvolvimento está rodando corretamente.</p>
+    </div>
+
+    <div class="info">
+        <h2>🔗 Links de Acesso:</h2>
+        <a href="http://localhost:3000/" target="_blank">🚀 Acessar Sistema (Porta 3000)</a>
+        
+        <h2 style="margin-top: 30px;">📝 Instruções:</h2>
+        <ol>
+            <li>Clique no link acima para abrir o sistema</li>
+            <li>A tela de login deve aparecer</li>
+            <li>Use as credenciais abaixo</li>
+        </ol>
+
+        <h2 style="margin-top: 30px;">🔑 Credenciais de Login:</h2>
+        <ul>
+            <li><strong>Usuário:</strong> anderson</li>
+            <li><strong>Senha:</strong> 123</li>
+        </ul>
+
+        <h2 style="margin-top: 30px;">⚠️ Problemas?</h2>
+        <p>Se a tela de login não aparecer:</p>
+        <ul>
+            <li>Pressione <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> para hard refresh</li>
+            <li>Abra o Console (F12) e verifique erros</li>
+            <li>Tente outro navegador</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('Página de teste carregada com sucesso!');
+        console.log('Redirecionando para o sistema em 3 segundos...');
+        setTimeout(() => {
+            window.location.href = 'http://localhost:3000/';
+        }, 3000);
+    </script>
+</body>
+</html>
