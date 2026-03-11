@@ -1,0 +1,7 @@
+{
+  "name": "ADJPA ERP - Sistema de Gestão para Igreja",
+  "description": "Um sistema completo de gestão para igrejas, integrando RH, financeiro, gestão de membros, eventos e inteligência artificial para análise de crescimento e saúde espiritual.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

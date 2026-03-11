@@ -1,0 +1,44 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Regras para fotos de perfil
+    match /profiles/{unitId}/{memberId}/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId);
+    }
+    
+    // Regras para documentos de funcionários
+    match /employees/{unitId}/{employeeId}/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId);
+    }
+    
+    // Regras para documentos de membros
+    match /members/{unitId}/{memberId}/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId ||
+         request.auth.uid == userId);
+    }
+    
+    // Regras para documentos financeiros
+    match /financial/{unitId}/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para relatórios
+    match /reports/{unitId}/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para backups
+    match /backups/{unitId}/{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+  }
+}

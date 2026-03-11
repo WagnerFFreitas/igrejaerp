@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regras para unidades/filiais
+    match /units/{unitId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId);
+    }
+    
+    // Regras para funcionários
+    match /units/{unitId}/employees/{employeeId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId ||
+         request.auth.token.employeeId == employeeId);
+    }
+    
+    // Regras para membros
+    match /units/{unitId}/members/{memberId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId ||
+         request.auth.token.memberId == memberId);
+    }
+    
+    // Regras para transações financeiras
+    match /units/{unitId}/transactions/{transactionId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId);
+    }
+    
+    // Regras para contas a pagar/receber
+    match /units/{unitId}/payables/{payableId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    match /units/{unitId}/receivables/{receivableId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para contas bancárias
+    match /units/{unitId}/accounts/{accountId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para categorias financeiras
+    match /units/{unitId}/categories/{categoryId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para patrimônio
+    match /units/{unitId}/assets/{assetId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para folha de pagamento
+    match /units/{unitId}/payroll/{payrollId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId);
+    }
+    
+    // Regras para banco de horas
+    match /units/{unitId}/timebank/{timebankId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.unitId == unitId ||
+         request.auth.token.employeeId == timebankId);
+    }
+    
+    // Regras para tesouraria
+    match /units/{unitId}/treasury/{documentId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para conciliação bancária
+    match /units/{unitId}/reconciliation/{reconciliationId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para relatórios (somente leitura)
+    match /units/{unitId}/reports/{reportId} {
+      allow read: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+      allow create: if request.auth != null && 
+        request.auth.token.unitId == unitId;
+    }
+    
+    // Regras para logs do sistema (somente escrita)
+    match /units/{unitId}/logs/{logId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // Regras para usuários (admin only)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // Regras para configurações globais (admin only)
+    match /settings/{settingId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+  }
+}
