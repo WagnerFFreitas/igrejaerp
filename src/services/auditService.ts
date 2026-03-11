@@ -56,7 +56,7 @@ export class AuditService {
       const request = indexedDB.open('ADJPA_ERP_DB', 3);
       
       request.onsuccess = function(event) {
-        const db = event.target.result;
+        const db = (event.target as IDBOpenDBRequest).result;
         
         if (!db.objectStoreNames.contains('system_config')) {
           resolve(false);
@@ -88,7 +88,7 @@ export class AuditService {
       const request = indexedDB.open('ADJPA_ERP_DB', 3);
       
       request.onupgradeneeded = function(event) {
-        const db = event.target.result;
+        const db = (event.target as IDBOpenDBRequest).result;
         
         // Criar store de configurações do sistema se não existir
         if (!db.objectStoreNames.contains('system_config')) {
@@ -97,7 +97,7 @@ export class AuditService {
       };
       
       request.onsuccess = function(event) {
-        const db = event.target.result;
+        const db = (event.target as IDBOpenDBRequest).result;
         
         if (!db.objectStoreNames.contains('system_config')) {
           reject(new Error('Store system_config não encontrada'));
@@ -423,7 +423,7 @@ export class AuditService {
         const request = indexedDB.open('ADJPA_ERP_DB', 3);
         
         request.onupgradeneeded = function(event) {
-          const db = event.target.result;
+          const db = (event.target as IDBOpenDBRequest).result;
           console.log('📝 Upgrade do IndexedDB para versão 3...');
           
           // Criar store de audit_logs se não existir
@@ -439,7 +439,7 @@ export class AuditService {
         };
         
         request.onsuccess = function(event) {
-          const db = event.target.result;
+          const db = (event.target as IDBOpenDBRequest).result;
           
           // Verificar se a store existe
           if (!db.objectStoreNames.contains(AuditService.AUDIT_STORE)) {

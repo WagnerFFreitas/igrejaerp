@@ -1,6 +1,6 @@
 // Serviço de Gerenciamento de Usuários
 
-import { UserAuth, UserRole } from '../types';
+import { UserAuth, UserRole } from '../../types';
 
 export interface SystemUser {
   id: string;
@@ -142,7 +142,7 @@ export class UserService {
       const request = indexedDB.open('ADJPA_ERP_DB', 3); // Versão 3 para incluir usuários e audit_logs
       
       request.onupgradeneeded = function(event) {
-        const db = event.target.result;
+        const db = (event.target as IDBOpenDBRequest).result;
         console.log('📝 Atualizando IndexedDB para versão 2 (incluindo usuários)...');
         
         // Criar store de usuários se não existir
@@ -153,7 +153,7 @@ export class UserService {
       };
       
       request.onsuccess = function(event) {
-        const db = event.target.result;
+        const db = (event.target as IDBOpenDBRequest).result;
         
         if (!db.objectStoreNames.contains(UserService.USERS_STORE)) {
           console.log('� Store de usuários não encontrada');
@@ -190,7 +190,7 @@ export class UserService {
       const request = indexedDB.open('ADJPA_ERP_DB', 3);
       
       request.onsuccess = function(event) {
-        const db = event.target.result;
+        const db = (event.target as IDBOpenDBRequest).result;
         
         // Verificar se a store existe
         if (!db.objectStoreNames.contains(UserService.USERS_STORE)) {

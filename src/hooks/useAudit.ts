@@ -1,5 +1,5 @@
 import { AuditService } from '../services/auditService';
-import { UserAuth } from '../types';
+import { UserAuth } from '../../types';
 
 export const useAudit = (currentUser: UserAuth | null) => {
   const logAction = async (action: string, entity: string, entityId?: string, entityName?: string, details?: any) => {

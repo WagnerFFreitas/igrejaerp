@@ -7,9 +7,9 @@ import IndexedDBService from '../src/services/indexedDBService';
 
 export class DatabaseService {
   private isFirebaseConfigured(): boolean {
-    // Sempre retornar false para forçar uso do IndexedDB
-    // Firebase só será usado se estiver realmente configurado e funcionando
-    return false;
+    // Verifica se a API Key do Firebase foi configurada nas variáveis de ambiente
+    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+    return !!apiKey && apiKey !== 'demo-key' && apiKey !== 'sua_api_key_aqui';
   }
 
   // Storage local robusto com IndexedDB
