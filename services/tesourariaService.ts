@@ -4,7 +4,6 @@
  */
 
 import { 
-  getFirestore, 
   collection, 
   getDocs, 
   doc, 
@@ -12,8 +11,8 @@ import {
   updateDoc,
   query, 
   where,
-  orderBy
 } from 'firebase/firestore';
+import { db } from '../src/services/firebaseService';
 import { 
   CashClosing, 
   CashMovement, 
@@ -32,8 +31,6 @@ import {
 } from '../utils/calculosTesouraria';
 
 export const treasuryService = {
-  db: getFirestore(),
-
   /**
    * FECHAMENTO DE CAIXA DIÁRIO
    */
@@ -46,16 +43,26 @@ export const treasuryService = {
     observations?: string
   ): Promise<CashClosing> {
     // Busca transações do dia
-    const transactionsRef = collection(this.db, 'financial/transactions');
-    const q = query(
-      transactionsRef,
-      where('unitId', '==', unitId),
-      where('accountId', '==', accountId),
-      where('date', '==', date)
-    );
+    let transactions: Transaction[] = [];
     
-    const snapshot = await getDocs(q);
-    const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+    if (db) {
+      try {
+        const transactionsRef = collection(db, 'financial/transactions');
+        const q = query(
+          transactionsRef,
+          where('unitId', '==', unitId),
+          where('accountId', '==', accountId),
+          where('date', '==', date)
+        );
+        
+        const snapshot = await getDocs(q);
+        transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+      } catch (error) {
+        console.warn("⚠️ Erro ao buscar transações do Firebase para fechamento:", error);
+      }
+    }
+    
+    // TODO: Buscar do IndexedDB se Firebase falhar ou não estiver disponível
     
     // Calcula totais
     const openingBalance = 0; // Implementar lógica de saldo inicial
@@ -91,8 +98,14 @@ export const treasuryService = {
       createdAt: new Date().toISOString(),
     };
     
-    const docRef = doc(this.db, 'treasury/cash-closings', closing.id);
-    await setDoc(docRef, closing);
+    if (db) {
+      try {
+        const docRef = doc(db, 'treasury/cash-closings', closing.id);
+        await setDoc(docRef, closing);
+      } catch (firebaseError) {
+        console.warn("⚠️ Falha ao sincronizar fechamento com Firebase:", firebaseError);
+      }
+    }
     
     return closing;
   },

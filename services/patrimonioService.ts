@@ -39,12 +39,10 @@ import {
   calcularDepreciacaoTotal,
   DepreciationData
 } from '../utils/depreciacaoCalculations';
+import IndexedDBService from '../src/services/indexedDBService';
+import { db } from '../src/services/firebaseService';
 
 export const patrimonioService = {
-  get db() {
-    return getFirestore();
-  },
-
   /**
    * ==========================================================================
    * GESTÃO DE BENS PATRIMONIAIS
@@ -55,68 +53,154 @@ export const patrimonioService = {
    * Cadastrar novo bem patrimonial
    */
   async registerAsset(assetData: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>): Promise<Asset> {
-    // Gerar número de patrimônio automático
-    const assetNumber = await gerarNumeroPatrimonio(this.db, assetData.unitId);
-    
-    const asset: Asset = {
-      ...assetData,
-      id: crypto.randomUUID(),
-      assetNumber,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      // Gerar número de patrimônio automático
+      const assetNumber = await gerarNumeroPatrimonio(db, assetData.unitId);
+      
+      const asset: Asset = {
+        ...assetData,
+        id: crypto.randomUUID(),
+        assetNumber,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    // Salvar no Firebase
-    const docRef = doc(this.db, 'patrimonio/assets', asset.id);
-    await setDoc(docRef, asset);
+      // Salvar localmente primeiro (IndexedDB)
+      await IndexedDBService.save('assets', asset);
+      console.log("✅ Bem salvo localmente no IndexedDB");
 
-    return asset;
+      // Tentar salvar no Firebase se disponível
+      if (db) {
+        try {
+          const docRef = doc(db, 'patrimonio/assets', asset.id);
+          await setDoc(docRef, asset);
+          console.log("✅ Bem sincronizado com Firebase");
+        } catch (firebaseError) {
+          console.warn("⚠️ Falha ao sincronizar com Firebase, mantido apenas localmente:", firebaseError);
+        }
+      }
+
+      return asset;
+    } catch (error) {
+      console.error("❌ Erro ao registrar bem:", error);
+      throw error;
+    }
   },
 
   /**
    * Atualizar dados do bem
    */
   async updateAsset(assetId: string, updates: Partial<Asset>): Promise<void> {
-    const docRef = doc(this.db, 'patrimonio/assets', assetId);
-    
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    });
+    try {
+      const existingAsset = await this.getAssetById(assetId);
+      if (!existingAsset) throw new Error('Bem não encontrado');
+
+      const updatedAsset = {
+        ...existingAsset,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Salvar localmente
+      await IndexedDBService.save('assets', updatedAsset);
+
+      // Tentar Firebase
+      if (db) {
+        try {
+          const docRef = doc(db, 'patrimonio/assets', assetId);
+          await updateDoc(docRef, {
+            ...updates,
+            updatedAt: new Date().toISOString(),
+          });
+        } catch (firebaseError) {
+          console.warn("⚠️ Falha ao sincronizar atualização com Firebase:", firebaseError);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Erro ao atualizar bem:", error);
+      throw error;
+    }
   },
 
   /**
    * Buscar todos os bens de uma unidade
    */
   async getAssets(unitId: string, category?: AssetType, status?: AssetStatus): Promise<Asset[]> {
-    let constraints: any[] = [where('unitId', '==', unitId)];
-    
-    if (category) {
-      constraints.push(where('category', '==', category));
-    }
-    
-    if (status) {
-      constraints.push(where('status', '==', status));
-    }
+    try {
+      // Tentar carregar do IndexedDB primeiro
+      const localAssets = await IndexedDBService.getAll('assets');
+      let filtered = localAssets.filter(a => a.unitId === unitId);
+      
+      if (category && category !== 'ALL' as any) {
+        filtered = filtered.filter(a => a.category === category);
+      }
+      
+      if (status && status !== 'ALL' as any) {
+        filtered = filtered.filter(a => a.status === status);
+      }
 
-    const q = query(collection(this.db, 'patrimonio/assets'), ...constraints);
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
+      if (filtered.length > 0) {
+        console.log(`📊 Encontrados ${filtered.length} bens no IndexedDB`);
+        return filtered;
+      }
+
+      // Se não houver localmente, tentar Firebase
+      if (db) {
+        let constraints: any[] = [where('unitId', '==', unitId)];
+        
+        if (category && category !== 'ALL' as any) {
+          constraints.push(where('category', '==', category));
+        }
+        
+        if (status && status !== 'ALL' as any) {
+          constraints.push(where('status', '==', status));
+        }
+
+        const q = query(collection(db, 'patrimonio/assets'), ...constraints);
+        const snapshot = await getDocs(q);
+        const firebaseAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
+        
+        // Salvar no IndexedDB para uso futuro
+        for (const asset of firebaseAssets) {
+          await IndexedDBService.save('assets', asset);
+        }
+        
+        return firebaseAssets;
+      }
+
+      return [];
+    } catch (error) {
+      console.error("❌ Erro ao buscar bens:", error);
+      return [];
+    }
   },
 
   /**
    * Buscar bem por ID
    */
   async getAssetById(assetId: string): Promise<Asset | null> {
-    const docRef = doc(this.db, 'patrimonio/assets', assetId);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Asset;
+    try {
+      // Tentar local
+      const localAsset = await IndexedDBService.get('assets', assetId);
+      if (localAsset) return localAsset;
+
+      // Tentar Firebase
+      if (db) {
+        const docRef = doc(db, 'patrimonio/assets', assetId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const asset = { id: docSnap.id, ...docSnap.data() } as Asset;
+          await IndexedDBService.save('assets', asset);
+          return asset;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("❌ Erro ao buscar bem por ID:", error);
+      return null;
     }
-    
-    return null;
   },
 
   /**
@@ -204,9 +288,18 @@ export const patrimonioService = {
     };
 
     // Salvar registro
-    const docRef = doc(this.db, 'patrimonio/depreciations', depreciation.id);
-    await setDoc(docRef, depreciation);
+    if (db) {
+      try {
+        const docRef = doc(db, 'patrimonio/depreciations', depreciation.id);
+        await setDoc(docRef, depreciation);
+      } catch (firebaseError) {
+        console.warn("⚠️ Falha ao sincronizar depreciação com Firebase:", firebaseError);
+      }
+    }
 
+    // Salvar localmente (TODO: Implementar store de depreciações no IndexedDB se necessário)
+    // Por enquanto, apenas atualizamos o bem que já é salvo localmente no updateAsset
+    
     // Atualizar bem com novos valores
     await this.updateAsset(assetId, {
       currentBookValue: dadosDepreciacao.bookValue,
@@ -289,8 +382,14 @@ export const patrimonioService = {
     };
 
     // Salvar transferência
-    const docRef = doc(this.db, 'patrimonio/transfers', transfer.id);
-    await setDoc(docRef, transfer);
+    if (db) {
+      try {
+        const docRef = doc(db, 'patrimonio/transfers', transfer.id);
+        await setDoc(docRef, transfer);
+      } catch (firebaseError) {
+        console.warn("⚠️ Falha ao sincronizar transferência com Firebase:", firebaseError);
+      }
+    }
 
     // Atualizar bem com nova unidade
     await this.updateAsset(assetId, {
@@ -369,8 +468,14 @@ export const patrimonioService = {
     };
 
     // Salvar inventário
-    const docRef = doc(this.db, 'patrimonio/inventory', inventory.id);
-    await setDoc(docRef, inventory);
+    if (db) {
+      try {
+        const docRef = doc(db, 'patrimonio/inventory', inventory.id);
+        await setDoc(docRef, inventory);
+      } catch (firebaseError) {
+        console.warn("⚠️ Falha ao sincronizar inventário com Firebase:", firebaseError);
+      }
+    }
 
     // Atualizar bens com data do último inventário
     for (const item of items) {
@@ -409,8 +514,14 @@ export const patrimonioService = {
     };
 
     // Salvar ajuste
-    const docRef = doc(this.db, 'patrimonio/inventory-adjustments', adjustment.id);
-    await setDoc(docRef, adjustment);
+    if (db) {
+      try {
+        const docRef = doc(db, 'patrimonio/inventory-adjustments', adjustment.id);
+        await setDoc(docRef, adjustment);
+      } catch (firebaseError) {
+        console.warn("⚠️ Falha ao sincronizar ajuste de inventário com Firebase:", firebaseError);
+      }
+    }
 
     // Se for baixa, atualizar o bem
     if (adjustmentType === 'BAIXA') {
@@ -439,8 +550,14 @@ export const patrimonioService = {
     };
 
     // Salvar manutenção
-    const docRef = doc(this.db, 'patrimonio/maintenances', maintenance.id);
-    await setDoc(docRef, maintenance);
+    if (db) {
+      try {
+        const docRef = doc(db, 'patrimonio/maintenances', maintenance.id);
+        await setDoc(docRef, maintenance);
+      } catch (firebaseError) {
+        console.warn("⚠️ Falha ao sincronizar manutenção com Firebase:", firebaseError);
+      }
+    }
 
     // Se for realizada, atualizar bem
     if (maintenance.status === 'REALIZADA') {
@@ -530,25 +647,45 @@ export const patrimonioService = {
  * Gerar número de patrimônio sequencial (função auxiliar)
  */
 async function gerarNumeroPatrimonio(db: any, unitId: string): Promise<string> {
-  // Buscar último número cadastrado
-  const q = query(
-    collection(db, 'patrimonio/assets'),
-    where('unitId', '==', unitId),
-    orderBy('assetNumber', 'desc')
-  );
-  
-  const snapshot = await getDocs(q);
-  
-  if (snapshot.empty) {
+  try {
+    // Tentar buscar do IndexedDB primeiro (mais rápido e funciona offline)
+    const localAssets = await IndexedDBService.getAll('assets');
+    const unitAssets = localAssets.filter((a: any) => a.unitId === unitId);
+    
+    if (unitAssets.length > 0) {
+      // Ordenar por assetNumber desc
+      unitAssets.sort((a: any, b: any) => (b.assetNumber || '').localeCompare(a.assetNumber || ''));
+      const lastNumber = unitAssets[0].assetNumber;
+      const parts = lastNumber.split('-');
+      const currentNumber = parseInt(parts[parts.length - 1]);
+      const nextNumber = isNaN(currentNumber) ? 1 : currentNumber + 1;
+      return `${unitId}-${nextNumber.toString().padStart(6, '0')}`;
+    }
+
+    // Se não houver localmente e tiver Firebase, tenta buscar do Firebase
+    if (db) {
+      const q = query(
+        collection(db, 'patrimonio/assets'),
+        where('unitId', '==', unitId),
+        orderBy('assetNumber', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const lastDoc = snapshot.docs[0]; // orderBy desc, então o primeiro é o maior
+        const lastNumber = lastDoc.data().assetNumber;
+        const parts = lastNumber.split('-');
+        const currentNumber = parseInt(parts[parts.length - 1]);
+        const nextNumber = isNaN(currentNumber) ? 1 : currentNumber + 1;
+        return `${unitId}-${nextNumber.toString().padStart(6, '0')}`;
+      }
+    }
+    
+    // Se nada for encontrado, inicia do 1
     return `${unitId}-000001`;
+  } catch (error) {
+    console.warn("⚠️ Erro ao gerar número de patrimônio, usando fallback temporal:", error);
+    return `${unitId}-${Date.now().toString().slice(-6)}`;
   }
-
-  // Extrair último número e incrementar
-  const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-  const lastNumber = lastDoc.data().assetNumber;
-  const parts = lastNumber.split('-');
-  const currentNumber = parseInt(parts[parts.length - 1]);
-  const nextNumber = currentNumber + 1;
-
-  return `${unitId}-${nextNumber.toString().padStart(6, '0')}`;
 }

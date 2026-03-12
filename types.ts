@@ -84,7 +84,7 @@ export interface Dependent {
   id: string;
   name: string;
   birthDate: string;
-  relationship: 'FILHO' | 'CONJUGE' | 'PAI' | 'MAE' | 'OUTRO';
+  relationship: 'FILHO' | 'FILHA' | 'CONJUGE' | 'PAI' | 'MAE' | 'OUTRO';
   cpf?: string;
 }
 
@@ -298,8 +298,13 @@ export interface AuditLog {
   userName: string;
   action: string;
   entity: string;
+  entityId?: string;
+  entityName?: string;
   date: string;
   ip: string;
+  details?: any;
+  success?: boolean;
+  hash?: string;
 }
 
 // Added missing TaxConfig interface
@@ -307,9 +312,20 @@ export interface TaxConfig {
   inssBrackets: { limit: number; rate: number }[];
   irrfBrackets: { limit: number; rate: number; deduction: number }[];
   fgtsRate: number;
-  patronalRate: number;
-  ratRate: number;
-  terceirosRate: number;
+  patronalRate?: number;
+  ratRate?: number;
+  terceirosRate?: number;
+  thirdPartyEntities?: {
+    sindicatoRate: number;
+    confederacaoRate: number;
+    sistemaS: number;
+    senai: number;
+    senac: number;
+    sesi: number;
+    sebrae: number;
+    incra: number;
+    terceirosRate: number;
+  };
 }
 
 // ============================================================================
@@ -791,6 +807,7 @@ export interface Payroll {
   matricula: string;
   employeeName: string;
   email?: string;
+  phone?: string;
   cpf: string;
   rg: string;
   pis: string;
@@ -843,6 +860,13 @@ export interface Payroll {
   vale_alimentacao: number;
   vr_ativo: boolean;
   vale_refeicao: number;
+  cep?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  createdAt?: string;
+  updatedAt?: string;
   ps_ativo: boolean;
   plano_saude_colaborador: number;
   po_ativo: boolean;

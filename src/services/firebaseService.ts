@@ -1,31 +1,41 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 
-// Configuração Firebase (emuladores locais)
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-key',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'localhost:9099',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'studio-3774299343-4984f',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'localhost:9199',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || 'demo',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'demo'
-};
+// Import the Firebase configuration
+import firebaseConfig from '../../firebase-applet-config.json';
 
 // Inicializar Firebase
 let app;
-let db, storage, auth, functions;
+let db: any, auth: any, functions: any;
+let storage = null;
 
 try {
   app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  storage = getStorage(app);
+  db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  // storage = getStorage(app); // Desativado temporariamente pois requer plano pago
   auth = getAuth(app);
   functions = getFunctions(app);
   
   console.log("🔥 Firebase inicializado com sucesso");
+
+  // Teste de conexão
+  const testConnection = async () => {
+    try {
+      await getDocFromServer(doc(db, 'test', 'connection'));
+      console.log("✅ Conexão com Firestore estabelecida com sucesso!");
+    } catch (error) {
+      if(error instanceof Error && error.message.includes('the client is offline')) {
+        console.error("❌ O cliente está offline. Verifique sua configuração do Firebase.");
+      } else {
+        console.warn("⚠️ Teste de conexão retornou um erro (pode ser permissão, o que significa que conectou):", error);
+      }
+    }
+  };
+  testConnection();
+
 } catch (error) {
   console.warn("❌ Erro ao inicializar Firebase:", error);
 }

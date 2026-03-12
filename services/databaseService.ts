@@ -2,14 +2,32 @@
 import { Member, Payroll, Transaction, FinancialAccount, Unit, Asset, EmployeeLeave } from '../types';
 import { MOCK_UNITS, MOCK_MEMBERS, MOCK_TRANSACTIONS, MOCK_ACCOUNTS } from '../constants';
 import { db } from '../src/services/firebaseService';
-import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import IndexedDBService from '../src/services/indexedDBService';
 
 export class DatabaseService {
   private isFirebaseConfigured(): boolean {
-    // Verifica se a API Key do Firebase foi configurada nas variáveis de ambiente
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
-    return !!apiKey && apiKey !== 'demo-key' && apiKey !== 'sua_api_key_aqui';
+    // Verificar se o db do Firestore está inicializado
+    return !!db;
+  }
+
+  // Helper para timeout em chamadas do Firebase
+  private async withTimeout<T>(promise: Promise<T>, ms: number = 5000): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Timeout de ${ms}ms excedido na operação do Firebase`));
+      }, ms);
+      
+      promise
+        .then(value => {
+          clearTimeout(timer);
+          resolve(value);
+        })
+        .catch(reason => {
+          clearTimeout(timer);
+          reject(reason);
+        });
+    });
   }
 
   // Storage local robusto com IndexedDB
@@ -57,7 +75,7 @@ export class DatabaseService {
     }
     try {
       const q = query(collection(db, 'units'));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await this.withTimeout(getDocs(q), 5000);
       return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
     } catch (error) {
       console.warn("Erro ao carregar unidades, usando dados de demonstração:", error);
@@ -74,14 +92,12 @@ export class DatabaseService {
       const localMembers = await this.getFromLocal('members');
       console.log(`📊 Encontrados ${localMembers.length} membros no IndexedDB`);
       
-      if (unitId) {
-        const filtered = localMembers.filter(m => m.unitId === unitId);
-        console.log(`📊 ${filtered.length} membros para unidade ${unitId}`);
-        return filtered;
-      }
-      
-      // Se há dados locais, retorna eles
       if (localMembers.length > 0) {
+        if (unitId) {
+          const filtered = localMembers.filter(m => m.unitId === unitId);
+          console.log(`📊 ${filtered.length} membros para unidade ${unitId}`);
+          return filtered;
+        }
         return localMembers;
       }
     } catch (error) {
@@ -96,16 +112,20 @@ export class DatabaseService {
         if (unitId) {
           q = query(collection(db, 'members'), where('unitId', '==', unitId));
         }
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await this.withTimeout(getDocs(q), 8000);
         const firebaseMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
         console.log(`🔥 Carregados ${firebaseMembers.length} membros do Firebase`);
         
-        // Salvar localmente para cache
-        for (const member of firebaseMembers) {
-          await this.saveToLocal('members', member);
+        if (firebaseMembers.length > 0) {
+          // Salvar localmente para cache
+          for (const member of firebaseMembers) {
+            await this.saveToLocal('members', member);
+          }
+          return firebaseMembers;
+        } else {
+          console.log("⚠️ Firebase vazio, usando dados mock");
+          return MOCK_MEMBERS.filter(m => !unitId || m.unitId === unitId);
         }
-        
-        return firebaseMembers;
       } catch (error) {
         console.warn("❌ Erro ao carregar do Firebase:", error);
       }
@@ -117,7 +137,7 @@ export class DatabaseService {
   }
 
   async saveMember(member: Partial<Member>): Promise<string> {
-    const memberData = { ...member, id: member.id || `local_${Date.now()}` };
+    const memberData = { ...member, id: member.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
     console.log("🚀 Iniciando salvamento de membro...");
     console.log("📋 Dados completos:", memberData);
@@ -134,11 +154,22 @@ export class DatabaseService {
       }
     }
     
-    // Firebase fallback (não usado no momento)
+    // Firebase fallback
     try {
-      const docRef = await addDoc(collection(db, 'members', memberData));
-      console.log("✅ Membro salvo no Firebase com ID:", docRef.id);
-      return docRef.id;
+      if (member.id && !member.id.startsWith('local_')) {
+        const docRef = doc(db, 'members', member.id);
+        await this.withTimeout(setDoc(docRef, memberData, { merge: true }), 8000);
+        console.log("✅ Membro salvo no Firebase com ID:", member.id);
+        await this.saveToLocal('members', memberData);
+        return member.id;
+      } else {
+        // Remove the local ID before saving to Firebase so it generates a new one
+        const { id, ...dataToSave } = memberData;
+        const docRef = await this.withTimeout(addDoc(collection(db, 'members'), dataToSave), 8000);
+        console.log("✅ Membro salvo no Firebase com ID:", docRef.id);
+        await this.saveToLocal('members', { ...dataToSave, id: docRef.id });
+        return docRef.id;
+      }
     } catch (error) {
       console.error("Erro ao salvar membro no Firebase, salvando localmente:", error);
       await this.saveToLocal('members', memberData);
@@ -146,9 +177,24 @@ export class DatabaseService {
     }
   }
 
+  async deleteMember(id: string): Promise<void> {
+    console.log("🚀 Iniciando deleção de membro com ID:", id);
+    try {
+      if (this.isFirebaseConfigured()) {
+        await this.withTimeout(deleteDoc(doc(db, 'members', id)), 8000);
+        console.log("✅ Membro deletado do Firebase com ID:", id);
+      }
+      await IndexedDBService.delete('members', id);
+      console.log("✅ Membro deletado do IndexedDB com ID:", id);
+    } catch (error) {
+      console.error("❌ Erro ao deletar membro:", error);
+      throw error;
+    }
+  }
+
   // Funcionários
   async saveEmployee(employee: Partial<Payroll>): Promise<string> {
-    const employeeData = { ...employee, id: employee.id || `local_${Date.now()}` };
+    const employeeData = { ...employee, id: employee.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
     console.log("🚀 Iniciando salvamento de funcionário...");
     console.log("📋 Dados completos:", employeeData);
@@ -165,11 +211,22 @@ export class DatabaseService {
       }
     }
     
-    // Firebase fallback (não usado no momento)
+    // Firebase fallback
     try {
-      const docRef = await addDoc(collection(db, 'employees', employeeData));
-      console.log("✅ Funcionário salvo no Firebase com ID:", docRef.id);
-      return docRef.id;
+      if (employee.id && !employee.id.startsWith('local_')) {
+        const docRef = doc(db, 'employees', employee.id);
+        await this.withTimeout(setDoc(docRef, employeeData, { merge: true }), 8000);
+        console.log("✅ Funcionário salvo no Firebase com ID:", employee.id);
+        await this.saveToLocal('employees', employeeData);
+        return employee.id;
+      } else {
+        // Remove the local ID before saving to Firebase so it generates a new one
+        const { id, ...dataToSave } = employeeData;
+        const docRef = await this.withTimeout(addDoc(collection(db, 'employees'), dataToSave), 8000);
+        console.log("✅ Funcionário salvo no Firebase com ID:", docRef.id);
+        await this.saveToLocal('employees', { ...dataToSave, id: docRef.id });
+        return docRef.id;
+      }
     } catch (error) {
       console.error("Erro ao salvar funcionário no Firebase, salvando localmente:", error);
       await this.saveToLocal('employees', employeeData);
@@ -185,13 +242,12 @@ export class DatabaseService {
       const localEmployees = await this.getFromLocal('employees');
       console.log(`📊 Encontrados ${localEmployees.length} funcionários no IndexedDB`);
       
-      if (unitId) {
-        const filtered = localEmployees.filter(e => e.unitId === unitId);
-        console.log(`📊 ${filtered.length} funcionários para unidade ${unitId}`);
-        return filtered;
-      }
-      
       if (localEmployees.length > 0) {
+        if (unitId) {
+          const filtered = localEmployees.filter(e => e.unitId === unitId);
+          console.log(`📊 ${filtered.length} funcionários para unidade ${unitId}`);
+          return filtered;
+        }
         return localEmployees;
       }
     } catch (error) {
@@ -204,14 +260,23 @@ export class DatabaseService {
         const q = unitId 
           ? query(collection(db, 'employees'), where('unitId', '==', unitId))
           : query(collection(db, 'employees'));
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await this.withTimeout(getDocs(q), 8000);
         const firebaseEmployees = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Payroll[];
         
         console.log(`📊 Encontrados ${firebaseEmployees.length} funcionários no Firebase`);
-        return firebaseEmployees;
+        
+        if (firebaseEmployees.length > 0) {
+          for (const employee of firebaseEmployees) {
+            await this.saveToLocal('employees', employee);
+          }
+          return firebaseEmployees;
+        } else {
+          console.log("⚠️ Firebase vazio, nenhum dado para retornar");
+          return [];
+        }
       } catch (error) {
         console.warn("❌ Erro ao carregar do Firebase:", error);
       }
@@ -219,7 +284,7 @@ export class DatabaseService {
     
     // Último recurso: dados mock
     console.warn("⚠️ Usando dados mock - nenhum funcionário encontrado");
-    return MOCK_PAYROLL.filter(e => !unitId || e.unitId === unitId);
+    return [];
   }
 
   // Financeiro
@@ -231,13 +296,12 @@ export class DatabaseService {
       const localTransactions = await this.getFromLocal('transactions');
       console.log(`📊 Encontradas ${localTransactions.length} transações no IndexedDB`);
       
-      if (unitId) {
-        const filtered = localTransactions.filter(t => t.unitId === unitId);
-        console.log(`📊 ${filtered.length} transações para unidade ${unitId}`);
-        return filtered;
-      }
-      
       if (localTransactions.length > 0) {
+        if (unitId) {
+          const filtered = localTransactions.filter(t => t.unitId === unitId);
+          console.log(`📊 ${filtered.length} transações para unidade ${unitId}`);
+          return filtered;
+        }
         return localTransactions;
       }
     } catch (error) {
@@ -252,7 +316,7 @@ export class DatabaseService {
         if (unitId) {
           q = query(collection(db, 'transactions'), where('unitId', '==', unitId));
         }
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await this.withTimeout(getDocs(q), 8000);
         const firebaseTransactions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
         console.log(`🔥 Carregadas ${firebaseTransactions.length} transações do Firebase`);
         
@@ -270,8 +334,23 @@ export class DatabaseService {
     return MOCK_TRANSACTIONS.filter(t => !unitId || t.unitId === unitId);
   }
 
+  async deleteEmployee(id: string): Promise<void> {
+    console.log("🚀 Iniciando deleção de funcionário com ID:", id);
+    try {
+      if (this.isFirebaseConfigured()) {
+        await this.withTimeout(deleteDoc(doc(db, 'employees', id)), 8000);
+        console.log("✅ Funcionário deletado do Firebase com ID:", id);
+      }
+      await IndexedDBService.delete('employees', id);
+      console.log("✅ Funcionário deletado do IndexedDB com ID:", id);
+    } catch (error) {
+      console.error("❌ Erro ao deletar funcionário:", error);
+      throw error;
+    }
+  }
+
   async saveTransaction(transaction: Partial<Transaction>): Promise<string> {
-    const transactionData = { ...transaction, id: transaction.id || `local_${Date.now()}` };
+    const transactionData = { ...transaction, id: transaction.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
     console.log("🚀 Iniciando salvamento de transação...");
     console.log("📋 Dados completos:", transactionData);
@@ -290,9 +369,20 @@ export class DatabaseService {
     
     // Firebase fallback
     try {
-      const docRef = await addDoc(collection(db, 'transactions'), transactionData);
-      console.log("✅ Transação salva no Firebase com ID:", docRef.id);
-      return docRef.id;
+      if (transaction.id && !transaction.id.startsWith('local_')) {
+        const docRef = doc(db, 'transactions', transaction.id);
+        await this.withTimeout(setDoc(docRef, transactionData, { merge: true }), 8000);
+        console.log("✅ Transação salva no Firebase com ID:", transaction.id);
+        await this.saveToLocal('transactions', transactionData);
+        return transaction.id;
+      } else {
+        // Remove the local ID before saving to Firebase so it generates a new one
+        const { id, ...dataToSave } = transactionData;
+        const docRef = await this.withTimeout(addDoc(collection(db, 'transactions'), dataToSave), 8000);
+        console.log("✅ Transação salva no Firebase com ID:", docRef.id);
+        await this.saveToLocal('transactions', { ...dataToSave, id: docRef.id });
+        return docRef.id;
+      }
     } catch (error) {
       console.error("Erro ao salvar transação no Firebase, salvando localmente:", error);
       await this.saveToLocal('transactions', transactionData);
@@ -309,13 +399,12 @@ export class DatabaseService {
       const localAccounts = await this.getFromLocal('accounts');
       console.log(`📊 Encontradas ${localAccounts.length} contas no IndexedDB`);
       
-      if (unitId) {
-        const filtered = localAccounts.filter(a => a.unitId === unitId);
-        console.log(`📊 ${filtered.length} contas para unidade ${unitId}`);
-        return filtered;
-      }
-      
       if (localAccounts.length > 0) {
+        if (unitId) {
+          const filtered = localAccounts.filter(a => a.unitId === unitId);
+          console.log(`📊 ${filtered.length} contas para unidade ${unitId}`);
+          return filtered;
+        }
         return localAccounts;
       }
     } catch (error) {
@@ -330,7 +419,7 @@ export class DatabaseService {
         if (unitId) {
           q = query(collection(db, 'accounts'), where('unitId', '==', unitId));
         }
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await this.withTimeout(getDocs(q), 8000);
         const firebaseAccounts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FinancialAccount));
         console.log(`🔥 Carregadas ${firebaseAccounts.length} contas do Firebase`);
         
@@ -352,7 +441,7 @@ export class DatabaseService {
 
   // Contas Bancárias
   async saveAccount(account: Partial<FinancialAccount>): Promise<string> {
-    const accountData = { ...account, id: account.id || `local_${Date.now()}` };
+    const accountData = { ...account, id: account.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
     console.log("🚀 Iniciando salvamento de conta bancária...");
     console.log("📋 Dados completos:", accountData);
@@ -371,9 +460,20 @@ export class DatabaseService {
     
     // Firebase fallback
     try {
-      const docRef = await addDoc(collection(db, 'accounts'), accountData);
-      console.log("✅ Conta salva no Firebase com ID:", docRef.id);
-      return docRef.id;
+      if (account.id && !account.id.startsWith('local_')) {
+        const docRef = doc(db, 'accounts', account.id);
+        await this.withTimeout(setDoc(docRef, accountData, { merge: true }), 8000);
+        console.log("✅ Conta salva no Firebase com ID:", account.id);
+        await this.saveToLocal('accounts', accountData);
+        return account.id;
+      } else {
+        // Remove the local ID before saving to Firebase so it generates a new one
+        const { id, ...dataToSave } = accountData;
+        const docRef = await this.withTimeout(addDoc(collection(db, 'accounts'), dataToSave), 8000);
+        console.log("✅ Conta salva no Firebase com ID:", docRef.id);
+        await this.saveToLocal('accounts', { ...dataToSave, id: docRef.id });
+        return docRef.id;
+      }
     } catch (error) {
       console.error("Erro ao salvar conta no Firebase, salvando localmente:", error);
       await this.saveToLocal('accounts', accountData);
@@ -383,7 +483,7 @@ export class DatabaseService {
 
   // Ativos/Patrimônio
   async saveAsset(asset: Partial<Asset>): Promise<string> {
-    const assetData = { ...asset, id: asset.id || `local_${Date.now()}` };
+    const assetData = { ...asset, id: asset.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
     console.log("🚀 Iniciando salvamento de ativo...");
     console.log("📋 Dados completos:", assetData);
@@ -402,9 +502,20 @@ export class DatabaseService {
     
     // Firebase fallback
     try {
-      const docRef = await addDoc(collection(db, 'assets'), assetData);
-      console.log("✅ Ativo salvo no Firebase com ID:", docRef.id);
-      return docRef.id;
+      if (asset.id && !asset.id.startsWith('local_')) {
+        const docRef = doc(db, 'assets', asset.id);
+        await this.withTimeout(setDoc(docRef, assetData, { merge: true }), 8000);
+        console.log("✅ Ativo salvo no Firebase com ID:", asset.id);
+        await this.saveToLocal('assets', assetData);
+        return asset.id;
+      } else {
+        // Remove the local ID before saving to Firebase so it generates a new one
+        const { id, ...dataToSave } = assetData;
+        const docRef = await this.withTimeout(addDoc(collection(db, 'assets'), dataToSave), 8000);
+        console.log("✅ Ativo salvo no Firebase com ID:", docRef.id);
+        await this.saveToLocal('assets', { ...dataToSave, id: docRef.id });
+        return docRef.id;
+      }
     } catch (error) {
       console.error("Erro ao salvar ativo no Firebase, salvando localmente:", error);
       await this.saveToLocal('assets', assetData);
@@ -414,7 +525,7 @@ export class DatabaseService {
 
   // Folha de Pagamento
   async savePayroll(payroll: Partial<Payroll>): Promise<string> {
-    const payrollData = { ...payroll, id: payroll.id || `local_${Date.now()}` };
+    const payrollData = { ...payroll, id: payroll.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
     console.log("🚀 Iniciando salvamento da folha de pagamento...");
     console.log("📋 Dados completos:", payrollData);
@@ -433,9 +544,20 @@ export class DatabaseService {
     
     // Firebase fallback
     try {
-      const docRef = await addDoc(collection(db, 'payroll'), payrollData);
-      console.log("✅ Folha salva no Firebase com ID:", docRef.id);
-      return docRef.id;
+      if (payroll.id && !payroll.id.startsWith('local_')) {
+        const docRef = doc(db, 'payroll', payroll.id);
+        await this.withTimeout(setDoc(docRef, payrollData, { merge: true }), 8000);
+        console.log("✅ Folha salva no Firebase com ID:", payroll.id);
+        await this.saveToLocal('payroll', payrollData);
+        return payroll.id;
+      } else {
+        // Remove the local ID before saving to Firebase so it generates a new one
+        const { id, ...dataToSave } = payrollData;
+        const docRef = await this.withTimeout(addDoc(collection(db, 'payroll'), dataToSave), 8000);
+        console.log("✅ Folha salva no Firebase com ID:", docRef.id);
+        await this.saveToLocal('payroll', { ...dataToSave, id: docRef.id });
+        return docRef.id;
+      }
     } catch (error) {
       console.error("Erro ao salvar folha no Firebase, salvando localmente:", error);
       await this.saveToLocal('payroll', payrollData);
@@ -445,7 +567,7 @@ export class DatabaseService {
 
   // Férias/Afastamentos
   async saveLeave(leave: Partial<EmployeeLeave>): Promise<string> {
-    const leaveData = { ...leave, id: leave.id || `local_${Date.now()}` };
+    const leaveData = { ...leave, id: leave.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
     console.log("🚀 Iniciando salvamento de férias/afastamento...");
     console.log("📋 Dados completos:", leaveData);
@@ -464,9 +586,20 @@ export class DatabaseService {
     
     // Firebase fallback
     try {
-      const docRef = await addDoc(collection(db, 'leaves'), leaveData);
-      console.log("✅ Férias salvas no Firebase com ID:", docRef.id);
-      return docRef.id;
+      if (leave.id && !leave.id.startsWith('local_')) {
+        const docRef = doc(db, 'leaves', leave.id);
+        await this.withTimeout(setDoc(docRef, leaveData, { merge: true }), 8000);
+        console.log("✅ Férias salvas no Firebase com ID:", leave.id);
+        await this.saveToLocal('leaves', leaveData);
+        return leave.id;
+      } else {
+        // Remove the local ID before saving to Firebase so it generates a new one
+        const { id, ...dataToSave } = leaveData;
+        const docRef = await this.withTimeout(addDoc(collection(db, 'leaves'), dataToSave), 8000);
+        console.log("✅ Férias salvas no Firebase com ID:", docRef.id);
+        await this.saveToLocal('leaves', { ...dataToSave, id: docRef.id });
+        return docRef.id;
+      }
     } catch (error) {
       console.error("Erro ao salvar férias no Firebase, salvando localmente:", error);
       await this.saveToLocal('leaves', leaveData);
@@ -480,10 +613,12 @@ export class DatabaseService {
     
     try {
       // IndexedDB primeiro
-      const assets = await this.getFromLocal<Asset>('assets');
-      const unitAssets = assets.filter(a => a.unitId === unitId);
-      console.log(`📊 Encontrados ${unitAssets.length} ativos no IndexedDB`);
-      return unitAssets;
+      const assets = await this.getFromLocal('assets');
+      if (assets.length > 0) {
+        const unitAssets = assets.filter(a => a.unitId === unitId);
+        console.log(`📊 Encontrados ${unitAssets.length} ativos no IndexedDB`);
+        return unitAssets;
+      }
     } catch (error) {
       console.error("Erro ao buscar ativos no IndexedDB:", error);
     }
@@ -491,7 +626,7 @@ export class DatabaseService {
     // Firebase fallback
     try {
       const q = query(collection(db, 'assets'), where('unitId', '==', unitId));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await this.withTimeout(getDocs(q), 8000);
       const assets = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
       console.log(`📊 Encontrados ${assets.length} ativos no Firebase`);
       return assets;

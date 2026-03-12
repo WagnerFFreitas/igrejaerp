@@ -17,11 +17,12 @@ import { Configuracoes } from './components/Configuracoes';
 import { DashboardExecutivo } from './components/DashboardExecutivo';
 import { UserAuth, Payroll, Member, Transaction, FinancialAccount, Asset, EmployeeLeave, UserRole } from './types';
 import { dbService } from './services/databaseService';
-import { MOCK_PAYROLL, MOCK_LEAVES, MOCK_ASSETS } from './constants';
+import { MOCK_LEAVES, MOCK_ASSETS } from './constants';
 import IndexedDBService from './src/services/indexedDBService';
 import { AuditService } from './src/services/auditService';
 import { UserService } from './src/services/userService';
 import { useAudit } from './src/hooks/useAudit';
+import { DataInitializer } from './src/services/dataInitializer';
 import { 
   User as UserIcon, Key, LogIn, Church, AlertCircle, Loader2, Cloud, ShieldCheck
 } from 'lucide-react';
@@ -181,23 +182,9 @@ const Login: React.FC<{ onLogin: (user: UserAuth) => void }> = ({ onLogin }) => 
             )}
             <button 
               type="submit" 
-              className={`w-full py-4 rounded-2xl font-black shadow-xl transition-all flex items-center justify-center gap-2 mt-2 ${
-                !usersInitialized 
-                  ? 'bg-slate-400 text-slate-300 cursor-not-allowed' 
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
-              }`}
-              disabled={!usersInitialized}
+              className={`w-full py-4 rounded-2xl font-black shadow-xl transition-all flex items-center justify-center gap-2 mt-2 bg-indigo-600 text-white hover:bg-indigo-700`}
             >
-              {!usersInitialized ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  Aguarde...
-                </>
-              ) : (
-                <>
-                  <LogIn size={20} /> Acessar Sistema Cloud
-                </>
-              )}
+              <LogIn size={20} /> Acessar Sistema Cloud
             </button>
           </form>
 
@@ -253,6 +240,10 @@ const App: React.FC = () => {
       setIsLoading(true);
       try {
         console.log("Carregando dados para unidade:", currentUnitId);
+        
+        // Inicializar dados se necessário
+        await DataInitializer.initializeData(currentUnitId);
+        
         const [m, t, a, e] = await Promise.all([
           dbService.getMembers(currentUnitId),
           dbService.getTransactions(currentUnitId),
@@ -375,7 +366,7 @@ const App: React.FC = () => {
           members={unitMembers}
         />
       );
-      case 'assets': return <Patrimonio />;
+      case 'assets': return <Patrimonio currentUnitId={currentUnitId} user={currentUser} />;
       case 'rh': return <RecursosHumanos employees={unitEmployees} />;
       case 'dp': return <Funcionarios employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} />;
       case 'leaves': return <Afastamentos leaves={unitLeaves} setLeaves={setLeaves} currentUnitId={currentUnitId} />;

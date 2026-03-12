@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 import { 
   Database, Download, UploadCloud, ShieldCheck, Calculator, Save, 
   ShieldAlert, Fingerprint, RefreshCw, MapPin, FileText, Percent, 
-  AlertCircle, CheckCircle2, Trash2, Globe, DatabaseZap, CloudDownload
+  AlertCircle, CheckCircle2, Trash2, Globe, DatabaseZap, CloudDownload, Users
 } from 'lucide-react';
-import { UserAuth, TaxConfig } from '../types';
+import { UserAuth, TaxConfig, Member, Payroll, Employee } from '../types';
 import { DEFAULT_TAX_CONFIG } from '../constants';
 import CryptoService from '../src/services/cryptoService';
+import IndexedDBService from '../src/services/indexedDBService';
+import { dbService } from '../services/databaseService';
 
 interface ConfiguracoesProps {
   user: UserAuth;
@@ -19,6 +21,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<ConfigTab>('backup');
   const [taxConfig, setTaxConfig] = useState<TaxConfig>(DEFAULT_TAX_CONFIG);
   const [isSyncingCep, setIsSyncingCep] = useState(false);
+  const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [certificateStatus, setCertificateStatus] = useState<'VALID' | 'EXPIRED' | 'NOT_INSTALLED'>('VALID');
 
@@ -31,6 +34,84 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
     setSelectedStates(prev => 
       prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf]
     );
+  };
+
+  const handleRemoveDuplicates = async () => {
+    console.log("🚀 Iniciando remoção de duplicatas...");
+    
+    setIsRemovingDuplicates(true);
+    try {
+      const unitId = user.unitId;
+      
+      // Limpar cache local para forçar busca do Firebase
+      await IndexedDBService.clear('members');
+      await IndexedDBService.clear('employees');
+      
+      // Buscar dados atualizados do Firebase
+      const members = await dbService.getMembers(unitId);
+      console.log("🔍 Membros encontrados:", members.length);
+      const memberNames = new Map<string, string>(); // Map name -> id
+      const duplicateMembers: string[] = [];
+      
+      for (const member of members) {
+        const normalizedName = member.name.trim().toLowerCase();
+        if (memberNames.has(normalizedName)) {
+          console.log("⚠️ Duplicata encontrada (membro):", member.name, member.id);
+          duplicateMembers.push(member.id!);
+        } else {
+          memberNames.set(normalizedName, member.id!);
+        }
+      }
+      
+      const employees = await dbService.getEmployees(unitId);
+      console.log("🔍 Funcionários encontrados:", employees.length);
+      const employeeNames = new Map<string, string>(); // Map name -> id
+      const duplicateEmployees: string[] = [];
+      
+      for (const emp of employees) {
+        const normalizedName = emp.employeeName.trim().toLowerCase();
+        if (employeeNames.has(normalizedName)) {
+          console.log("⚠️ Duplicata encontrada (funcionário):", emp.employeeName, emp.id);
+          duplicateEmployees.push(emp.id!);
+        } else {
+          employeeNames.set(normalizedName, emp.id!);
+        }
+      }
+      
+      console.log(`Encontrados ${duplicateMembers.length} membros duplicados e ${duplicateEmployees.length} funcionários duplicados no Firebase.`);
+      console.log("IDs duplicados:", { duplicateMembers, duplicateEmployees });
+      
+      // Deletar sequencialmente para evitar sobrecarga no Firebase/IndexedDB
+      for (const id of duplicateMembers) {
+        console.log("⚠️ Deletando membro duplicado:", id);
+        try {
+          if (id) await dbService.deleteMember(id);
+        } catch (err) {
+          console.error(`❌ Erro ao deletar membro ${id}:`, err);
+        }
+      }
+      
+      for (const id of duplicateEmployees) {
+        console.log("⚠️ Deletando funcionário duplicado:", id);
+        try {
+          if (id) await dbService.deleteEmployee(id);
+        } catch (err) {
+          console.error(`❌ Erro ao deletar funcionário ${id}:`, err);
+        }
+      }
+      
+      // Limpar cache local novamente para forçar recarregamento limpo
+      await IndexedDBService.clear('members');
+      await IndexedDBService.clear('employees');
+      
+      alert(`✅ Limpeza concluída! Foram removidos ${duplicateMembers.length} membros e ${duplicateEmployees.length} funcionários duplicados.`);
+      window.location.reload();
+    } catch (error: any) {
+      console.error("❌ Erro ao remover duplicatas:", error);
+      alert("❌ Erro ao remover duplicatas: " + error.message);
+    } finally {
+      setIsRemovingDuplicates(false);
+    }
   };
 
   const handleBackup = async () => {
@@ -60,85 +141,70 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
 
       // Função para buscar dados do IndexedDB e criptografar dados sensíveis
       const getFromIndexedDB = async (storeName: string) => {
-        return new Promise((resolve, reject) => {
-          const request = indexedDB.open('ADJPA_ERP_DB', 1);
+        try {
+          let data = await IndexedDBService.getAll(storeName);
           
-          request.onsuccess = function(event) {
-            const db = event.target.result;
-            
-            if (!db.objectStoreNames.contains(storeName)) {
-              console.log(`⚠️ Store ${storeName} não encontrada`);
-              resolve([]);
-              return;
-            }
-            
-            const transaction = db.transaction(storeName, 'readonly');
-            const store = transaction.objectStore(storeName);
-            const getRequest = store.getAll();
-            
-            getRequest.onsuccess = function() {
-              let data = getRequest.result || [];
-              
-              // Criptografar dados sensíveis dependendo do tipo
-              if (storeName === 'members') {
-                data = data.map(member => CryptoService.sanitizeMember(member));
-              }
-              
-              if (storeName === 'employees') {
-                data = data.map(employee => CryptoService.sanitizeEmployee(employee));
-              }
-              
-              if (storeName === 'transactions') {
-                data = data.map(transaction => CryptoService.sanitizeTransaction(transaction));
-              }
-              
-              console.log(`📊 ${storeName}: ${data.length} itens encontrados (dados sensíveis criptografados)`);
-              resolve(data);
-            };
-            
-            getRequest.onerror = function() {
-              console.error(`❌ Erro ao buscar ${storeName}:`, getRequest.error);
-              reject(getRequest.error);
-            };
-          };
+          // Criptografar dados sensíveis dependendo do tipo
+          if (storeName === 'members') {
+            data = data.map(member => CryptoService.sanitizeMember(member));
+          }
           
-          request.onerror = function() {
-            console.error('❌ Erro ao abrir IndexedDB:', request.error);
-            reject(request.error);
-          };
-        });
+          if (storeName === 'employees') {
+            data = data.map(employee => CryptoService.sanitizeEmployee(employee));
+          }
+          
+          if (storeName === 'transactions') {
+            data = data.map(transaction => CryptoService.sanitizeTransaction(transaction));
+          }
+          
+          console.log(`📊 ${storeName}: ${data.length} itens encontrados (dados sensíveis criptografados)`);
+          return data;
+        } catch (error) {
+          console.error(`❌ Erro ao buscar ${storeName}:`, error);
+          return [];
+        }
       };
 
       // Buscar todos os dados
       console.log("📂 Buscando dados do IndexedDB...");
       
-      backupData.data.members = await getFromIndexedDB('members');
-      backupData.data.transactions = await getFromIndexedDB('transactions');
-      backupData.data.accounts = await getFromIndexedDB('accounts');
-      backupData.data.employees = await getFromIndexedDB('employees');
-      backupData.data.assets = await getFromIndexedDB('assets');
-      backupData.data.leaves = await getFromIndexedDB('leaves');
+      const members = await getFromIndexedDB('members');
+      const transactions = await getFromIndexedDB('transactions');
+      const accounts = await getFromIndexedDB('accounts');
+      const employees = await getFromIndexedDB('employees');
+      const assets = await getFromIndexedDB('assets');
+      const leaves = await getFromIndexedDB('leaves');
+
+      backupData.data.members = members;
+      backupData.data.transactions = transactions;
+      backupData.data.accounts = accounts;
+      backupData.data.employees = employees;
+      backupData.data.assets = assets;
+      backupData.data.leaves = leaves;
 
       // Estatísticas do backup
       const stats = {
         totalItems: 0,
-        members: backupData.data.members.length,
-        transactions: backupData.data.transactions.length,
-        accounts: backupData.data.accounts.length,
-        employees: backupData.data.employees.length,
-        assets: backupData.data.assets.length,
-        leaves: backupData.data.leaves.length
+        members: members.length,
+        transactions: transactions.length,
+        accounts: accounts.length,
+        employees: employees.length,
+        assets: assets.length,
+        leaves: leaves.length
       };
       
       stats.totalItems = Object.values(stats).reduce((sum, count) => sum + count, 0);
 
       // Adicionar estatísticas ao backup
-      backupData.statistics = stats;
-      backupData.security = {
-        encrypted: true,
-        sensitiveDataMasked: true,
-        level: 'HIGH',
-        note: 'Dados sensíveis foram mascarados para proteção de privacidade'
+      const finalBackupData = {
+        ...backupData,
+        statistics: stats,
+        security: {
+          encrypted: true,
+          sensitiveDataMasked: true,
+          level: 'HIGH',
+          note: 'Dados sensíveis foram mascarados para proteção de privacidade'
+        }
       };
 
       console.log("📊 Estatísticas do backup:", stats);
@@ -146,7 +212,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       console.log("✅ Backup concluído com sucesso!");
 
       // Criar e baixar arquivo
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(finalBackupData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -195,46 +261,23 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
 
         // Função para salvar dados no IndexedDB
         const saveToIndexedDB = async (storeName: string, data: any[]) => {
-          return new Promise((resolve, reject) => {
-            const request = indexedDB.open('ADJPA_ERP_DB', 1);
+          try {
+            console.log(`🧹 Limpando store ${storeName}...`);
+            await IndexedDBService.clear(storeName);
             
-            request.onsuccess = function(event) {
-              const db = event.target.result;
-              
-              if (!db.objectStoreNames.contains(storeName)) {
-                console.log(`⚠️ Store ${storeName} não encontrada, ignorando...`);
-                resolve([]);
-                return;
-              }
-              
-              const transaction = db.transaction(storeName, 'readwrite');
-              const store = transaction.objectStore(storeName);
-              
-              // Limpar dados existentes
-              const clearRequest = store.clear();
-              
-              clearRequest.onsuccess = function() {
-                console.log(`🧹 Store ${storeName} limpa`);
-                
-                // Adicionar novos dados
-                let savedCount = 0;
-                data.forEach(item => {
-                  const addRequest = store.put(item);
-                  addRequest.onsuccess = () => savedCount++;
-                });
-                
-                transaction.oncomplete = function() {
-                  console.log(`✅ ${storeName}: ${savedCount} itens restaurados`);
-                  resolve(savedCount);
-                };
-              };
-            };
+            console.log(`🔄 Restaurando ${data.length} itens em ${storeName}...`);
+            let savedCount = 0;
+            for (const item of data) {
+              await IndexedDBService.save(storeName, item);
+              savedCount++;
+            }
             
-            request.onerror = function() {
-              console.error('❌ Erro ao abrir IndexedDB:', request.error);
-              reject(request.error);
-            };
-          });
+            console.log(`✅ ${storeName}: ${savedCount} itens restaurados`);
+            return savedCount;
+          } catch (error) {
+            console.error(`❌ Erro ao restaurar ${storeName}:`, error);
+            return 0;
+          }
         };
 
         // Restaurar todos os dados
@@ -249,7 +292,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
           leaves: await saveToIndexedDB('leaves', backup.data.leaves || [])
         };
 
-        const totalRestored = Object.values(results).reduce((sum, count) => sum + count, 0);
+        const totalRestored = Object.values(results).reduce((sum: number, count: number) => sum + count, 0);
         
         console.log("✅ Restore concluído:", results);
         console.log("🔄 Recarregando página para atualizar dados...");
@@ -324,7 +367,10 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                 Como este sistema funciona localmente no seu navegador, a limpeza do cache pode apagar os dados. <strong className="text-slate-900 font-black">Realize um backup semanal</strong> para garantir a segurança das informações da igreja.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 p-8">
+            <div className="flex flex-col sm:flex-row gap-4 p-8 flex-wrap">
+              <button onClick={handleRemoveDuplicates} disabled={isRemovingDuplicates} className="bg-rose-600 text-white px-8 py-4 rounded-2xl font-black text-[11px] tracking-widest uppercase shadow-xl hover:bg-rose-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                <Users size={16}/> {isRemovingDuplicates ? 'Limpando...' : 'Remover Duplicatas'}
+              </button>
               <button onClick={handleBackup} className="bg-[#111827] text-white px-8 py-4 rounded-2xl font-black text-[11px] tracking-widest uppercase shadow-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3">
                 <Download size={16}/> Baixar Cópia de Segurança
               </button>

@@ -5,9 +5,16 @@ export const MOCK_UNITS: Unit[] = [
   { id: 'u-filial1', name: 'ADJPA - Unidade Leste', cnpj: '00.123.456/0002-88', address: 'Av. Brasil, 500', city: 'São Paulo', state: 'SP', isHeadquarter: false },
 ];
 
-// Dados Mock removidos para teste de salvamento manual
-export const MOCK_MEMBERS: Member[] = [];
-export const MOCK_PAYROLL: Payroll[] = [];
+// Dados Mock adicionados conforme solicitado
+export const MOCK_MEMBERS: Member[] = [
+  { id: 'm1', name: 'João Silva', email: 'joao.silva@email.com', phone: '(11) 98765-4321', birthDate: '1985-04-12', membershipDate: '2020-01-15', status: 'ACTIVE', role: 'MEMBER', address: { zipCode: '00000-000', street: 'Rua das Flores', number: '123', neighborhood: 'Centro', city: 'São Paulo', state: 'SP' }, unitId: 'u-sede', gender: 'M', maritalStatus: 'SINGLE', isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], avatar: '', cpf: '111.111.111-11', rg: '11111111' },
+  { id: 'm2', name: 'Maria Oliveira', email: 'maria.o@email.com', phone: '(11) 91234-5678', birthDate: '1990-08-25', membershipDate: '2019-11-20', status: 'ACTIVE', role: 'LEADER', address: { zipCode: '00000-000', street: 'Av. Principal', number: '456', neighborhood: 'Centro', city: 'São Paulo', state: 'SP' }, unitId: 'u-sede', gender: 'F', maritalStatus: 'MARRIED', isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], avatar: '', cpf: '222.222.222-22', rg: '22222222' },
+  { id: 'm3', name: 'Pedro Santos', email: 'pedro.santos@email.com', phone: '(11) 99988-7766', birthDate: '1978-02-10', membershipDate: '2015-05-10', status: 'ACTIVE', role: 'VOLUNTEER', address: { zipCode: '00000-000', street: 'Rua do Bosque', number: '789', neighborhood: 'Centro', city: 'São Paulo', state: 'SP' }, unitId: 'u-sede', gender: 'M', maritalStatus: 'MARRIED', isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], avatar: '', cpf: '333.333.333-33', rg: '33333333' },
+  { id: 'm4', name: 'Ana Costa', email: 'ana.costa@email.com', phone: '(11) 97766-5544', birthDate: '1995-12-05', membershipDate: '2022-03-01', status: 'ACTIVE', role: 'MEMBER', address: { zipCode: '00000-000', street: 'Travessa da Paz', number: '321', neighborhood: 'Centro', city: 'São Paulo', state: 'SP' }, unitId: 'u-sede', gender: 'F', maritalStatus: 'SINGLE', isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], avatar: '', cpf: '444.444.444-44', rg: '44444444' },
+  { id: 'm5', name: 'Lucas Pereira', email: 'lucas.p@email.com', phone: '(11) 96655-4433', birthDate: '1988-07-18', membershipDate: '2018-09-12', status: 'INACTIVE', role: 'MEMBER', address: { zipCode: '00000-000', street: 'Rua Nova', number: '654', neighborhood: 'Centro', city: 'São Paulo', state: 'SP' }, unitId: 'u-sede', gender: 'M', maritalStatus: 'SINGLE', isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], avatar: '', cpf: '555.555.555-55', rg: '55555555' },
+  { id: 'm6', name: 'Juliana Lima', email: 'juliana.lima@email.com', phone: '(11) 95544-3322', birthDate: '1992-03-30', membershipDate: '2021-06-25', status: 'ACTIVE', role: 'MEMBER', address: { zipCode: '00000-000', street: 'Av. Central', number: '987', neighborhood: 'Centro', city: 'São Paulo', state: 'SP' }, unitId: 'u-sede', gender: 'F', maritalStatus: 'SINGLE', isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], avatar: '', cpf: '666.666.666-66', rg: '66666666' }
+];
+
 export const MOCK_ACCOUNTS: FinancialAccount[] = [];
 export const MOCK_TRANSACTIONS: Transaction[] = [];
 export const MOCK_AUDIT: AuditLog[] = [];

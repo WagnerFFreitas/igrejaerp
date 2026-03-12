@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { BarChart3, Download, FileSpreadsheet, DollarSign, Users, Briefcase, Share2, CheckCircle2, Loader2, FileJson } from 'lucide-react';
-import { MOCK_PAYROLL, MOCK_TRANSACTIONS, MOCK_MEMBERS } from '../constants';
+import { MOCK_TRANSACTIONS, MOCK_MEMBERS } from '../constants';
 
 export const Relatorios: React.FC = () => {
   const [isExporting, setIsExporting] = useState<string | null>(null);

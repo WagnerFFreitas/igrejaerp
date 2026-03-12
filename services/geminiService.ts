@@ -55,6 +55,15 @@ export class GeminiService {
       return "Ocorreu um erro ao gerar a mensagem.";
     }
   }
+
+  // Métodos para compatibilidade com a UI
+  isQuotaBlocked(): boolean {
+    return false;
+  }
+
+  getBlockedTimeRemaining(): number {
+    return 0;
+  }
 }
 
 export const geminiService = new GeminiService();

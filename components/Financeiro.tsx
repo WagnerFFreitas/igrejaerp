@@ -16,9 +16,9 @@ import { useAudit } from '../src/hooks/useAudit';
 interface FinanceiroProps {
   transactions: Transaction[];
   currentUnitId: string;
-  setTransactions: (newList: Transaction[]) => void;
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   accounts: FinancialAccount[];
-  setAccounts: (newList: FinancialAccount[]) => void;
+  setAccounts: React.Dispatch<React.SetStateAction<FinancialAccount[]>>;
   user?: UserAuth;
   members: Member[];
 }
@@ -28,6 +28,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Hook de auditoria
   const { logAction } = useAudit(user);
@@ -61,6 +62,8 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
       console.log("❌ Descrição obrigatória não preenchida");
       return alert("A descrição é obrigatória.");
     }
+    
+    setIsSaving(true);
     
     // Se for dízimo e tiver membro selecionado, atualizar a descrição se estiver vazia ou genérica
     let finalDescription = formData.description;
@@ -96,6 +99,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
         
         setIsModalOpen(false); 
         setEditingId(null);
+        setIsSaving(false);
         return;
       }
 
@@ -142,18 +146,23 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
 
       // Atualizar o estado local
       if (editingId) {
-        setTransactions(transactions.map(t => t.id === editingId ? { ...transactionData, id: savedId } : t));
+        setTransactions(prev => prev.map(t => t.id === editingId ? { ...transactionData, id: savedId } : t));
+        console.log("✅ Transação atualizada na lista global");
       } else {
-        setTransactions([{ ...transactionData, id: savedId }, ...transactions]);
+        setTransactions(prev => [{ ...transactionData, id: savedId }, ...prev]);
+        console.log("✅ Nova transação adicionada à lista global");
       }
 
       setIsModalOpen(false); 
       setEditingId(null);
+      console.log("🎉 Processo de salvamento finalizado com sucesso!");
       alert("Transação salva com sucesso!");
       
     } catch (error) {
       console.error("❌ Erro ao salvar transação:", error);
       alert("Erro ao salvar transação. Tente novamente.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -504,8 +513,19 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
               </div>
             </div>
             <div className="p-4 bg-slate-50 border-t flex gap-3 shadow-inner">
-               <button onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 font-bold uppercase text-[11px] bg-white border border-slate-200 rounded-2xl hover:bg-slate-100 transition-all">Cancelar</button>
-               <button onClick={handleSave} className="flex-2 py-2.5 font-black uppercase text-[11px] bg-indigo-600 text-white rounded-2xl shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"><Save size={16}/> Confirmar e Sincronizar ERP</button>
+               <button onClick={() => setIsModalOpen(false)} disabled={isSaving} className="flex-1 py-2.5 font-bold uppercase text-[11px] bg-white border border-slate-200 rounded-2xl hover:bg-slate-100 transition-all disabled:opacity-50">Cancelar</button>
+               <button onClick={handleSave} disabled={isSaving} className="flex-2 py-2.5 font-black uppercase text-[11px] bg-indigo-600 text-white rounded-2xl shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                 {isSaving ? (
+                   <>
+                     <Loader2 size={16} className="animate-spin" />
+                     Sincronizando...
+                   </>
+                 ) : (
+                   <>
+                     <Save size={16}/> Confirmar e Sincronizar ERP
+                   </>
+                 )}
+               </button>
             </div>
           </div>
         </div>

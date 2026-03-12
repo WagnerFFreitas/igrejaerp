@@ -32,7 +32,7 @@ export class AuditService {
   private static async getGlobalDB(): Promise<IDBDatabase | null> {
     try {
       // Tentar usar a instância global do IndexedDBService
-      const { IndexedDBService } = await import('./indexedDBService');
+      const IndexedDBService = (await import('./indexedDBService')).default;
       
       // Se o IndexedDBService já tiver uma conexão, usar ela
       if ((IndexedDBService as any).db) {
@@ -52,81 +52,30 @@ export class AuditService {
 
   // Verificar se os logs são imutáveis (proteção adicional)
   private static async verifyImmutable(): Promise<boolean> {
-    return new Promise((resolve) => {
-      const request = indexedDB.open('ADJPA_ERP_DB', 3);
-      
-      request.onsuccess = function(event) {
-        const db = (event.target as IDBOpenDBRequest).result;
-        
-        if (!db.objectStoreNames.contains('system_config')) {
-          resolve(false);
-          return;
-        }
-        
-        const transaction = db.transaction('system_config', 'readonly');
-        const store = transaction.objectStore('system_config');
-        const getRequest = store.get(AuditService.IMMUTABLE_FLAG);
-        
-        getRequest.onsuccess = function() {
-          resolve(getRequest.result?.value === true);
-        };
-        
-        getRequest.onerror = function() {
-          resolve(false);
-        };
-      };
-      
-      request.onerror = function() {
-        resolve(false);
-      };
-    });
+    try {
+      const IndexedDBService = (await import('./indexedDBService')).default;
+      const config = await IndexedDBService.get('system_config', AuditService.IMMUTABLE_FLAG);
+      return config?.value === true;
+    } catch (error) {
+      console.error('❌ AuditService: Erro ao verificar imutabilidade:', error);
+      return false;
+    }
   }
 
   // Marcar logs como imutáveis (só pode ser feito uma vez)
   private static async setImmutable(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open('ADJPA_ERP_DB', 3);
-      
-      request.onupgradeneeded = function(event) {
-        const db = (event.target as IDBOpenDBRequest).result;
-        
-        // Criar store de configurações do sistema se não existir
-        if (!db.objectStoreNames.contains('system_config')) {
-          db.createObjectStore('system_config', { keyPath: 'id' });
-        }
-      };
-      
-      request.onsuccess = function(event) {
-        const db = (event.target as IDBOpenDBRequest).result;
-        
-        if (!db.objectStoreNames.contains('system_config')) {
-          reject(new Error('Store system_config não encontrada'));
-          return;
-        }
-        
-        const transaction = db.transaction('system_config', 'readwrite');
-        const store = transaction.objectStore('system_config');
-        const addRequest = store.put({
-          id: AuditService.IMMUTABLE_FLAG,
-          value: true,
-          createdAt: new Date().toISOString(),
-          description: 'Logs de auditoria marcados como imutáveis'
-        });
-        
-        addRequest.onsuccess = () => {
-          console.log('🔒 Logs de auditoria marcados como IMUTÁVEIS');
-          resolve();
-        };
-        
-        addRequest.onerror = () => {
-          reject(addRequest.error);
-        };
-      };
-      
-      request.onerror = function() {
-        reject(request.error);
-      };
-    });
+    try {
+      const IndexedDBService = (await import('./indexedDBService')).default;
+      await IndexedDBService.save('system_config', {
+        id: AuditService.IMMUTABLE_FLAG,
+        value: true,
+        createdAt: new Date().toISOString(),
+        description: 'Logs de auditoria marcados como imutáveis'
+      });
+      console.log('🔒 Logs de auditoria marcados como IMUTÁVEIS');
+    } catch (error) {
+      console.error('❌ AuditService: Erro ao marcar como imutável:', error);
+    }
   }
 
   // Registrar login de usuário
@@ -409,7 +358,7 @@ export class AuditService {
 
   // Salvar log no IndexedDB
   private static async saveLog(log: AuditLog): Promise<void> {
-    return new Promise((resolve, reject) => {
+    try {
       // Adicionar hash de verificação para garantir integridade
       const logWithHash = {
         ...log,
@@ -418,71 +367,44 @@ export class AuditService {
         immutable: true
       };
 
-      // Usar setTimeout para evitar bloqueios síncronos
-      setTimeout(() => {
-        const request = indexedDB.open('ADJPA_ERP_DB', 3);
-        
-        request.onupgradeneeded = function(event) {
-          const db = (event.target as IDBOpenDBRequest).result;
-          console.log('📝 Upgrade do IndexedDB para versão 3...');
+      const db = await this.getGlobalDB();
+      
+      if (!db) {
+        console.log('❌ AuditService: Não foi possível obter conexão com IndexedDB para salvar log');
+        return;
+      }
+      
+      if (!db.objectStoreNames.contains(AuditService.AUDIT_STORE)) {
+        console.log('❌ Store de audit_logs não encontrada. Logs não serão salvos.');
+        return;
+      }
+      
+      const transaction = db.transaction(AuditService.AUDIT_STORE, 'readwrite');
+      const store = transaction.objectStore(AuditService.AUDIT_STORE);
+      const addRequest = store.add(logWithHash);
+      
+      return new Promise((resolve) => {
+        addRequest.onsuccess = () => {
+          console.log(`💾 Log de auditoria salvo: ${log.action} - ${log.userName}`);
           
-          // Criar store de audit_logs se não existir
-          if (!db.objectStoreNames.contains(AuditService.AUDIT_STORE)) {
-            console.log('📝 Criando store de audit_logs...');
-            db.createObjectStore(AuditService.AUDIT_STORE, { keyPath: 'id' });
+          // Marcar como imutável após primeiro log
+          if (log.action === 'USER_LOGIN') {
+            AuditService.setImmutable().catch(err => {
+              console.warn('⚠️ Não foi possível marcar logs como imutáveis:', err);
+            });
           }
           
-          // Criar store de configurações do sistema se não existir
-          if (!db.objectStoreNames.contains('system_config')) {
-            db.createObjectStore('system_config', { keyPath: 'id' });
-          }
+          resolve();
         };
         
-        request.onsuccess = function(event) {
-          const db = (event.target as IDBOpenDBRequest).result;
-          
-          // Verificar se a store existe
-          if (!db.objectStoreNames.contains(AuditService.AUDIT_STORE)) {
-            console.log('❌ Store de audit_logs não encontrada. Logs não serão salvos.');
-            resolve(); // Não rejeitar, apenas não salvar
-            return;
-          }
-          
-          // Store existe, salvar normalmente
-          const transaction = db.transaction(AuditService.AUDIT_STORE, 'readwrite');
-          const store = transaction.objectStore(AuditService.AUDIT_STORE);
-          const addRequest = store.add(logWithHash);
-          
-          addRequest.onsuccess = () => {
-            console.log(`💾 Log de auditoria salvo: ${log.action} - ${log.userName}`);
-            
-            // Marcar como imutável após primeiro log
-            if (log.action === 'USER_LOGIN') {
-              AuditService.setImmutable().catch(err => {
-                console.warn('⚠️ Não foi possível marcar logs como imutáveis:', err);
-              });
-            }
-            
-            resolve();
-          };
-          
-          addRequest.onerror = () => {
-            console.error('❌ Erro ao salvar log:', addRequest.error);
-            resolve(); // Não rejeitar, apenas resolver
-          };
-        };
-        
-        request.onerror = function() {
-          console.error('❌ Erro ao abrir IndexedDB:', request.error);
+        addRequest.onerror = () => {
+          console.error('❌ Erro ao salvar log:', addRequest.error);
           resolve(); // Não rejeitar, apenas resolver
         };
-        
-        request.onblocked = function() {
-          console.log('🔒 IndexedDB bloqueado, tentando novamente...');
-          resolve(); // Não bloquear
-        };
-      }, 100); // Pequeno delay para evitar conflitos
-    });
+      });
+    } catch (error) {
+      console.error('❌ Erro ao salvar log de auditoria:', error);
+    }
   }
 
   // Gerar hash simples para verificação de integridade

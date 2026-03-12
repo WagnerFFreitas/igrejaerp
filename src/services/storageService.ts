@@ -7,6 +7,7 @@ import {
   getMetadata
 } from 'firebase/storage';
 import { storage } from './firebaseService';
+import { withTimeout } from '../utils/promiseUtils';
 
 export class StorageService {
   // FORÇAR modo local para evitar Firebase Storage
@@ -28,8 +29,21 @@ export class StorageService {
     console.log("📄 File:", file.name);
     console.log("💾 Force local mode:", this.FORCE_LOCAL_MODE);
     
-    // SEMPRE usar modo local (base64) para evitar problemas com Firebase
-    console.warn("💾 Usando upload local (base64) para evitar problemas");
+    // Se o storage estiver disponível e não estivermos em modo forçado, tentar upload real
+    if (this.isStorageAvailable()) {
+      try {
+        const storageRef = ref(storage, path);
+        await withTimeout(uploadBytes(storageRef, file, { customMetadata: metadata }), 15000);
+        const downloadURL = await withTimeout(getDownloadURL(storageRef), 5000);
+        console.log("✅ Arquivo enviado para Firebase Storage:", downloadURL);
+        return downloadURL;
+      } catch (error) {
+        console.warn("⚠️ Falha no upload para Firebase Storage, usando fallback base64:", error);
+      }
+    }
+    
+    // SEMPRE usar modo local (base64) como fallback ou se forçado
+    console.warn("💾 Usando upload local (base64)");
     
     // Retornar URL temporária em base64
     return new Promise((resolve, reject) => {
@@ -38,7 +52,6 @@ export class StorageService {
         reader.onloadend = () => {
           const result = reader.result as string;
           console.log("✅ Arquivo convertido para base64:", file.name);
-          console.log("📏 Tamanho do base64:", result.length, "caracteres");
           resolve(result);
         };
         reader.onerror = () => {
@@ -124,53 +137,63 @@ export class StorageService {
 
   // Download de arquivo
   static async getDownloadURL(path: string): Promise<string> {
+    if (!this.isStorageAvailable()) return path;
     try {
       const storageRef = ref(storage, path);
-      return await getDownloadURL(storageRef);
+      return await withTimeout(getDownloadURL(storageRef), 8000);
     } catch (error: any) {
-      throw new Error(`Erro ao obter URL de download: ${error.message}`);
+      console.warn(`Erro ao obter URL de download: ${error.message}`);
+      return path;
     }
   }
 
   // Deletar arquivo
   static async deleteFile(path: string): Promise<void> {
+    if (!this.isStorageAvailable()) return;
     try {
       const storageRef = ref(storage, path);
-      await deleteObject(storageRef);
+      await withTimeout(deleteObject(storageRef), 8000);
     } catch (error: any) {
-      throw new Error(`Erro ao deletar arquivo: ${error.message}`);
+      console.warn(`Erro ao deletar arquivo: ${error.message}`);
     }
   }
 
   // Listar arquivos de um diretório
   static async listFiles(path: string): Promise<any[]> {
+    if (!this.isStorageAvailable()) return [];
     try {
       const storageRef = ref(storage, path);
-      const result = await listAll(storageRef);
+      const result = await withTimeout(listAll(storageRef), 10000);
       
       const files = await Promise.all(
         result.items.map(async (itemRef) => {
-          const downloadURL = await getDownloadURL(itemRef);
-          const metadata = await getMetadata(itemRef);
-          
-          return {
-            name: itemRef.name,
-            path: itemRef.fullPath,
-            downloadURL,
-            metadata: {
-              size: metadata.size,
-              contentType: metadata.contentType,
-              timeCreated: metadata.timeCreated,
-              updated: metadata.updated,
-              customMetadata: metadata.customMetadata
-            }
-          };
+          try {
+            const downloadURL = await withTimeout(getDownloadURL(itemRef), 5000);
+            const metadata = await withTimeout(getMetadata(itemRef), 5000);
+            
+            return {
+              name: itemRef.name,
+              path: itemRef.fullPath,
+              downloadURL,
+              metadata: {
+                size: metadata.size,
+                contentType: metadata.contentType,
+                timeCreated: metadata.timeCreated,
+                updated: metadata.updated,
+                customMetadata: metadata.customMetadata
+              }
+            };
+          } catch (itemError) {
+            console.warn(`Erro ao processar item ${itemRef.name}:`, itemError);
+            return null;
+          }
         })
       );
 
-      return files;
+      return files.filter(f => f !== null);
     } catch (error: any) {
-      throw new Error(`Erro ao listar arquivos: ${error.message}`);
+      console.warn(`Erro ao listar arquivos: ${error.message}`);
+      return [];
     }
   }
 
@@ -207,11 +230,13 @@ export class StorageService {
 
   // Obter metadados do arquivo
   static async getFileMetadata(path: string): Promise<any> {
+    if (!this.isStorageAvailable()) return null;
     try {
       const storageRef = ref(storage, path);
-      return await getMetadata(storageRef);
+      return await withTimeout(getMetadata(storageRef), 8000);
     } catch (error: any) {
-      throw new Error(`Erro ao obter metadados: ${error.message}`);
+      console.warn(`Erro ao obter metadados: ${error.message}`);
+      return null;
     }
   }
 }

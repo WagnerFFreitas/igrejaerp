@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebaseService';
+import { withTimeout } from '../utils/promiseUtils';
 
 export interface UserProfile {
   uid: string;
@@ -26,11 +27,11 @@ export class AuthService {
   // Login
   static async login(email: string, password: string): Promise<UserProfile> {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await withTimeout(signInWithEmailAndPassword(auth, email, password), 10000, 'Tempo de login excedido. Verifique sua conexão.');
       const user = userCredential.user;
 
       // Buscar perfil do usuário no Firestore
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userDoc = await withTimeout(getDoc(doc(db, 'users', user.uid)), 8000, 'Não foi possível carregar o perfil do usuário.');
       if (!userDoc.exists()) {
         throw new Error('Perfil do usuário não encontrado');
       }
@@ -78,14 +79,14 @@ export class AuthService {
 
       // Atualizar no Authentication
       if (data.displayName) {
-        await updateProfile(user, { displayName: data.displayName });
+        await withTimeout(updateProfile(user, { displayName: data.displayName }), 8000);
       }
 
       // Atualizar no Firestore
-      await updateDoc(doc(db, 'users', user.uid), {
+      await withTimeout(updateDoc(doc(db, 'users', user.uid), {
         ...data,
         updatedAt: new Date()
-      });
+      }), 8000);
     } catch (error: any) {
       throw new Error(error.message);
     }

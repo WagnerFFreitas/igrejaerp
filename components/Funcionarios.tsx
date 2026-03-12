@@ -18,13 +18,13 @@ import { useAudit } from '../src/hooks/useAudit';
 interface FuncionariosProps {
   employees: Payroll[];
   currentUnitId: string;
-  setEmployees: (newList: Payroll[]) => void;
+  setEmployees: React.Dispatch<React.SetStateAction<Payroll[]>>;
   user?: UserAuth;
 }
 
 type EmployeeTab = 'pessoais' | 'contrato' | 'jornada' | 'banco_horas' | 'documentos' | 'endereco' | 'bancarios' | 'beneficios' | 'esocial' | 'dependentes' | 'folha';
 
-const InputField = ({ label, value, onChange, placeholder, type = "text", icon: Icon }: any) => (
+const InputField = ({ label, value, onChange, placeholder, type = "text", icon: Icon, readOnly = false }: any) => (
   <div className="space-y-1.5">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
       {Icon && <Icon size={12} className="text-slate-300"/>} {label}
@@ -32,9 +32,10 @@ const InputField = ({ label, value, onChange, placeholder, type = "text", icon: 
     <input 
       type={type}
       value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => !readOnly && onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+      readOnly={readOnly}
+      className={`w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none transition-all ${readOnly ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 focus:ring-2 focus:ring-indigo-500'}`}
     />
   </div>
 );
@@ -96,6 +97,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Payroll | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<EmployeeTab>('pessoais');
   const [isSearchingCEP, setIsSearchingCEP] = useState(false);
 
@@ -136,16 +138,23 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
   const handleSave = async () => {
     console.log("🚀 Iniciando salvamento do funcionário...");
     
-    if (!formData.employeeName || !formData.cpf || !formData.matricula) {
+    if (!formData.employeeName || !formData.cpf) {
       console.log("❌ Campos obrigatórios não preenchidos");
-      alert("Nome, CPF e Matrícula são obrigatórios.");
+      alert("Nome e CPF são obrigatórios.");
       return;
     }
 
+    setIsSaving(true);
+
     try {
+      const employeeId = editingEmployee?.id || `E${Date.now()}`;
+      // Gerar matrícula automática se não existir
+      const generatedMatricula = formData.matricula || `F${Date.now().toString().slice(-5)}`;
+
       const employeeData = {
         ...formData,
-        id: editingEmployee?.id || `E${Date.now()}`,
+        id: employeeId,
+        matricula: generatedMatricula,
         unitId: currentUnitId,
         createdAt: editingEmployee?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -179,15 +188,15 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
       // Atualizar o estado local
       if (editingEmployee) {
-        setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...e, ...formData } as Payroll : e));
-        console.log("✅ Funcionário atualizado na lista local");
+        setEmployees(prev => prev.map(e => e.id === editingEmployee.id ? { ...e, ...formData } as Payroll : e));
+        console.log("✅ Funcionário atualizado na lista global");
       } else {
         const newEmployee: Payroll = {
           ...formData,
           id: savedId,
         } as Payroll;
-        setEmployees([...employees, newEmployee]);
-        console.log("✅ Funcionário adicionado na lista local");
+        setEmployees(prev => [...prev, newEmployee]);
+        console.log("✅ Funcionário adicionado na lista global");
       }
 
       setIsModalOpen(false);
@@ -197,6 +206,8 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     } catch (error) {
       console.error("❌ Erro ao salvar funcionário:", error);
       alert("Falha ao salvar funcionário. " + (error.message || "Verifique o console para mais detalhes."));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -209,8 +220,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
   const handleNew = () => {
     setEditingEmployee(null);
+    const generatedMatricula = `F${Date.now().toString().slice(-5)}`;
     setFormData({
-      employeeName: '', cpf: '', rg: '', email: '', matricula: '',
+      employeeName: '', cpf: '', rg: '', email: '', matricula: generatedMatricula,
       pis: '', ctps: '', titulo_eleitor: '', reservista: '', aso_data: '',
       blood_type: 'A+', emergency_contact: '', cargo: '', funcao: '',
       departamento: '', cbo: '', data_admissao: '', birthDate: '',
@@ -458,10 +470,23 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={handleSave} className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">
-                  <Save size={18}/> Salvar Registro
+                <button 
+                  onClick={handleSave} 
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18}/> Salvar Registro
+                    </>
+                  )}
                 </button>
-                <button onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-slate-100 rounded-2xl text-slate-400 transition-all">
+                <button onClick={() => setIsModalOpen(false)} disabled={isSaving} className="p-3 hover:bg-slate-100 rounded-2xl text-slate-400 transition-all disabled:opacity-50">
                   <X size={24}/>
                 </button>
               </div>
@@ -613,7 +638,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
               {activeTab === 'contrato' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4">
-                  <InputField label="Matrícula" value={formData.matricula} onChange={(v:any) => setFormData({...formData, matricula: v})} placeholder="Ex: 2024001" icon={Tag} />
+                  <InputField label="Matrícula" value={formData.matricula} readOnly={true} placeholder="Gerada automaticamente" icon={Tag} />
                   <InputField label="Cargo" value={formData.cargo} onChange={(v:any) => setFormData({...formData, cargo: v})} placeholder="Ex: Analista" icon={Briefcase} />
                   <InputField label="Função" value={formData.funcao} onChange={(v:any) => setFormData({...formData, funcao: v})} placeholder="Ex: Desenvolvedor" icon={Star} />
                   <InputField label="Departamento" value={formData.departamento} onChange={(v:any) => setFormData({...formData, departamento: v})} placeholder="Ex: TI" icon={Building} />

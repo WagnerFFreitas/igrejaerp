@@ -1,6 +1,8 @@
 // Serviço de Gerenciamento de Usuários
 
 import { UserAuth, UserRole } from '../../types';
+import IndexedDBService from './indexedDBService';
+import { withTimeout } from '../utils/promiseUtils';
 
 export interface SystemUser {
   id: string;
@@ -138,87 +140,23 @@ export class UserService {
 
   // Obter todos os usuários
   static async getUsers(): Promise<SystemUser[]> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open('ADJPA_ERP_DB', 3); // Versão 3 para incluir usuários e audit_logs
-      
-      request.onupgradeneeded = function(event) {
-        const db = (event.target as IDBOpenDBRequest).result;
-        console.log('📝 Atualizando IndexedDB para versão 2 (incluindo usuários)...');
-        
-        // Criar store de usuários se não existir
-        if (!db.objectStoreNames.contains(UserService.USERS_STORE)) {
-          const userStore = db.createObjectStore(UserService.USERS_STORE, { keyPath: 'id' });
-          console.log('✅ Store de usuários criada com sucesso');
-        }
-      };
-      
-      request.onsuccess = function(event) {
-        const db = (event.target as IDBOpenDBRequest).result;
-        
-        if (!db.objectStoreNames.contains(UserService.USERS_STORE)) {
-          console.log('� Store de usuários não encontrada');
-          resolve([]);
-          return;
-        }
-        
-        const transaction = db.transaction(UserService.USERS_STORE, 'readonly');
-        const store = transaction.objectStore(UserService.USERS_STORE);
-        const getRequest = store.getAll();
-        
-        getRequest.onsuccess = function() {
-          const users = getRequest.result || [];
-          console.log(`📋 Carregados ${users.length} usuários do IndexedDB`);
-          resolve(users);
-        };
-        
-        getRequest.onerror = function() {
-          console.error('❌ Erro ao carregar usuários:', getRequest.error);
-          reject(getRequest.error);
-        };
-      };
-      
-      request.onerror = function() {
-        console.error('❌ Erro ao abrir IndexedDB:', request.error);
-        reject(request.error);
-      };
-    });
+    try {
+      return await withTimeout(IndexedDBService.getAll(UserService.USERS_STORE), 10000);
+    } catch (error) {
+      console.error('❌ UserService: Erro ao carregar usuários:', error);
+      return [];
+    }
   }
 
   // Salvar usuário
   static async saveUser(user: SystemUser): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open('ADJPA_ERP_DB', 3);
-      
-      request.onsuccess = function(event) {
-        const db = (event.target as IDBOpenDBRequest).result;
-        
-        // Verificar se a store existe
-        if (!db.objectStoreNames.contains(UserService.USERS_STORE)) {
-          console.log('❌ Store de usuários não existe. Abortando salvamento.');
-          reject(new Error('Store de usuários não encontrada'));
-          return;
-        }
-        
-        const transaction = db.transaction(UserService.USERS_STORE, 'readwrite');
-        const store = transaction.objectStore(UserService.USERS_STORE);
-        const addRequest = store.put(user);
-        
-        addRequest.onsuccess = () => {
-          console.log(`💾 Usuário salvo com sucesso: ${user.username}`);
-          resolve();
-        };
-        
-        addRequest.onerror = () => {
-          console.error('❌ Erro ao salvar usuário:', addRequest.error);
-          reject(addRequest.error);
-        };
-      };
-      
-      request.onerror = function() {
-        console.error('❌ Erro ao abrir IndexedDB:', request.error);
-        reject(request.error);
-      };
-    });
+    try {
+      await withTimeout(IndexedDBService.save(UserService.USERS_STORE, user), 10000);
+      console.log(`💾 Usuário salvo com sucesso: ${user.username}`);
+    } catch (error) {
+      console.error('❌ UserService: Erro ao salvar usuário:', error);
+      throw error;
+    }
   }
 
   // Atualizar último acesso

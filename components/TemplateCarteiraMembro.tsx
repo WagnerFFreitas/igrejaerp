@@ -111,7 +111,7 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
         {/* NOME E CARGO */}
         <div 
           className="absolute z-40" 
-          style={{ top: '14.5mm', left: '26mm', width: '56mm' }}
+          style={{ top: '16.0mm', left: '26mm', width: '56mm' }}
         >
           <h4 className="text-[9.2px] font-black text-slate-900 uppercase leading-none" style={{ margin: 0 }}>
             {member.name}
@@ -121,10 +121,10 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
           </p>
         </div>
 
-        {/* VALIDADE E QR CODE - Mantido em 25.5mm de topo */}
+        {/* VALIDADE E QR CODE - Mantido em 24.5mm de topo */}
         <div 
           className="absolute z-40 flex items-center justify-between" 
-          style={{ top: '25.5mm', left: '26mm', width: '55.5mm' }}
+          style={{ top: '24.5mm', left: '26mm', width: '55.5mm' }}
         >
           {/* Box de Validade */}
           <div 

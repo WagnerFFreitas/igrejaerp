@@ -19,10 +19,10 @@ type MemberTab = 'pessoais' | 'familia' | 'endereco' | 'vida_crista' | 'minister
 interface MembrosProps {
   members: Member[];
   currentUnitId: string;
-  setMembers: (newList: Member[]) => void;
-  setTransactions: (newList: Transaction[]) => void;
+  setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   accounts: FinancialAccount[];
-  setAccounts: (newList: FinancialAccount[]) => void;
+  setAccounts: React.Dispatch<React.SetStateAction<FinancialAccount[]>>;
   user?: UserAuth;
 }
 
@@ -271,11 +271,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
 
       console.log("📋 Atualizando lista de membros...");
       if (editingMember) {
-        setMembers(members.map(m => m.id === editingMember.id ? memberData : m));
-        console.log("✅ Membro atualizado na lista");
+        setMembers(prev => prev.map(m => m.id === editingMember.id ? memberData : m));
+        console.log("✅ Membro atualizado na lista global");
       } else {
-        setMembers([memberData, ...members]);
-        console.log("✅ Membro adicionado à lista");
+        setMembers(prev => [memberData, ...prev]);
+        console.log("✅ Membro adicionado à lista global");
       }
       
       console.log("🔚 Fechando modal e limpando estado...");

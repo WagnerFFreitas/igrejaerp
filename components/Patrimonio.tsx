@@ -10,24 +10,28 @@ import React, { useState, useEffect } from 'react';
 import { 
   Package, TrendingDown, ClipboardList, FileText, Plus, Search, Filter,
   Building, MapPin, User, Calendar, DollarSign, Percent, AlertCircle,
-  CheckCircle, XCircle, Clock, ArrowRight, Download, Upload, Printer
+  CheckCircle, XCircle, Clock, ArrowRight, Download, Upload, Printer, Loader2
 } from 'lucide-react';
 import { patrimonioService } from '../services/patrimonioService';
 import { Asset, AssetType, AssetStatus, InventoryCount } from '../types';
 
 /**
- * Props do componente (vazio para standalone)
+ * Props do componente
  */
-interface PatrimonioProps {}
+interface PatrimonioProps {
+  currentUnitId: string;
+  user?: any;
+}
 
 /**
  * Componente Principal de Patrimônio
  */
-export const Patrimonio: React.FC<PatrimonioProps> = () => {
+export const Patrimonio: React.FC<PatrimonioProps> = ({ currentUnitId, user }) => {
   // Estado principal
   const [activeTab, setActiveTab] = useState<'assets' | 'depreciation' | 'inventory' | 'reports'>('assets');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Filtros
   const [selectedCategory, setSelectedCategory] = useState<AssetType | 'ALL'>('ALL');
@@ -43,7 +47,7 @@ export const Patrimonio: React.FC<PatrimonioProps> = () => {
    */
   useEffect(() => {
     loadAssets();
-  }, []);
+  }, [currentUnitId]);
 
   /**
    * Carregar bens da unidade
@@ -51,12 +55,54 @@ export const Patrimonio: React.FC<PatrimonioProps> = () => {
   const loadAssets = async () => {
     setLoading(true);
     try {
-      const loadedAssets = await patrimonioService.getAssets('unit-1'); // TODO: Pegar unidade logada
+      const loadedAssets = await patrimonioService.getAssets(currentUnitId);
       setAssets(loadedAssets);
     } catch (error) {
       console.error('Erro ao carregar bens:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onNewAsset = () => {
+    setEditingAsset(null);
+    setShowModal(true);
+  };
+
+  const onEditAsset = (asset: Asset) => {
+    setEditingAsset(asset);
+    setShowModal(true);
+  };
+
+  const handleSave = async (assetData: Partial<Asset>) => {
+    setIsSaving(true);
+    try {
+      if (editingAsset) {
+        await patrimonioService.updateAsset(editingAsset.id, assetData);
+        alert('Bem atualizado com sucesso!');
+      } else {
+        const fullAssetData = {
+          ...assetData,
+          unitId: currentUnitId,
+          status: 'ATIVO' as AssetStatus,
+          currentValue: assetData.acquisitionValue || 0,
+          currentBookValue: assetData.acquisitionValue || 0,
+          accumulatedDepreciation: 0,
+          depreciationMethod: 'LINEAR' as any,
+          depreciationRate: 20, // 20% ao ano padrão
+          condition: 'BOM' as any,
+        } as Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>;
+        
+        await patrimonioService.registerAsset(fullAssetData);
+        alert('Bem cadastrado com sucesso!');
+      }
+      setShowModal(false);
+      loadAssets();
+    } catch (error) {
+      console.error('Erro ao salvar bem:', error);
+      alert('Erro ao salvar bem patrimonial.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -193,8 +239,9 @@ export const Patrimonio: React.FC<PatrimonioProps> = () => {
           onClose={() => {
             setShowModal(false);
             setEditingAsset(null);
-            loadAssets();
           }}
+          onSave={handleSave}
+          isSaving={isSaving}
         />
       )}
     </div>
@@ -431,153 +478,198 @@ const ReportsTab: React.FC = () => (
 interface AssetModalProps {
   asset: Asset | null;
   onClose: () => void;
+  onSave: (data: Partial<Asset>) => void;
+  isSaving: boolean;
 }
 
-const AssetModal: React.FC<AssetModalProps> = ({ asset, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {asset ? 'Editar Bem' : 'Novo Bem Patrimonial'}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <XCircle className="w-6 h-6" />
-          </button>
-        </div>
-        
-        <form className="space-y-4">
-          {/* Dados Básicos */}
-          <div className="grid grid-cols-2 gap-4">
+const AssetModal: React.FC<AssetModalProps> = ({ asset, onClose, onSave, isSaving }) => {
+  const [formData, setFormData] = useState<Partial<Asset>>(asset || {
+    name: '',
+    category: 'EQUIPAMENTOS',
+    description: '',
+    acquisitionValue: 0,
+    acquisitionDate: new Date().toISOString().split('T')[0],
+    usefulLifeMonths: 60,
+    location: '',
+    responsible: '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {asset ? 'Editar Bem' : 'Novo Bem Patrimonial'}
+            </h2>
+            <button onClick={onClose} disabled={isSaving} className="text-gray-400 hover:text-gray-600 disabled:opacity-50">
+              <XCircle className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Dados Básicos */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome do Bem
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                  disabled={isSaving}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Categoria
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={e => setFormData({ ...formData, category: e.target.value as AssetType })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled={isSaving}
+                >
+                  <option value="IMOVEIS">Imóveis</option>
+                  <option value="VEICULOS">Veículos</option>
+                  <option value="EQUIPAMENTOS">Equipamentos</option>
+                  <option value="MOVEIS">Móveis</option>
+                  <option value="COMPUTADORES">Informática</option>
+                  <option value="MAQUINAS">Máquinas</option>
+                </select>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome do Bem
+                Descrição
               </label>
-              <input
-                type="text"
-                defaultValue={asset?.name}
+              <textarea
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
+                disabled={isSaving}
               />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoria
-              </label>
-              <select
-                defaultValue={asset?.category || 'EQUIPAMENTOS'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+
+            {/* Valores e Datas */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Valor de Aquisição (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.acquisitionValue}
+                  onChange={e => setFormData({ ...formData, acquisitionValue: parseFloat(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                  disabled={isSaving}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Data de Aquisição
+                </label>
+                <input
+                  type="date"
+                  value={formData.acquisitionDate?.split('T')[0]}
+                  onChange={e => setFormData({ ...formData, acquisitionDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Vida Útil (meses)
+                </label>
+                <input
+                  type="number"
+                  value={formData.usefulLifeMonths}
+                  onChange={e => setFormData({ ...formData, usefulLifeMonths: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                  disabled={isSaving}
+                />
+              </div>
+            </div>
+
+            {/* Localização */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Localização
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={e => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="Ex: Sala 1, Almoxarifado"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Responsável
+                </label>
+                <input
+                  type="text"
+                  value={formData.responsible}
+                  onChange={e => setFormData({ ...formData, responsible: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled={isSaving}
+                />
+              </div>
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex gap-4 pt-6 border-t">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                <option value="IMOVEIS">Imóveis</option>
-                <option value="VEICULOS">Veículos</option>
-                <option value="EQUIPAMENTOS">Equipamentos</option>
-                <option value="MOVEIS">Móveis</option>
-                <option value="COMPUTADORES">Informática</option>
-                <option value="MAQUINAS">Máquinas</option>
-              </select>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  asset ? 'Salvar Alterações' : 'Cadastrar Bem'
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50"
+              >
+                Cancelar
+              </button>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição
-            </label>
-            <textarea
-              defaultValue={asset?.description}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          {/* Valores e Datas */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Valor de Aquisição (R$)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                defaultValue={asset?.acquisitionValue}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Data de Aquisição
-              </label>
-              <input
-                type="date"
-                defaultValue={asset?.acquisitionDate?.split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Vida Útil (meses)
-              </label>
-              <input
-                type="number"
-                defaultValue={asset?.usefulLifeMonths || 60}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Localização */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Localização
-              </label>
-              <input
-                type="text"
-                defaultValue={asset?.location}
-                placeholder="Ex: Sala 1, Almoxarifado"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Responsável
-              </label>
-              <input
-                type="text"
-                defaultValue={asset?.responsible}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Botões de Ação */}
-          <div className="flex gap-4 pt-6 border-t">
-            <button
-              type="submit"
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 font-medium"
-            >
-              {asset ? 'Salvar Alterações' : 'Cadastrar Bem'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
  * Componente de Loading
