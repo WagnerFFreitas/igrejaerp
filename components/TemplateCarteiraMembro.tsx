@@ -9,6 +9,8 @@ interface TemplateCarteiraMembroProps {
 export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ member, id }) => {
   // Lógica para formatar a matrícula como 0001/ANO
   const getMatriculaDisplay = () => {
+    if (member.matricula) return member.matricula;
+    
     const numPart = member.id.replace(/\D/g, '').padStart(4, '0') || '0001';
     const yearPart = member.membershipDate 
       ? new Date(member.membershipDate).getFullYear() 

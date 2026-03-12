@@ -21,6 +21,7 @@ export const DataInitializer = {
             profession: 'Engenheiro',
             role: 'LEADER',
             status: 'ACTIVE',
+            matricula: 'M01/2026',
             fatherName: 'José Silva',
             motherName: 'Maria Silva',
             bloodType: 'O+',
@@ -53,6 +54,7 @@ export const DataInitializer = {
             profession: 'Advogada',
             role: 'STAFF',
             status: 'ACTIVE',
+            matricula: 'M02/2026',
             fatherName: 'Pedro Oliveira',
             motherName: 'Lucia Oliveira',
             bloodType: 'A+',
@@ -83,6 +85,14 @@ export const DataInitializer = {
           let needsUpdate = false;
           const updatedMember = { ...member };
           
+          // Garantir matrícula
+          if (!updatedMember.matricula) {
+            const year = updatedMember.membershipDate ? new Date(updatedMember.membershipDate).getFullYear() : 2026;
+            const index = members.indexOf(member) + 1;
+            updatedMember.matricula = `M${index.toString().padStart(2, '0')}/${year}`;
+            needsUpdate = true;
+          }
+
           const fields = Object.keys(updatedMember) as (keyof Member)[];
           for (const field of fields) {
             const value = updatedMember[field];
@@ -117,7 +127,7 @@ export const DataInitializer = {
         const employeesToCreate: any[] = [
           {
             unitId,
-            matricula: 'F001',
+            matricula: 'F01/2026',
             employeeName: 'Carlos Alberto Silva',
             cpf: '123.456.789-01',
             rg: 'MG-12.345.678',
@@ -222,6 +232,14 @@ export const DataInitializer = {
           let needsUpdate = false;
           const updatedEmp = { ...emp };
           
+          // Garantir matrícula
+          if (!updatedEmp.matricula) {
+            const year = updatedEmp.data_admissao ? new Date(updatedEmp.data_admissao).getFullYear() : 2026;
+            const index = employees.indexOf(emp) + 1;
+            updatedEmp.matricula = `F${index.toString().padStart(2, '0')}/${year}`;
+            needsUpdate = true;
+          }
+
           // 1. Verificar campos existentes
           const existingFields = Object.keys(updatedEmp) as (keyof Payroll)[];
           for (const field of existingFields) {

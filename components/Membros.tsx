@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, Edit2, X, User, Plus, Printer, QrCode, Square, CheckSquare, 
   Loader2, Save, Trash2, Camera, Heart, Baby, Flame, Award, Map, AlertCircle, 
   DollarSign, Star, Users, TrendingUp, Download, Phone, Mail, Briefcase, 
-  Info, Sparkles, BookOpen, MapPin, Calendar, History, Tag, Landmark, Users2, Wand2,
+  Info, Sparkles, BookOpen, MapPin, Calendar, History, Tag, Landmark, Users2,
   MessageSquare, CheckCircle2, XCircle, Filter
 } from 'lucide-react';
 import { Member, Transaction, FinancialAccount, MemberContribution, Dependent, UserAuth } from '../types';
@@ -26,14 +26,15 @@ interface MembrosProps {
   user?: UserAuth;
 }
 
-const InputField = ({ label, value, onChange, placeholder = "", type = "text", className = "" }: any) => (
+const InputField = ({ label, value, onChange, placeholder = "", type = "text", className = "", readOnly = false }: any) => (
   <div className={className}>
     <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider">{label}</label>
     <input 
       type={type}
-      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+      readOnly={readOnly}
+      className={`w-full px-4 py-2 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all ${readOnly ? 'bg-slate-100 text-slate-700 cursor-not-allowed' : 'bg-slate-50'}`} 
       value={value || ''} 
-      onChange={e => onChange(e.target.value)} 
+      onChange={e => !readOnly && onChange(e.target.value)} 
       placeholder={placeholder}
     />
   </div>
@@ -99,8 +100,26 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     total: members.length
   }), [members]);
 
+  const getNextMemberMatricula = () => {
+    const currentYear = new Date().getFullYear();
+    if (!members || members.length === 0) return `M01/${currentYear}`;
+    
+    const numbers = members
+      .filter(m => m.matricula && m.matricula.startsWith('M'))
+      .map(m => {
+        const match = m.matricula.match(/M(\d+)\//);
+        return match ? parseInt(match[1]) : 0;
+      });
+    
+    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const nextNumber = maxNumber + 1;
+    const paddedNumber = nextNumber.toString().padStart(2, '0');
+    
+    return `M${paddedNumber}/${currentYear}`;
+  };
+
   const [formData, setFormData] = useState<Partial<Member>>({
-    name: '', cpf: '', rg: '', email: '', phone: '', whatsapp: '', profession: '',
+    name: '', matricula: '', cpf: '', rg: '', email: '', phone: '', whatsapp: '', profession: '',
     status: 'ACTIVE', role: 'MEMBER', gender: 'M', maritalStatus: 'SINGLE',
     address: { zipCode: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' },
     unitId: currentUnitId, contributions: [], otherMinistries: [],
@@ -108,6 +127,13 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     isTithable: false, isRegularGiver: false, participatesCampaigns: false,
     dependents: [], bloodType: 'A+', emergencyContact: '', tags: [], familyId: ''
   });
+
+  useEffect(() => {
+    if (isModalOpen && !formData.matricula) {
+      const next = getNextMemberMatricula();
+      setFormData(prev => ({ ...prev, matricula: next }));
+    }
+  }, [isModalOpen, formData.matricula, members.length]);
 
   const titheMap = useMemo(() => {
     const months = [];
@@ -144,49 +170,6 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const fillWithDummyData = () => {
-    const maleNames = ["Gabriel Silva Santos", "Fernando Henrique Lima", "Roberto Carlos Mendes", "Anderson Silva Oliveira", "Marcos Paulo Costa"];
-    const femaleNames = ["Mariana Costa Souza", "Patrícia Gomes Oliveira", "Luciana Maria Ferreira", "Cláudia Regina Diniz", "Beatriz Alcantara"];
-    
-    const isMale = Math.random() > 0.5;
-    const randomName = isMale 
-      ? maleNames[Math.floor(Math.random() * maleNames.length)] 
-      : femaleNames[Math.floor(Math.random() * femaleNames.length)];
-
-    const randomCPF = `${Math.floor(Math.random()*900+100)}.${Math.floor(Math.random()*900+100)}.${Math.floor(Math.random()*900+100)}-${Math.floor(Math.random()*90+10)}`;
-    const randomRG = `${Math.floor(Math.random()*90+10)}.${Math.floor(Math.random()*900+100)}.${Math.floor(Math.random()*900+100)}-${Math.floor(Math.random()*9+1)}`;
-    const randomPhone = `(11) 9${Math.floor(Math.random()*9000+1000)}-${Math.floor(Math.random()*9000+1000)}`;
-
-    setFormData({
-      ...formData,
-      name: randomName,
-      cpf: randomCPF,
-      rg: randomRG,
-      email: `${randomName.split(' ')[0].toLowerCase()}@exemplo.com.br`,
-      phone: randomPhone,
-      whatsapp: randomPhone,
-      gender: isMale ? 'M' : 'F',
-      birthDate: `${1970 + Math.floor(Math.random() * 30)}-0${1 + Math.floor(Math.random() * 8)}-${10 + Math.floor(Math.random() * 18)}`,
-      fatherName: isMale ? "José de Arimateia Santos" : "Manoel Gomes Ferreira",
-      motherName: isMale ? "Maria do Carmo Silva" : "Regina Célia Oliveira",
-      bloodType: ["A+", "B+", "O+", "AB+", "O-", "A-"][Math.floor(Math.random() * 6)],
-      emergencyContact: `(21) 9${Math.floor(Math.random()*9000+1000)}-${Math.floor(Math.random()*9000+1000)} (Esposa/Marido)`,
-      address: {
-        zipCode: "01001-000",
-        street: "Praça da Sé",
-        number: String(Math.floor(Math.random() * 1000)),
-        neighborhood: "Centro",
-        city: "São Paulo",
-        state: "SP"
-      },
-      ecclesiasticalPosition: ["Membro", "Diácono", "Presbítero", "Missionária", "Obreiro"][Math.floor(Math.random() * 5)],
-      mainMinistry: ["Louvor", "Infantil", "Ação Social", "Missões", "Ensino"][Math.floor(Math.random() * 5)],
-      baptismDate: "2010-05-22",
-      membershipDate: "2015-01-10",
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(randomName)}&background=${isMale ? '003399' : 'e11d48'}&color=fff&bold=true`
-    });
   };
 
   const handleCEPLookup = async (cep: string) => {
@@ -226,9 +209,10 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     try {
       console.log("📝 Gerando ID do membro...");
       const memberId = editingMember?.id || `M${Date.now()}`;
-      let memberData = { ...formData, id: memberId } as Member;
+      const matricula = formData.matricula || getNextMemberMatricula();
+      let memberData = { ...formData, id: memberId, matricula } as Member;
       
-      console.log("👤 Dados do membro preparados:", { id: memberData.id, name: memberData.name });
+      console.log("👤 Dados do membro preparados:", { id: memberData.id, name: memberData.name, matricula: memberData.matricula });
 
       if (avatarFile) {
         console.log("📷 Fazendo upload da foto...");
@@ -358,8 +342,9 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
           </button>
           <button onClick={() => { 
             setEditingMember(null); 
+            const generatedMatricula = getNextMemberMatricula();
             setFormData({
-              name: '', unitId: currentUnitId, status: 'ACTIVE', role: 'MEMBER',
+              name: '', matricula: generatedMatricula, unitId: currentUnitId, status: 'ACTIVE', role: 'MEMBER',
               address: {zipCode:'', street:'', number:'', complement: '', neighborhood:'', city:'', state:''},
               isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], otherMinistries: [], dependents: [], bloodType: 'A+', emergencyContact: '', tags: [], familyId: ''
             }); 
@@ -493,7 +478,12 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-3 text-slate-400">
                     <button onClick={() => { setEditingMember(member); setSelectedMemberIds([member.id]); setIsIDCardOpen(true); }} className="hover:text-slate-900"><QrCode size={16} /></button>
-                    <button onClick={() => { setEditingMember(member); setFormData(member); setIsModalOpen(true); }} className="hover:text-slate-900"><Edit2 size={16} /></button>
+                    <button onClick={() => { 
+                      const memberWithMatricula = { ...member, matricula: member.matricula || getNextMemberMatricula() };
+                      setEditingMember(memberWithMatricula); 
+                      setFormData(memberWithMatricula); 
+                      setIsModalOpen(true); 
+                    }} className="hover:text-slate-900"><Edit2 size={16} /></button>
                   </div>
                 </td>
               </tr>
@@ -513,9 +503,6 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={fillWithDummyData} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-xl font-black text-[9px] uppercase hover:bg-amber-100 transition-all border border-amber-200">
-                  <Wand2 size={12}/> Preencher Teste
-                </button>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20}/></button>
               </div>
             </div>
@@ -552,10 +539,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                         <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
                       </label>
                     </div>
-                    <div className="flex-1 grid grid-cols-2 gap-4">
-                       <InputField label="Nome Completo" value={formData.name} onChange={(v:any) => setFormData({...formData, name: v})} className="col-span-2" />
-                       <InputField label="CPF" value={formData.cpf} onChange={(v:any) => setFormData({...formData, cpf: v})} />
-                       <InputField label="RG" value={formData.rg} onChange={(v:any) => setFormData({...formData, rg: v})} />
+                    <div className="flex-1 grid grid-cols-4 gap-4">
+                       <InputField label="Matrícula" value={formData.matricula} readOnly={true} className="col-span-1" />
+                       <InputField label="Nome Completo" value={formData.name} onChange={(v:any) => setFormData({...formData, name: v})} className="col-span-3" />
+                       <InputField label="CPF" value={formData.cpf} onChange={(v:any) => setFormData({...formData, cpf: v})} className="col-span-2" />
+                       <InputField label="RG" value={formData.rg} onChange={(v:any) => setFormData({...formData, rg: v})} className="col-span-2" />
                     </div>
                   </div>
                   

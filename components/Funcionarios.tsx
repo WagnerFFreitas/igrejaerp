@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Briefcase, Plus, QrCode, Square, CheckSquare, Edit2, Search, Building, 
   UserCheck, Printer, X, Download, Loader2, Save, Trash2, Camera, 
@@ -35,7 +35,7 @@ const InputField = ({ label, value, onChange, placeholder, type = "text", icon: 
       onChange={(e) => !readOnly && onChange(e.target.value)}
       placeholder={placeholder}
       readOnly={readOnly}
-      className={`w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none transition-all ${readOnly ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 focus:ring-2 focus:ring-indigo-500'}`}
+      className={`w-full px-4 py-3 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none transition-all ${readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-slate-50 focus:ring-2 focus:ring-indigo-500'}`}
     />
   </div>
 );
@@ -129,11 +129,36 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     address: { zipCode: '', street: '', number: '', neighborhood: '', city: '', state: '' }
   });
 
+  useEffect(() => {
+    if (isModalOpen && !formData.matricula) {
+      const next = getNextEmployeeMatricula();
+      setFormData(prev => ({ ...prev, matricula: next }));
+    }
+  }, [isModalOpen, formData.matricula, employees.length]);
+
   const filtered = employees.filter(e => 
     e.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.matricula.includes(searchTerm) ||
     e.cpf.includes(searchTerm)
   );
+
+  const getNextEmployeeMatricula = () => {
+    const currentYear = new Date().getFullYear();
+    if (!employees || employees.length === 0) return `F01/${currentYear}`;
+    
+    const numbers = employees
+      .filter(e => e.matricula && e.matricula.startsWith('F'))
+      .map(e => {
+        const match = e.matricula.match(/F(\d+)\//);
+        return match ? parseInt(match[1]) : 0;
+      });
+    
+    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const nextNumber = maxNumber + 1;
+    const paddedNumber = nextNumber.toString().padStart(2, '0');
+    
+    return `F${paddedNumber}/${currentYear}`;
+  };
 
   const handleSave = async () => {
     console.log("🚀 Iniciando salvamento do funcionário...");
@@ -149,7 +174,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     try {
       const employeeId = editingEmployee?.id || `E${Date.now()}`;
       // Gerar matrícula automática se não existir
-      const generatedMatricula = formData.matricula || `F${Date.now().toString().slice(-5)}`;
+      const generatedMatricula = formData.matricula || getNextEmployeeMatricula();
 
       const employeeData = {
         ...formData,
@@ -212,15 +237,16 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
   };
 
   const handleEdit = (emp: Payroll) => {
-    setEditingEmployee(emp);
-    setFormData(emp);
+    const empWithMatricula = { ...emp, matricula: emp.matricula || getNextEmployeeMatricula() };
+    setEditingEmployee(empWithMatricula);
+    setFormData(empWithMatricula);
     setIsModalOpen(true);
     setActiveTab('pessoais');
   };
 
   const handleNew = () => {
     setEditingEmployee(null);
-    const generatedMatricula = `F${Date.now().toString().slice(-5)}`;
+    const generatedMatricula = getNextEmployeeMatricula();
     setFormData({
       employeeName: '', cpf: '', rg: '', email: '', matricula: generatedMatricula,
       pis: '', ctps: '', titulo_eleitor: '', reservista: '', aso_data: '',

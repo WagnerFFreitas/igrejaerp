@@ -159,6 +159,7 @@ export interface Employee {
   cpf: string;
   rg?: string;
   pis: string;
+  matricula: string;
   cargo: string;
   departamento: string;
   regime: EmploymentRegime;
@@ -722,6 +723,7 @@ export interface ESocialWorker {
 export interface Member {
   id: string;
   unitId: string;
+  matricula: string;
   name: string;
   cpf: string;
   rg: string;
