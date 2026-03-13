@@ -1,15 +1,20 @@
 
 import React, { useState } from 'react';
 import { BarChart3, Download, FileSpreadsheet, DollarSign, Users, Briefcase, Share2, CheckCircle2, Loader2, FileJson } from 'lucide-react';
-import { MOCK_TRANSACTIONS, MOCK_MEMBERS } from '../constants';
+import { Transaction, Member } from '../types';
 
-export const Relatorios: React.FC = () => {
+interface RelatoriosProps {
+  transactions: Transaction[];
+  members: Member[];
+}
+
+export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members }) => {
   const [isExporting, setIsExporting] = useState<string | null>(null);
 
-  const handleExport = async (type: string, format: string) => {
+  const handleExport = async (type: string, format: string, data: any) => {
     setIsExporting(`${type}_${format}`);
     await new Promise(resolve => setTimeout(resolve, 1500));
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ exportDate: new Date().toISOString() }, null, 2));
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
     const dl = document.createElement('a');
     dl.setAttribute("href", dataStr);
     dl.setAttribute("download", `EXPORT_${type}_${new Date().getTime()}.${format.toLowerCase()}`);
@@ -34,8 +39,8 @@ export const Relatorios: React.FC = () => {
             <p className="text-slate-400 font-medium leading-relaxed max-w-md">Exporte balancetes e dados da folha em formatos compatíveis com os principais softwares contábeis.</p>
           </div>
           <div className="flex gap-4">
-             <button onClick={() => handleExport('FINANCEIRO', 'CSV')} className="flex items-center gap-2 py-4 px-8 bg-white text-slate-900 rounded-2xl font-black uppercase text-xs shadow-xl transition-all hover:scale-105 active:scale-95">{isExporting?.includes('FINANCEIRO') ? <Loader2 size={16} className="animate-spin"/> : <FileSpreadsheet size={16}/>} Financeiro CSV</button>
-             <button onClick={() => handleExport('FOLHA', 'JSON')} className="flex items-center gap-2 py-4 px-8 bg-indigo-500 text-white rounded-2xl font-black uppercase text-xs shadow-xl transition-all hover:scale-105 active:scale-95">{isExporting?.includes('FOLHA') ? <Loader2 size={16} className="animate-spin"/> : <FileJson size={16}/>} Folha/DP JSON</button>
+             <button onClick={() => handleExport('FINANCEIRO', 'CSV', transactions)} className="flex items-center gap-2 py-4 px-8 bg-white text-slate-900 rounded-2xl font-black uppercase text-xs shadow-xl transition-all hover:scale-105 active:scale-95">{isExporting?.includes('FINANCEIRO') ? <Loader2 size={16} className="animate-spin"/> : <FileSpreadsheet size={16}/>} Financeiro CSV</button>
+             <button onClick={() => handleExport('FOLHA', 'JSON', members)} className="flex items-center gap-2 py-4 px-8 bg-indigo-500 text-white rounded-2xl font-black uppercase text-xs shadow-xl transition-all hover:scale-105 active:scale-95">{isExporting?.includes('FOLHA') ? <Loader2 size={16} className="animate-spin"/> : <FileJson size={16}/>} Folha/DP JSON</button>
           </div>
         </div>
       </div>

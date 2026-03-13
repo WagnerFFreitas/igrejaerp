@@ -142,7 +142,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthYear = d.toISOString().slice(0, 7);
       const hasTithe = formData.contributions?.some(c => 
-        c.type === 'TITHE' && c.date.startsWith(monthYear)
+        c.type === 'Dizimo' && c.date.startsWith(monthYear)
       );
       months.push({
         label: d.toLocaleDateString('pt-BR', { month: 'short' }),
@@ -470,16 +470,24 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 </td>
                 <td className="px-4 py-4">
                   <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
-                    member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                    member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 
+                    member.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
+                    'bg-rose-50 text-rose-600'
                   }`}>
-                    {member.status === 'ACTIVE' ? 'Regular' : 'Inativo'}
+                    {member.status === 'ACTIVE' ? 'Ativo' : 
+                     member.status === 'PENDING' ? 'Pendente' : 
+                     'Inativo'}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-3 text-slate-400">
                     <button onClick={() => { setEditingMember(member); setSelectedMemberIds([member.id]); setIsIDCardOpen(true); }} className="hover:text-slate-900"><QrCode size={16} /></button>
                     <button onClick={() => { 
-                      const memberWithMatricula = { ...member, matricula: member.matricula || getNextMemberMatricula() };
+                      const memberWithMatricula = { 
+                        ...member, 
+                        matricula: member.matricula || getNextMemberMatricula(),
+                        status: member.status || 'ACTIVE'
+                      };
                       setEditingMember(memberWithMatricula); 
                       setFormData(memberWithMatricula); 
                       setIsModalOpen(true); 
@@ -554,7 +562,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                     <InputField label="Nascimento" type="date" value={formData.birthDate} onChange={(v:any) => setFormData({...formData, birthDate: v})} />
                     <SelectField label="Sexo" value={formData.gender} onChange={(v:any) => setFormData({...formData, gender: v})} options={[{value:'M', label:'Masculino'}, {value:'F', label:'Feminino'}]} />
                     <InputField label="Profissão" value={formData.profession} onChange={(v:any) => setFormData({...formData, profession: v})} />
-                    <SelectField label="Status" value={formData.status} onChange={(v:any) => setFormData({...formData, status: v})} options={[{value:'ACTIVE', label:'Ativo'}, {value:'INACTIVE', label:'Inativo'}, {value:'PENDING', label:'Pendente'}]} />
+                    <SelectField label="Status" value={formData.status || 'ACTIVE'} onChange={(v:any) => setFormData({...formData, status: v})} options={[{value:'ACTIVE', label:'Ativo'}, {value:'INACTIVE', label:'Inativo'}, {value:'PENDING', label:'Pendente'}]} />
                     <SelectField label="Cargo/Função" value={formData.role} onChange={(v:any) => setFormData({...formData, role: v})} options={[{value:'MEMBER', label:'Membro'}, {value:'VISITOR', label:'Visitante'}, {value:'VOLUNTEER', label:'Voluntário'}, {value:'STAFF', label:'Staff'}, {value:'LEADER', label:'Líder'}]} />
                   </div>
 
@@ -723,7 +731,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                          <div className="md:col-span-1">
                             <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Tipo</label>
                             <select id="quick-tithe-type" className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500">
-                               <option value="TITHE">Dízimo</option>
+                               <option value="Dizimo">Dízimo</option>
                                <option value="OFFERING">Oferta</option>
                                <option value="CAMPAIGN">Campanha</option>
                             </select>
@@ -733,7 +741,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                             <input id="quick-tithe-date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500" />
                          </div>
                          <button 
-                           onClick={() => {
+                           onClick={async () => {
                              const valInput = document.getElementById('quick-tithe-value') as HTMLInputElement;
                              const typeInput = document.getElementById('quick-tithe-type') as HTMLSelectElement;
                              const dateInput = document.getElementById('quick-tithe-date') as HTMLInputElement;
@@ -746,15 +754,45 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                                value: val,
                                date: dateInput.value,
                                type: typeInput.value as any,
-                               description: typeInput.value === 'TITHE' ? `Dízimo: ${formData.name}` : `${typeInput.options[typeInput.selectedIndex].text}: ${formData.name}`
+                               description: typeInput.value === 'Dizimo' ? `Dízimo: ${formData.name}` : `${typeInput.options[typeInput.selectedIndex].text}: ${formData.name}`
                              };
 
                              // Update member contributions
                              const updatedContributions = [...(formData.contributions || []), newContribution];
-                             setFormData({...formData, contributions: updatedContributions});
+                             const updatedMember = {...formData, contributions: updatedContributions};
+                             setFormData(updatedMember);
                              
-                             valInput.value = '';
-                             alert("Contribuição registrada com sucesso!");
+                             // Create Transaction in Financeiro
+                             const transactionData: Partial<Transaction> = {
+                               description: newContribution.description,
+                               amount: val,
+                               date: dateInput.value,
+                               type: 'INCOME',
+                               category: typeInput.value,
+                               operationNature: 'nat1', // Receitas de Contribuições
+                               costCenter: 'cc1', // Sede
+                               projectId: '',
+                               accountId: accounts[0]?.id || '',
+                               status: 'PAID',
+                               unitId: currentUnitId,
+                               paymentMethod: 'PIX',
+                               memberId: formData.id,
+                             };
+
+                             try {
+                               // Save member first
+                               await dbService.saveMember(updatedMember);
+                               setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember as Member : m));
+
+                               const savedId = await dbService.saveTransaction(transactionData);
+                               setTransactions(prev => [...prev, { ...transactionData, id: savedId } as Transaction]);
+                               
+                               valInput.value = '';
+                               alert("Contribuição registrada com sucesso no perfil e no financeiro!");
+                             } catch (error) {
+                               console.error("Erro ao salvar:", error);
+                               alert("Houve um erro ao registrar a contribuição. Verifique o console.");
+                             }
                            }}
                            className="h-[38px] bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase px-4 hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center gap-2"
                          >

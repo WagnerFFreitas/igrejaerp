@@ -105,7 +105,7 @@ export class CashFlowProjectionService {
     let projectedIncome = 0;
     
     // Dízimos
-    const tithesProjection = projetarReceitas(transactions, days, 'TITHE');
+    const tithesProjection = projetarReceitas(transactions, days, 'Dizimo');
     projectedIncome += tithesProjection * scenarioFactors.income;
     
     // Ofertas

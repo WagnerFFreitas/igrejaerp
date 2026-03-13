@@ -424,7 +424,7 @@ export function getDefaultChartOfAccounts(unitId: string): ChartOfAccount[] {
  * Converte categoria de transação financeira em conta contábil
  * 
  * PARÂMETROS:
- * - category: string → Categoria da transação (ex: 'TITHE', 'OFFERING')
+ * - category: string → Categoria da transação (ex: 'Dizimo', 'OFFERING')
  * - isIncome: boolean → Se é receita (true) ou despesa (false)
  * 
  * RETORNO:
@@ -437,7 +437,7 @@ export function mapCategoryToAccount(
   if (isIncome) {
     // Receitas
     switch (category.toUpperCase()) {
-      case 'TITHE':
+      case 'DIZIMO':
         return '4.1.01.001';  // Dízimos
       case 'OFFERING':
         return '4.2.01.001';  // Ofertas

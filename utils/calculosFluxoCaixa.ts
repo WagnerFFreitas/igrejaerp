@@ -92,7 +92,7 @@ export interface MovingAverage {
  * PARÂMETROS:
  * - transactions: Transaction[] → Histórico completo
  * - days: number → Dias para projetar
- * - category?: string → Filtra categoria (ex: 'TITHE')
+ * - category?: string → Filtra categoria (ex: 'Dizimo')
  * 
  * RETORNO:
  * number → Valor total projetado

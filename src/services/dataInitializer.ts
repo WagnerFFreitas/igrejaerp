@@ -93,6 +93,12 @@ export const DataInitializer = {
             needsUpdate = true;
           }
 
+          // Garantir status válido
+          if (!updatedMember.status || !['ACTIVE', 'INACTIVE', 'PENDING'].includes(updatedMember.status)) {
+            updatedMember.status = 'ACTIVE';
+            needsUpdate = true;
+          }
+
           const fields = Object.keys(updatedMember) as (keyof Member)[];
           for (const field of fields) {
             const value = updatedMember[field];
@@ -300,6 +306,7 @@ export const DataInitializer = {
       // Identificação
       name: 'Roberto Alves',
       employeeName: 'Roberto Alves',
+      status: 'ACTIVE',
       cpf: '333.444.555-66',
       rg: '00.000.000-0',
       pis: '000.00000.00-0',

@@ -76,7 +76,7 @@ export interface MemberContribution {
   id: string;
   value: number;
   date: string;
-  type: 'TITHE' | 'OFFERING' | 'CAMPAIGN';
+  type: 'Dizimo' | 'OFFERING' | 'CAMPAIGN';
   description?: string;
 }
 

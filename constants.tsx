@@ -16,7 +16,12 @@ export const MOCK_MEMBERS: Member[] = [
 ];
 
 export const MOCK_ACCOUNTS: FinancialAccount[] = [];
-export const MOCK_TRANSACTIONS: Transaction[] = [];
+export const MOCK_TRANSACTIONS: Transaction[] = [
+  { id: 't1', description: 'Dízimo: João Silva', amount: 1500, date: '2026-03-01', type: 'INCOME', category: 'Dizimo', operationNature: 'nat6', costCenter: 'cc1', projectId: 'proj1', accountId: 'a1', status: 'PAID', unitId: 'u-sede', paymentMethod: 'PIX', memberId: 'm1' },
+  { id: 't2', description: 'Dízimo: Maria Oliveira', amount: 2000, date: '2026-03-05', type: 'INCOME', category: 'Dizimo', operationNature: 'nat6', costCenter: 'cc1', projectId: 'proj1', accountId: 'a1', status: 'PAID', unitId: 'u-sede', paymentMethod: 'PIX', memberId: 'm2' },
+  { id: 't3', description: 'Conta de Luz', amount: 500, date: '2026-03-10', type: 'EXPENSE', category: 'Despesa', operationNature: 'nat9', costCenter: 'cc11', projectId: 'proj1', accountId: 'a1', status: 'PAID', unitId: 'u-sede', paymentMethod: 'TRANSFER' },
+  { id: 't4', description: 'Manutenção Ar Condicionado', amount: 300, date: '2026-03-12', type: 'EXPENSE', category: 'Despesa', operationNature: 'nat9', costCenter: 'cc11', projectId: 'proj1', accountId: 'a1', status: 'PAID', unitId: 'u-sede', paymentMethod: 'TRANSFER' }
+];
 export const MOCK_AUDIT: AuditLog[] = [];
 export const MOCK_EVENTS: ChurchEvent[] = [];
 export const MOCK_ASSETS: Asset[] = [];

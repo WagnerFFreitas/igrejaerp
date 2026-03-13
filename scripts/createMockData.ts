@@ -54,7 +54,7 @@ const mockMembers = [
         id: 'contrib_001',
         value: 500,
         date: '2024-01-15',
-        type: 'TITHE' as const,
+        type: 'Dizimo' as const,
         description: 'Dízimo Janeiro 2024'
       }
     ],
@@ -140,7 +140,7 @@ const mockMembers = [
         id: 'contrib_002',
         value: 800,
         date: '2024-01-15',
-        type: 'TITHE' as const,
+        type: 'Dizimo' as const,
         description: 'Dízimo Janeiro 2024'
       }
     ],

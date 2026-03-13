@@ -330,7 +330,7 @@ const populateDatabase = async () => {
           id: 'contrib_wagner_001',
           value: 1000,
           date: '2024-01-15',
-          type: 'TITHE',
+          type: 'Dizimo',
           description: 'Dízimo Janeiro 2024'
         },
         {

@@ -83,18 +83,18 @@ export const DashboardExecutivo: React.FC<DashboardExecutivoProps> = ({
       
       console.log("📊 Dados carregados:", { transactions: t.length, members: m.length, employees: e.length, assets: a.length });
       // Calcular KPIs financeiros reais
-      const receitasTotais = transactions
-        .filter(t => t.type === 'INCOME' && t.status === 'PAID')
-        .reduce((sum, t) => sum + (t.amount || 0), 0);
+      const receitasTotais = t
+        .filter(tx => tx.type === 'INCOME' && tx.status === 'PAID')
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0);
       
-      const despesasTotais = transactions
-        .filter(t => t.type === 'EXPENSE' && t.status === 'PAID')
-        .reduce((sum, t) => sum + (t.amount || 0), 0);
+      const despesasTotais = t
+        .filter(tx => tx.type === 'EXPENSE' && tx.status === 'PAID')
+        .reduce((sum, tx) => sum + (tx.amount || 0), 0);
       
       const saldo = receitasTotais - despesasTotais;
       const margemLiquida = receitasTotais > 0 ? (saldo / receitasTotais) * 100 : 0;
-      const ticketMedio = transactions.filter(t => t.status === 'PAID').length > 0 
-        ? receitasTotais / transactions.filter(t => t.status === 'PAID').length 
+      const ticketMedio = t.filter(tx => tx.status === 'PAID').length > 0 
+        ? receitasTotais / t.filter(tx => tx.status === 'PAID').length 
         : 0;
       
       setKpisFinanceiros({
@@ -109,8 +109,8 @@ export const DashboardExecutivo: React.FC<DashboardExecutivoProps> = ({
       });
       
       // Calcular KPIs de membros
-      const totalMembros = members.length;
-      const membrosAtivos = members.filter(m => m.status === 'ACTIVE').length;
+      const totalMembros = m.length;
+      const membrosAtivos = m.filter(member => member.status === 'ACTIVE').length;
       const crescimentoMembros = 0; // Calcular com período anterior
       const mediaContribuicao = totalMembros > 0 ? receitasTotais / totalMembros : 0;
       
@@ -121,18 +121,18 @@ export const DashboardExecutivo: React.FC<DashboardExecutivoProps> = ({
         taxaInadimplencia: 0, // Calcular baseado em dízimos pendentes
         mediaContribuicao: Math.round(mediaContribuicao * 100) / 100,
         porStatus: {
-          ACTIVE: members.filter(m => m.status === 'ACTIVE').length,
-          INACTIVE: members.filter(m => m.status === 'INACTIVE').length,
-          PENDING: members.filter(m => m.status === 'PENDING').length
+          ACTIVE: m.filter(member => member.status === 'ACTIVE').length,
+          INACTIVE: m.filter(member => member.status === 'INACTIVE').length,
+          PENDING: m.filter(member => member.status === 'PENDING').length
         },
         porDepartamento: {} // Calcular baseado nos ministérios dos membros
       });
       
       // Calcular KPIs de RH
-      const totalFuncionarios = employees.length;
-      const folhaMensal = employees
-        .filter(e => e.status === 'ACTIVE')
-        .reduce((sum, e) => sum + (e.salario_base || 0), 0);
+      const totalFuncionarios = e.length;
+      const folhaMensal = e
+        .filter(emp => emp.status === 'ACTIVE')
+        .reduce((sum, emp) => sum + (emp.salario_base || 0), 0);
       const mediaSalarial = totalFuncionarios > 0 ? folhaMensal / totalFuncionarios : 0;
       
       setKpisRH({
@@ -145,11 +145,11 @@ export const DashboardExecutivo: React.FC<DashboardExecutivoProps> = ({
       });
       
       // Calcular KPIs de patrimônio
-      const totalBens = assets.length;
-      const valorPatrimonialLiquido = assets
-        .reduce((sum, a) => sum + (a.currentValue || a.purchaseValue || 0), 0);
-      const valorOriginalTotal = assets
-        .reduce((sum, a) => sum + (a.purchaseValue || 0), 0);
+      const totalBens = a.length;
+      const valorPatrimonialLiquido = a
+        .reduce((sum, asset) => sum + (asset.currentValue || asset.acquisitionValue || 0), 0);
+      const valorOriginalTotal = a
+        .reduce((sum, asset) => sum + (asset.acquisitionValue || 0), 0);
       const depreciacaoAcumulada = valorOriginalTotal - valorPatrimonialLiquido;
       
       setKpisPatrimonio({
@@ -172,23 +172,23 @@ export const DashboardExecutivo: React.FC<DashboardExecutivoProps> = ({
         const dataMes = new Date();
         dataMes.setMonth(dataMes.getMonth() - i);
         
-        const receitasMes = transactions
-          .filter(t => t.type === 'INCOME' && t.status === 'PAID')
-          .filter(t => {
-            const dataTrans = new Date(t.date);
+        const receitasMes = t
+          .filter(tx => tx.type === 'INCOME' && tx.status === 'PAID')
+          .filter(tx => {
+            const dataTrans = new Date(tx.date);
             return dataTrans.getMonth() === dataMes.getMonth() && 
                    dataTrans.getFullYear() === dataMes.getFullYear();
           })
-          .reduce((sum, t) => sum + (t.amount || 0), 0);
+          .reduce((sum, tx) => sum + (tx.amount || 0), 0);
           
-        const despesasMes = transactions
-          .filter(t => t.type === 'EXPENSE' && t.status === 'PAID')
-          .filter(t => {
-            const dataTrans = new Date(t.date);
+        const despesasMes = t
+          .filter(tx => tx.type === 'EXPENSE' && tx.status === 'PAID')
+          .filter(tx => {
+            const dataTrans = new Date(tx.date);
             return dataTrans.getMonth() === dataMes.getMonth() && 
                    dataTrans.getFullYear() === dataMes.getFullYear();
           })
-          .reduce((sum, t) => sum + (t.amount || 0), 0);
+          .reduce((sum, tx) => sum + (tx.amount || 0), 0);
         
         dadosReceitas.push(receitasMes || 0);
         dadosDespesas.push(despesasMes || 0);

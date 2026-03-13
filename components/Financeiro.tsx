@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import { Relatorios } from './Relatorios';
 import { 
   Plus, ArrowUp, ArrowDown, Download, FileText, CreditCard,
   Landmark, Wallet, TrendingUp, X, Save, DollarSign, Calendar, 
@@ -34,7 +35,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
   const { logAction } = useAudit(user);
 
   const [formData, setFormData] = useState<Partial<Transaction>>({
-    description: '', amount: 0, date: new Date().toISOString().split('T')[0], type: 'INCOME', category: 'TITHE', operationNature: 'nat6', costCenter: 'cc1', projectId: '', accountId: accounts[0]?.id || '', status: 'PAID', unitId: currentUnitId, paymentMethod: 'PIX', memberId: '',
+    description: '', amount: 0, date: new Date().toISOString().split('T')[0], type: 'INCOME', category: 'Dizimo', operationNature: 'nat6', costCenter: 'cc1', projectId: '', accountId: accounts[0]?.id || '', status: 'PAID', unitId: currentUnitId, paymentMethod: 'PIX', memberId: '',
     // Campos para parcelamento
     isInstallment: false,  // Se é compra parcelada
     installmentCount: 1,   // Quantidade de parcelas
@@ -52,8 +53,8 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
   }, { income: 0, expense: 0, payable: 0 }), [transactions]);
 
   const filtered = transactions.filter(t => 
-    t.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    (t.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleSave = async () => {
     console.log("🚀 Iniciando salvamento da transação financeira...");
@@ -67,7 +68,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
     
     // Se for dízimo e tiver membro selecionado, atualizar a descrição se estiver vazia ou genérica
     let finalDescription = formData.description;
-    if (formData.category === 'TITHE' && formData.memberId) {
+    if (formData.category === 'Dizimo' && formData.memberId) {
       const member = members.find(m => m.id === formData.memberId);
       if (member && (!finalDescription || finalDescription === 'Dízimo')) {
         finalDescription = `Dízimo: ${member.name}`;
@@ -174,7 +175,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
       setEditingId(null); 
       setFormData({ 
         description: '', amount: 0, date: new Date().toISOString().split('T')[0], 
-        type: 'INCOME', category: 'TITHE', operationNature: 'nat6', costCenter: 'cc1', 
+        type: 'INCOME', category: 'Dizimo', operationNature: 'nat6', costCenter: 'cc1', 
         projectId: '', accountId: accounts[0]?.id || '', status: 'PAID', 
         unitId: currentUnitId, paymentMethod: 'PIX', memberId: '',
         isInstallment: false,
@@ -326,7 +327,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                   <td className="px-4 py-2.5">
                     <p className="font-bold text-slate-700 leading-none mb-0.5">{t.description}</p>
                     <p className="text-[9px] text-slate-400 font-medium uppercase">
-                      {t.category === 'TITHE' && t.memberId ? (
+                      {t.category === 'Dizimo' && t.memberId ? (
                         <span className="flex items-center gap-1 text-indigo-600 font-black">
                           <User size={10}/> {members.find(m => m.id === t.memberId)?.name || 'Membro'}
                         </span>
@@ -382,7 +383,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Valor Bruto (R$)</label>
-                  <input type="number" className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-black text-xs text-indigo-700" value={formData.amount} onChange={e => setFormData({...formData, amount: Number(e.target.value)})} />
+                  <input type="number" className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-black text-xs text-indigo-700" value={formData.amount === 0 ? '' : formData.amount} onChange={e => setFormData({...formData, amount: e.target.value === '' ? 0 : Number(e.target.value)})} />
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Data de Lançamento</label>
@@ -400,7 +401,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                 <div>
                   <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Categoria</label>
                   <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} >
-                    <option value="TITHE">Dízimo</option>
+                    <option value="Dizimo">Dízimo</option>
                     <option value="OFFERING">Oferta</option>
                     <option value="CAMPAIGN">Campanha</option>
                     <option value="UTILITIES">Utilidades (Luz/Água)</option>
@@ -462,7 +463,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                 </div>
               )}
 
-              {formData.type === 'INCOME' && formData.category === 'TITHE' && (
+              {formData.type === 'INCOME' && formData.category === 'Dizimo' && (
                 <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 animate-in slide-in-from-top-2">
                    <label className="text-[10px] font-black uppercase block mb-2 text-emerald-700 flex items-center gap-2"><User size={14}/> Selecionar Membro (Dizimista)</label>
                    <select 
@@ -526,6 +527,24 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                    </>
                  )}
                </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-5xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b flex justify-between items-center bg-white">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-md"><FileSearch size={20}/></div>
+                <div>
+                   <h2 className="font-black uppercase text-sm tracking-tight text-slate-900">Relatórios Financeiros</h2>
+                </div>
+              </div>
+              <button onClick={() => setIsReportModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400"><X size={20}/></button>
+            </div>
+            <div className="p-8 overflow-y-auto custom-scrollbar bg-slate-50/30">
+              <Relatorios transactions={transactions} members={members} />
             </div>
           </div>
         </div>
