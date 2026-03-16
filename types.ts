@@ -278,6 +278,42 @@ export interface PayrollConfig {
   thirdPartyRate: number;    // Rateio para terceiros (se tiver)
 }
 
+/**
+ * PARÂMETROS PARA CÁLCULO DE FOLHA
+ * =================================
+ */
+export interface PayrollInput {
+  employee: Employee;
+  competencyMonth: string;         // YYYY-MM
+  
+  // PROVENTOS VARIÁVEIS
+  overtimeHours50?: number;        // Horas extras 50%
+  overtimeHours100?: number;       // Horas extras 100%
+  nightShiftHours?: number;        // Horas noturnas
+  hazardPayDegree?: 'NONE' | 'MIN' | 'MED' | 'MAX';  // Insalubridade
+  periculosidade?: boolean;        // Periculosidade (30%)
+  dsr?: boolean;                   // Descanso Semanal Remunerado
+  commission?: number;             // Comissões
+  bonuses?: number;                // Bonificações
+  familySalary?: number;           // Salário família (manual ou auto)
+  otherAllowances?: number;        // Outros adicionais
+  
+  // DESCONTOS
+  absenceDays?: number;            // Dias faltados
+  delayMinutes?: number;           // Minutos atrasado
+  alimony?: number;                // Pensão alimentícia
+  healthInsurance?: number;        // Plano de saúde
+  mealTicket?: number;             // Vale refeição
+  transport?: number;              // Vale transporte
+  inssManual?: number;             // INSS manual (se informado)
+  irrfManual?: number;             // IRRF manual (se informado)
+  otherDeductions?: number;        // Outros descontos
+  
+  // CONFIGURAÇÕES
+  workingDays?: number;            // Dias úteis no mês (padrão: 22)
+  fgtsRate?: number;               // Alíquota FGTS (padrão: 8%)
+}
+
 // Added missing ChurchEvent interface
 export interface ChurchEvent {
   id: string;
@@ -837,13 +873,14 @@ export interface Payroll {
   he100_qtd: number;
   dsr_ativo: boolean;
   adic_noturno_qtd: number;
-  insalubridade_grau: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH';
+  insalubridade_grau: 'NONE' | 'MIN' | 'MED' | 'MAX';
   periculosidade_ativo: boolean;
   comissoes: number;
   gratificacoes: number;
   premios: number;
   ats_percentual: number;
   auxilio_moradia: number;
+  salario_familia: number;
   arredondamento: number;
   dependentes_qtd: number;
   dependentes_lista?: Dependent[];

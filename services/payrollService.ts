@@ -26,7 +26,7 @@
  * - Mantém histórico completo
  */
 
-import { Employee, PayrollCalculation, PaySlip, PayrollConfig } from '../types';
+import { Employee, PayrollCalculation, PaySlip, PayrollConfig, PayrollInput } from '../types';
 import {
   calcularINSS,
   calcularIRRF,
@@ -40,34 +40,6 @@ import {
   calcularFerias,
   roundMoney,
 } from '../utils/payrollCalculations';
-
-/**
- * PARÂMETROS PARA CÁLCULO DE FOLHA
- * =================================
- */
-export interface PayrollInput {
-  employee: Employee;
-  competencyMonth: string;         // YYYY-MM
-  
-  // PROVENTOS VARIÁVEIS
-  overtimeHours?: number;          // Horas extras
-  nightShiftHours?: number;        // Horas noturnas
-  hazardPayDegree?: 'MIN' | 'MED' | 'MAX';  // Insalubridade
-  commission?: number;             // Comissões
-  bonuses?: number;                // Bonificações
-  
-  // DESCONTOS
-  absenceDays?: number;            // Dias faltados
-  delayMinutes?: number;           // Minutos atrasado
-  alimony?: number;                // Pensão alimentícia
-  healthInsurance?: number;        // Plano de saúde
-  mealTicket?: number;             // Vale refeição
-  transport?: number;              // Vale transporte
-  
-  // CONFIGURAÇÕES
-  workingDays?: number;            // Dias úteis no mês (padrão: 22)
-  fgtsRate?: number;               // Alíquota FGTS (padrão: 8%)
-}
 
 /**
  * CLASSE DO SERVICE DE FOLHA
@@ -109,17 +81,24 @@ export class PayrollService {
     const allowances = this.calculateAllowances(input);
     
     // 3. Salário bruto
-    const grossSalary = baseSalary + allowances.overtime + allowances.nightShift + 
-                       allowances.hazardPay + allowances.commission + allowances.bonuses;
+    const grossSalary = baseSalary + 
+                       allowances.overtime + 
+                       allowances.nightShift + 
+                       allowances.hazardPay + 
+                       allowances.periculosidade +
+                       allowances.dsr +
+                       allowances.commission + 
+                       allowances.bonuses + 
+                       (input.otherAllowances || 0);
     
     // 4. Base de cálculo INSS
     const inssBase = grossSalary;
-    const inssValue = calcularINSS(inssBase);
+    const inssValue = input.inssManual !== undefined ? input.inssManual : calcularINSS(inssBase);
     
     // 5. Base de cálculo IRRF
     const irrfBase = grossSalary - inssValue;
     const dependentsCount = employee.dependents?.length || 0;
-    const irrfValue = calcularIRRF(irrfBase, inssValue, dependentsCount, input.alimony || 0);
+    const irrfValue = input.irrfManual !== undefined ? input.irrfManual : calcularIRRF(irrfBase, inssValue, dependentsCount, input.alimony || 0);
     
     // 6. FGTS (custo empregador, não desconta)
     const fgtsBase = grossSalary;
@@ -128,18 +107,19 @@ export class PayrollService {
     
     // 7. Outros descontos
     const absencesValue = input.absenceDays ? calcularDescontoFaltas(baseSalary, input.workingDays || 22, input.absenceDays) : 0;
-    const familySalaryValue = calcularSalarioFamilia(grossSalary, dependentsCount);
+    const familySalaryValue = input.familySalary !== undefined ? input.familySalary : calcularSalarioFamilia(grossSalary, dependentsCount);
     
     // 8. Totais de descontos
     const totalDeductions = inssValue + irrfValue + (input.healthInsurance || 0) + 
                            (input.mealTicket || 0) + (input.transport || 0) + 
-                           absencesValue;
+                           absencesValue + (input.otherDeductions || 0);
     
     // 9. Salário líquido
     const netSalary = grossSalary + familySalaryValue - totalDeductions;
     
     // 10. Custo total empregador
-    const employerCost = grossSalary + fgtsValue + (employerCosts(this.getEmployerCosts(grossSalary)));
+    const costs = this.getEmployerCosts(grossSalary);
+    const employerCost = grossSalary + costs.fgts + costs.inssPatronal + costs.outros;
     
     // 11. Monta objeto de cálculo
     return {
@@ -151,11 +131,11 @@ export class PayrollService {
         baseSalary,
         overtime: allowances.overtime || 0,
         nightShift: allowances.nightShift || 0,
-        hazardPay: allowances.hazardPay || 0,
+        hazardPay: allowances.hazardPay + allowances.periculosidade,
         commission: allowances.commission || 0,
         bonuses: allowances.bonuses || 0,
         familySalary: familySalaryValue,
-        other: 0,
+        other: allowances.dsr + (input.otherAllowances || 0),
       },
       
       deductions: {
@@ -169,7 +149,7 @@ export class PayrollService {
         absences: absencesValue,
         delays: 0,
         alimony: input.alimony || 0,
-        other: 0,
+        other: input.otherDeductions || 0,
       },
       
       totals: {
@@ -183,7 +163,7 @@ export class PayrollService {
         inssBase: roundMoney(inssBase),
         irrfBase: roundMoney(irrfBase),
         fgtsBase: roundMoney(fgtsBase),
-        inssRate: inssValue / inssBase,
+        inssRate: inssBase > 0 ? inssValue / inssBase : 0,
         irrfRate: irrfBase > 0 ? irrfValue / irrfBase : 0,
         fgtsRate: fgtsRate,
         dependentDeduction: dependentsCount * 189.59,
@@ -191,7 +171,7 @@ export class PayrollService {
       
       workingDays: input.workingDays || 22,
       absenceDays: input.absenceDays || 0,
-      overtimeHours: input.overtimeHours || 0,
+      overtimeHours: (input.overtimeHours50 || 0) + (input.overtimeHours100 || 0),
       status: 'CALCULATED',
     };
   }
@@ -207,14 +187,21 @@ export class PayrollService {
     overtime: number;
     nightShift: number;
     hazardPay: number;
+    periculosidade: number;
+    dsr: number;
     commission: number;
     bonuses: number;
   } {
     const { employee } = input;
     
-    // Horas extras
-    const overtime = input.overtimeHours 
-      ? calcularHorasExtras(employee.salary, employee.workHours, input.overtimeHours)
+    // Horas extras 50%
+    const overtime50 = input.overtimeHours50 
+      ? calcularHorasExtras(employee.salary, employee.workHours || 220, input.overtimeHours50, 0.5)
+      : 0;
+
+    // Horas extras 100%
+    const overtime100 = input.overtimeHours100 
+      ? calcularHorasExtras(employee.salary, employee.workHours || 220, input.overtimeHours100, 1.0)
       : 0;
     
     // Adicional noturno
@@ -223,14 +210,23 @@ export class PayrollService {
       : 0;
     
     // Insalubridade
-    const hazardPay = input.hazardPayDegree
-      ? calcularInsalubridade(1412.00, input.hazardPayDegree)
+    const hazardPay = (input.hazardPayDegree && input.hazardPayDegree !== 'NONE')
+      ? calcularInsalubridade(1412.00, input.hazardPayDegree as any)
       : 0;
+
+    // Periculosidade (30% sobre o salário base)
+    const periculosidade = input.periculosidade ? employee.salary * 0.3 : 0;
+
+    // DSR (Descanso Semanal Remunerado) - Cálculo simplificado: (HE + Adic Noturno) / dias úteis * domingos/feriados
+    // Aqui vamos usar um valor fixo ou proporcional se dsr estiver ativo
+    const dsr = input.dsr ? (overtime50 + overtime100 + nightShift) * 0.2 : 0;
     
     return {
-      overtime,
+      overtime: overtime50 + overtime100,
       nightShift,
       hazardPay,
+      periculosidade,
+      dsr,
       commission: input.commission || 0,
       bonuses: input.bonuses || 0,
     };
@@ -300,7 +296,8 @@ export class PayrollService {
     const input: PayrollInput = {
       employee: pastor,
       competencyMonth,
-      overtimeHours: 0,
+      overtimeHours50: 0,
+      overtimeHours100: 0,
       nightShiftHours: 0,
       absenceDays: 0,
       fgtsRate: 0,  // Pastor não tem FGTS

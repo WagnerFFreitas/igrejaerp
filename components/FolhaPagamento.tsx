@@ -29,8 +29,8 @@ import {
   Calendar, TrendingUp, TrendingDown, AlertCircle, CheckCircle, Clock, MoreVertical,
   Printer, Mail, Share2
 } from 'lucide-react';
-import { Employee, PayrollCalculation, PaySlip } from '../types';
-import { payrollService, PayrollInput } from '../services/payrollService';
+import { Employee, PayrollCalculation, PaySlip, PayrollInput } from '../types';
+import { payrollService } from '../services/payrollService';
 
 /**
  * PROPRIEDADES DO COMPONENTE
@@ -89,7 +89,8 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
       const input: PayrollInput = {
         employee: selectedEmployee,
         competencyMonth,
-        overtimeHours: 0,
+        overtimeHours50: 0,
+        overtimeHours100: 0,
         nightShiftHours: 0,
         absenceDays: 0,
         workingDays: 22,

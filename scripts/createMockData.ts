@@ -285,7 +285,7 @@ const mockEmployees = [
     he100_qtd: 2,
     dsr_ativo: true,
     adic_noturno_qtd: 8,
-    insalubridade_grau: 'LOW' as const,
+    insalubridade_grau: 'MIN' as const,
     periculosidade_ativo: false,
     comissoes: 0,
     gratificacoes: 100.00,
