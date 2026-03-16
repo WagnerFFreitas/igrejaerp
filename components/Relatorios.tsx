@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BarChart3, Download, FileSpreadsheet, DollarSign, Users, Briefcase, Share2, CheckCircle2, Loader2, FileJson } from 'lucide-react';
+import { BarChart3, Download, FileSpreadsheet, DollarSign, Users, Briefcase, Share2, CheckCircle2, Loader2, FileJson, Printer } from 'lucide-react';
 import { Transaction, Member } from '../types';
 
 interface RelatoriosProps {
@@ -22,11 +22,23 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members })
     setIsExporting(null);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in pb-20">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight italic font-serif">Relatórios & Exportação</h1>
-        <p className="text-slate-500 font-medium">Extração de dados para contabilidade e gestão estratégica ADJPA.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight italic font-serif">Relatórios & Exportação</h1>
+          <p className="text-slate-500 font-medium">Extração de dados para contabilidade e gestão estratégica ADJPA.</p>
+        </div>
+        <button 
+          onClick={handlePrint}
+          className="flex items-center gap-2 py-3 px-6 bg-slate-100 text-slate-700 rounded-2xl font-black uppercase text-xs shadow-sm transition-all hover:bg-slate-200 active:scale-95"
+        >
+          <Printer size={16} /> Imprimir
+        </button>
       </div>
 
       <div className="bg-indigo-600 rounded-[2.5rem] p-1 shadow-2xl overflow-hidden">

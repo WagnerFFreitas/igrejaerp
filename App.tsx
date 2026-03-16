@@ -244,17 +244,19 @@ const App: React.FC = () => {
         // Inicializar dados se necessário
         await DataInitializer.initializeData(currentUnitId);
         
-        const [m, t, a, e] = await Promise.all([
+        const [m, t, a, e, l] = await Promise.all([
           dbService.getMembers(currentUnitId),
           dbService.getTransactions(currentUnitId),
           dbService.getAccounts(currentUnitId),
-          dbService.getEmployees(currentUnitId)
+          dbService.getEmployees(currentUnitId),
+          dbService.getLeaves(currentUnitId)
         ]);
         setMembers(m);
         setTransactions(t);
         setAccounts(a);
         setEmployees(e);
-        console.log("Dados carregados:", { members: m.length, transactions: t.length, accounts: a.length, employees: e.length });
+        setLeaves(l);
+        console.log("Dados carregados:", { members: m.length, transactions: t.length, accounts: a.length, employees: e.length, leaves: l.length });
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
       } finally {
@@ -369,10 +371,10 @@ const App: React.FC = () => {
       case 'assets': return <Patrimonio currentUnitId={currentUnitId} user={currentUser} />;
       case 'rh': return <RecursosHumanos employees={unitEmployees} />;
       case 'dp': return <Funcionarios employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} />;
-      case 'leaves': return <Afastamentos leaves={unitLeaves} setLeaves={setLeaves} currentUnitId={currentUnitId} />;
+      case 'leaves': return <Afastamentos leaves={unitLeaves} setLeaves={setLeaves} currentUnitId={currentUnitId} employees={unitEmployees} />;
       case 'payroll': return <ProcessamentoFolha employees={unitEmployees} setEmployees={setEmployees} />;
       case 'events': return <Eventos />;
-      case 'reports': return <Relatorios />;
+      case 'reports': return <Relatorios transactions={unitTransactions} members={unitMembers} />;
       case 'messages': return <Comunicacao members={unitMembers} employees={unitEmployees} />;
       case 'audit': return <Auditoria />;
       case 'portal': return <PortalMembro />;

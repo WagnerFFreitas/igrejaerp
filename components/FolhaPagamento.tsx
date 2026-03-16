@@ -72,6 +72,8 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
   
   // Visualizar recibo
   const [showPaySlip, setShowPaySlip] = useState(false);
+
+  console.log('FolhaPagamento: employees', employees);
   
   /**
    * CALCULAR FOLHA DO FUNCIONÁRIO SELECIONADO

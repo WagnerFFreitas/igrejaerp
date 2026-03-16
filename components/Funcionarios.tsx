@@ -414,15 +414,21 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
         <div className="flex gap-2">
           <button 
             onClick={() => selectedIds.length > 0 && setIsIDCardOpen(true)}
-            className={`px-5 py-2 rounded-xl font-bold text-[10px] uppercase shadow-lg flex items-center gap-1.5 transition-all ${selectedIds.length > 0 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all ${selectedIds.length > 0 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
           >
             <Printer size={14} /> Imprimir Crachás ({selectedIds.length})
+          </button>
+          <button 
+            onClick={() => selectedIds.length > 0 && handleDirectPrint()}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all ${selectedIds.length > 0 ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+          >
+            <Printer size={14} /> Imprimir cadastro ({selectedIds.length})
           </button>
           <button 
             onClick={handleNew}
             className="px-5 py-2 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase shadow-lg flex items-center gap-1.5 transition-transform hover:scale-105 active:scale-95"
           >
-            <Plus size={14} /> Admissão Digital
+            <Plus size={14} /> Novo Cadastro
           </button>
         </div>
       </div>
@@ -461,9 +467,18 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                     {selectedIds.includes(emp.id) ? <CheckSquare size={16} className="text-indigo-600"/> : <Square size={16} className="text-slate-300"/>}
                   </div>
                 </td>
-                <td className="px-3 py-3 font-bold text-slate-900">
-                   <p>{emp.employeeName}</p>
-                   <p className="text-[8px] text-slate-400 uppercase font-black tracking-tighter mt-1">MAT: {emp.matricula}</p>
+                <td className="px-3 py-3 font-bold text-slate-900 flex items-center gap-3">
+                   <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
+                     {emp.avatar ? (
+                       <img src={emp.avatar} alt={emp.employeeName} className="w-full h-full object-cover" />
+                     ) : (
+                       <User size={20} className="text-slate-400" />
+                     )}
+                   </div>
+                   <div>
+                     <p>{emp.employeeName}</p>
+                     <p className="text-[8px] text-slate-400 uppercase font-black tracking-tighter mt-1">MAT: {emp.matricula}</p>
+                   </div>
                 </td>
                 <td className="px-6 py-3">
                    <p className="font-bold text-slate-600">{emp.cargo}</p>
@@ -471,8 +486,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                 </td>
                 <td className="px-6 py-3"><span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-100">Sincronizado</span></td>
                 <td className="px-6 py-3 text-right text-slate-300 hover:text-indigo-600 cursor-pointer transition-colors flex justify-end gap-2">
-                   <button onClick={() => { setSelectedIds([emp.id]); setIsIDCardOpen(true); }}><QrCode size={16}/></button>
-                   <button onClick={() => handleEdit(emp)}><Edit2 size={16}/></button>
+                   <button onClick={() => { setSelectedIds([emp.id]); setIsIDCardOpen(true); }} title="Imprimir Crachá"><QrCode size={16}/></button>
+                   <button onClick={() => { /* Lógica para imprimir cadastro */ window.print(); }} title="Imprimir Cadastro"><Printer size={16}/></button>
+                   <button onClick={() => handleEdit(emp)} title="Editar"><Edit2 size={16}/></button>
                 </td>
               </tr>
             ))}

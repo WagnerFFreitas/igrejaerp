@@ -566,6 +566,45 @@ export class DatabaseService {
   }
 
   // Férias/Afastamentos
+  async getLeaves(unitId?: string): Promise<EmployeeLeave[]> {
+    console.info("🔍 Buscando afastamentos...");
+    
+    try {
+      const localLeaves = await this.getFromLocal('leaves');
+      console.log(`📊 Encontrados ${localLeaves.length} afastamentos no IndexedDB`);
+      
+      if (localLeaves.length > 0) {
+        if (unitId) {
+          return localLeaves.filter(l => l.unitId === unitId);
+        }
+        return localLeaves;
+      }
+    } catch (error) {
+      console.warn("❌ Erro ao carregar afastamentos do IndexedDB:", error);
+    }
+    
+    if (this.isFirebaseConfigured()) {
+      try {
+        let q = query(collection(db, 'leaves'));
+        if (unitId) {
+          q = query(collection(db, 'leaves'), where('unitId', '==', unitId));
+        }
+        const querySnapshot = await this.withTimeout(getDocs(q), 8000);
+        const firebaseLeaves = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EmployeeLeave));
+        console.log(`🔥 Carregados ${firebaseLeaves.length} afastamentos do Firebase`);
+        
+        for (const leave of firebaseLeaves) {
+          await this.saveToLocal('leaves', leave);
+        }
+        return firebaseLeaves;
+      } catch (error) {
+        console.warn("❌ Erro ao carregar afastamentos do Firebase:", error);
+      }
+    }
+    
+    return [];
+  }
+
   async saveLeave(leave: Partial<EmployeeLeave>): Promise<string> {
     const leaveData = { ...leave, id: leave.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
     
@@ -604,6 +643,29 @@ export class DatabaseService {
       console.error("Erro ao salvar férias no Firebase, salvando localmente:", error);
       await this.saveToLocal('leaves', leaveData);
       return leaveData.id;
+    }
+  }
+
+  async deleteLeave(id: string): Promise<void> {
+    console.info("🗑️ Iniciando exclusão de afastamento:", id);
+    
+    // Deletar localmente
+    try {
+      await IndexedDBService.delete('leaves', id);
+      console.log("✅ Afastamento excluído localmente:", id);
+    } catch (error) {
+      console.error("❌ Erro ao excluir afastamento localmente:", error);
+    }
+    
+    // Deletar no Firebase
+    if (this.isFirebaseConfigured() && !id.startsWith('local_')) {
+      try {
+        const docRef = doc(db, 'leaves', id);
+        await this.withTimeout(deleteDoc(docRef), 8000);
+        console.log("✅ Afastamento excluído do Firebase:", id);
+      } catch (error) {
+        console.error("❌ Erro ao excluir afastamento do Firebase:", error);
+      }
     }
   }
 

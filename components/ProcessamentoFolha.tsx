@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
-import { Calculator, Printer, Check, Edit3, DollarSign, ArrowDownRight, ArrowUpRight, Save } from 'lucide-react';
-import { Payroll } from '../types';
+import { Calculator, Printer, Check, Edit3, DollarSign, ArrowDownRight, ArrowUpRight, Save, Loader2 } from 'lucide-react';
+import { Payroll, PayrollInput } from '../types';
+import { payrollService } from '../services/payrollService';
+import { dbService } from '../services/databaseService';
 
 interface ProcessamentoFolhaProps {
   employees: Payroll[];
@@ -10,10 +12,80 @@ interface ProcessamentoFolhaProps {
 
 export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employees }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Payroll | null>(null);
+  const [editSalary, setEditSalary] = useState<number>(0);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === employees.length) setSelectedIds([]);
     else setSelectedIds(employees.map(e => e.id));
+  };
+
+  const handleProcessPayroll = async () => {
+    if (selectedIds.length === 0) {
+      alert('Selecione pelo menos um funcionário para processar.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const competencyMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      
+      const processedResults = await Promise.all(
+        employees
+          .filter(emp => selectedIds.includes(emp.id))
+          .map(async (emp) => {
+            // Mapeamento básico de Payroll para Employee para o cálculo
+            const employeeData = {
+              id: emp.id,
+              name: emp.employeeName,
+              salary: emp.salario_base,
+              workHours: 40, // Valor padrão
+              dependents: [], // Valor padrão
+              regime: 'CLT' as any, // Mapeamento simplificado
+            };
+
+            const input: PayrollInput = {
+              employee: employeeData as any,
+              competencyMonth,
+            };
+            
+            return payrollService.generateMonthlyPayroll(input);
+          })
+      );
+
+      console.log('Folha processada:', processedResults);
+      alert(`Folha processada com sucesso para ${processedResults.length} funcionários.`);
+      
+    } catch (error) {
+      console.error('Erro ao processar folha:', error);
+      alert('Erro ao processar folha de pagamento.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (emp: Payroll) => {
+    setEditingEmployee(emp);
+    setEditSalary(emp.salario_base || 0);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEmployee) return;
+    
+    setIsLoading(true);
+    try {
+      await dbService.saveEmployee({ ...editingEmployee, salario_base: editSalary });
+      // Atualizar lista localmente
+      // setEmployees(prev => prev.map(e => e.id === editingEmployee.id ? { ...e, salario_base: editSalary } : e));
+      alert('Salário atualizado com sucesso.');
+      setEditingEmployee(null);
+    } catch (error) {
+      console.error('Erro ao salvar salário:', error);
+      alert('Erro ao salvar salário.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -24,11 +96,18 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
           <p className="text-slate-500 font-medium mt-2 text-[11px] uppercase tracking-widest">Processamento de proventos, encargos e eSocial</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-6 py-2.5 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-slate-300">
+          <button 
+            onClick={() => alert('Funcionalidade de impressão de holerites em desenvolvimento.')}
+            className="flex items-center gap-2 px-6 py-2.5 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-slate-300"
+          >
             <Printer size={16}/> Holerites
           </button>
-          <button className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase shadow-lg transition-all hover:bg-indigo-700">
-            <Calculator size={16}/> Processar Mês Atual
+          <button 
+            onClick={handleProcessPayroll}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase shadow-lg transition-all hover:bg-indigo-700 disabled:opacity-50"
+          >
+            <Calculator size={16}/> {isLoading ? 'Processando...' : 'Processar Mês Atual'}
           </button>
         </div>
       </div>
@@ -65,24 +144,50 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-xs">
-            {employees.map(emp => (
-              <tr key={emp.id} className="hover:bg-slate-50/50 transition-all">
-                <td className="px-6 py-4 text-center">
-                   <input type="checkbox" checked={selectedIds.includes(emp.id)} onChange={() => setSelectedIds(prev => prev.includes(emp.id) ? prev.filter(id => id !== emp.id) : [...prev, emp.id])} className="w-4 h-4 accent-indigo-600" />
-                </td>
-                <td className="px-4 py-4">
-                   <p className="font-bold text-slate-900 leading-none mb-1">{emp.employeeName}</p>
-                   <p className="text-[9px] text-slate-400 font-bold uppercase">{emp.cargo}</p>
-                </td>
-                <td className="px-8 py-4 text-emerald-600 font-bold">R$ {emp.total_proventos.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                <td className="px-8 py-4 text-rose-600 font-bold">R$ {emp.total_descontos.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                <td className="px-8 py-4 text-slate-900 font-black">R$ {emp.salario_liquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                <td className="px-8 py-4 text-right"><button className="text-slate-400 hover:text-indigo-600"><Edit3 size={16}/></button></td>
-              </tr>
-            ))}
+            {employees.map(emp => {
+              const totalProventos = emp.salario_base || 0;
+              const totalDescontos = 0; 
+              const salarioLiquido = totalProventos - totalDescontos;
+
+              return (
+                <tr key={emp.id} className="hover:bg-slate-50/50 transition-all">
+                  <td className="px-6 py-4 text-center">
+                    <input type="checkbox" checked={selectedIds.includes(emp.id)} onChange={() => setSelectedIds(prev => prev.includes(emp.id) ? prev.filter(id => id !== emp.id) : [...prev, emp.id])} className="w-4 h-4 accent-indigo-600" />
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="font-bold text-slate-900 leading-none mb-1">{emp.employeeName}</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase">{emp.cargo}</p>
+                  </td>
+                  <td className="px-8 py-4 text-emerald-600 font-bold">R$ {totalProventos.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                  <td className="px-8 py-4 text-rose-600 font-bold">R$ {totalDescontos.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                  <td className="px-8 py-4 text-slate-900 font-black">R$ {salarioLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                  <td className="px-8 py-4 text-right"><button onClick={() => handleEdit(emp)} className="text-slate-400 hover:text-indigo-600"><Edit3 size={16}/></button></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+      
+      {editingEmployee && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl">
+            <h2 className="text-lg font-black uppercase mb-6">Editar Salário: {editingEmployee.employeeName}</h2>
+            <div className="space-y-4">
+              <input 
+                type="number" 
+                value={editSalary} 
+                onChange={e => setEditSalary(Number(e.target.value))}
+                className="w-full p-3 rounded-xl border border-slate-200"
+              />
+              <div className="flex gap-3">
+                <button onClick={() => setEditingEmployee(null)} className="flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-slate-100">Cancelar</button>
+                <button onClick={handleSaveEdit} className="flex-1 py-3 rounded-xl font-bold text-xs uppercase bg-indigo-600 text-white">Salvar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

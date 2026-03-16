@@ -338,7 +338,13 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
             onClick={() => selectedMemberIds.length > 0 && setIsIDCardOpen(true)} 
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all ${selectedMemberIds.length > 0 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
           >
-            <Printer size={14} /> Imprimir ({selectedMemberIds.length})
+            <Printer size={14} /> Imprimir carteirinha ({selectedMemberIds.length})
+          </button>
+          <button 
+            onClick={() => selectedMemberIds.length > 0 && handleDirectPrint()} 
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all ${selectedMemberIds.length > 0 ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+          >
+            <Printer size={14} /> Imprimir cadastro ({selectedMemberIds.length})
           </button>
           <button onClick={() => { 
             setEditingMember(null); 
@@ -482,6 +488,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-3 text-slate-400">
                     <button onClick={() => { setEditingMember(member); setSelectedMemberIds([member.id]); setIsIDCardOpen(true); }} className="hover:text-slate-900"><QrCode size={16} /></button>
+                    <button onClick={() => window.print()} className="hover:text-slate-900"><Printer size={16} /></button>
                     <button onClick={() => { 
                       const memberWithMatricula = { 
                         ...member, 
