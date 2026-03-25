@@ -62,12 +62,47 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
   const confirmAction = async () => {
     setIsRangeModalOpen(false);
     
+    console.log('🔍 Filtrando funcionários. Faixa:', rangeStart, rangeEnd);
+    console.log('👥 Total de funcionários:', employees.length);
+
     // Filter employees based on range
     const filteredEmployees = employees.filter(emp => {
-      if (rangeStart && emp.matricula < rangeStart) return false;
-      if (rangeEnd && emp.matricula > rangeEnd) return false;
+      const matricula = (emp.matricula || '').toString().trim();
+      const start = rangeStart.toString().trim();
+      const end = rangeEnd.toString().trim();
+      
+      const getNum = (s: string) => parseInt(s.replace(/\D/g, ''), 10);
+      const matNum = getNum(matricula);
+      const startNum = getNum(start);
+      const endNum = getNum(end);
+      
+      // Numeric comparison
+      if (start && !isNaN(startNum) && !isNaN(matNum) && matNum < startNum) return false;
+      if (end && !isNaN(endNum) && !isNaN(matNum) && matNum > endNum) return false;
+      
+      // Fallback to localeCompare
+      const startComp = start ? matricula.localeCompare(start, undefined, {numeric: true, sensitivity: 'base'}) : 0;
+      const endComp = end ? matricula.localeCompare(end, undefined, {numeric: true, sensitivity: 'base'}) : 0;
+      
+      console.log(`Checking emp: ${emp.employeeName}, matricula: '${matricula}', range: '${start}'-'${end}', startComp: ${startComp}, endComp: ${endComp}`);
+      
+      // If start is provided, matricula must be >= start (startComp >= 0)
+      if (start && startComp < 0) return false;
+      // If end is provided, matricula must be <= end (endComp <= 0)
+      if (end && endComp > 0) return false;
+      
       return true;
     });
+
+    // Sort filtered employees by matricula
+    filteredEmployees.sort((a, b) => {
+      const matA = (a.matricula || '').toString().trim();
+      const matB = (b.matricula || '').toString().trim();
+      return matA.localeCompare(matB, undefined, {numeric: true});
+    });
+
+    console.log('✅ Funcionários filtrados e ordenados:', filteredEmployees.length);
+    filteredEmployees.forEach(emp => console.log(`  - ${emp.employeeName} (${emp.matricula})`));
 
     if (filteredEmployees.length === 0) {
       alert('Nenhum funcionário encontrado na faixa selecionada.');
@@ -203,10 +238,6 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
   };
 
   const handleGeneratePDF = () => {
-    if (selectedIds.length === 0) {
-      alert('Selecione pelo menos um funcionário para imprimir o holerite.');
-      return;
-    }
     setPendingAction('PDF');
     setIsRangeModalOpen(true);
   };

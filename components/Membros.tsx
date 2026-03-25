@@ -425,12 +425,13 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                   {selectedMemberIds.length === filteredMembers.length && filteredMembers.length > 0 ? <CheckSquare size={16} className="text-indigo-600"/> : <Square size={16} className="text-slate-300"/>}
                 </div>
               </th>
-              <th className="px-4 py-4">Identificação</th>
-              <th className="px-4 py-4">Cargo / Ministério</th>
-              <th className="px-4 py-4">Vínculos</th>
-              <th className="px-4 py-4">Status Financeiro</th>
-              <th className="px-4 py-4">Situação</th>
-              <th className="px-6 py-4 text-right">Ações</th>
+              <th className="px-1 py-4">Matrícula</th>
+              <th className="px-8 py-4">Identificação</th>
+              <th className="px-0 py-4">Cargo / Ministério</th>
+              <th className="px-1 py-4">Vínculos</th>
+              <th className="px-1 py-4">Status Financeiro</th>
+              <th className="px-0 py-4">Situação</th>
+              <th className="px-2 py-4 text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-[11px]">
@@ -441,7 +442,10 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                     {selectedMemberIds.includes(member.id) ? <CheckSquare size={16} className="text-indigo-600"/> : <Square size={16} className="text-slate-300"/>}
                   </div>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-1 py-4 font-bold text-slate-800 text-xs">
+                  {member.matricula || '-'}
+                </td>
+                <td className="px-8 py-4">
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <img src={member.avatar} className="w-10 h-10 rounded-full object-cover border border-slate-100" alt="" />
@@ -457,24 +461,24 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-0 py-4">
                   <p className="font-bold text-slate-800 text-xs">{member.ecclesiasticalPosition || 'Membro'}</p>
                   <p className="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">{member.mainMinistry || 'Geral'}</p>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-1 py-4">
                   <button className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-bold uppercase hover:bg-slate-100 transition-all">
                     <div className="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[8px]">F</div>
                     Ver Vínculos
                   </button>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-1 py-4">
                   <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
                     member.isTithable ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
                   }`}>
                     {member.isTithable ? 'Dizimista' : (member.role === 'VISITOR' ? 'Visitante' : 'Membro')}
                   </span>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-0 py-4">
                   <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
                     member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 
                     member.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
@@ -485,7 +489,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                      'Inativo'}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-2 py-4 text-right">
                   <div className="flex justify-end gap-3 text-slate-400">
                     <button onClick={() => { setEditingMember(member); setSelectedMemberIds([member.id]); setIsIDCardOpen(true); }} className="hover:text-slate-900"><QrCode size={16} /></button>
                     <button onClick={() => window.print()} className="hover:text-slate-900"><Printer size={16} /></button>

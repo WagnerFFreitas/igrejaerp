@@ -490,6 +490,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                   {selectedIds.length === filtered.length && filtered.length > 0 ? <CheckSquare size={16} className="text-indigo-600"/> : <Square size={16} className="text-slate-300"/>}
                 </div>
               </th>
+              <th className="px-3 py-4">Matrícula</th>
               <th className="px-3 py-4">Colaborador</th>
               <th className="px-6 py-4">Cargo / Tipo</th>
               <th className="px-6 py-4">Status eSocial</th>
@@ -504,6 +505,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                     {selectedIds.includes(emp.id) ? <CheckSquare size={16} className="text-indigo-600"/> : <Square size={16} className="text-slate-300"/>}
                   </div>
                 </td>
+                <td className="px-3 py-3 text-slate-600 font-bold">
+                  {emp.matricula}
+                </td>
                 <td className="px-3 py-3 font-bold text-slate-900 flex items-center gap-3">
                    <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
                      {emp.avatar ? (
@@ -514,7 +518,6 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                    </div>
                    <div>
                      <p>{emp.employeeName}</p>
-                     <p className="text-[8px] text-slate-400 uppercase font-black tracking-tighter mt-1">MAT: {emp.matricula}</p>
                    </div>
                 </td>
                 <td className="px-6 py-3">
