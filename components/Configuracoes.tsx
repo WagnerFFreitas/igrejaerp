@@ -18,12 +18,69 @@ interface ConfiguracoesProps {
 type ConfigTab = 'backup' | 'fiscal' | 'certificado' | 'tabelas';
 
 export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
+  const isDeveloper = user.role === 'DEVELOPER';
+  const canEditConfig = user.role === 'DEVELOPER' || user.role === 'ADMIN' || user.role === 'TREASURER';
   const [activeTab, setActiveTab] = useState<ConfigTab>('backup');
   const [taxConfig, setTaxConfig] = useState<TaxConfig>(DEFAULT_TAX_CONFIG);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   const [isSyncingCep, setIsSyncingCep] = useState(false);
   const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [certificateStatus, setCertificateStatus] = useState<'VALID' | 'EXPIRED' | 'NOT_INSTALLED'>('VALID');
+
+  // Carregar configurações ao montar
+  React.useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const savedConfig = await IndexedDBService.get('system_config', 'tax_config');
+        if (savedConfig) {
+          setTaxConfig(savedConfig);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configurações fiscais:', error);
+      }
+    };
+    loadConfig();
+  }, []);
+
+  const handleSaveTaxConfig = async () => {
+    if (!canEditConfig) return;
+    
+    setIsLoadingConfig(true);
+    try {
+      // 1. Salvar configuração no IndexedDB
+      await IndexedDBService.save('system_config', {
+        id: 'tax_config',
+        ...taxConfig,
+        updatedAt: new Date().toISOString()
+      });
+
+      // 2. Atualizar todos os funcionários com os novos valores padrão de VA e VR
+      const employees = await dbService.getEmployees(user.unitId);
+      let updatedCount = 0;
+
+      for (const emp of employees) {
+        // Atualizar apenas se o funcionário tiver o benefício ativo
+        // Ou talvez o usuário queira que atualize de qualquer forma?
+        // "ALTERE DE TODOS OS FUNCIONARIOS"
+        const updatedEmp = {
+          ...emp,
+          vale_alimentacao: taxConfig.defaultVA || 0,
+          vale_refeicao: taxConfig.defaultVR || 0,
+          updatedAt: new Date().toISOString()
+        };
+        await dbService.saveEmployee(updatedEmp);
+        updatedCount++;
+      }
+
+      alert(`Parâmetros fiscais atualizados com sucesso! ${updatedCount} funcionários atualizados com os novos valores de benefícios.`);
+    } catch (error) {
+      console.error('Erro ao salvar configurações fiscais:', error);
+      alert('Erro ao salvar parâmetros fiscais.');
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
 
   const BRAZILIAN_STATES = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
@@ -344,7 +401,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
               }`}
             >
               {tab === 'backup' && 'Backup & Dados'}
-              {tab === 'fiscal' && 'Parâmetros Fiscais'}
+              {tab === 'fiscal' && 'Parâmetros Fiscais & Benefícios'}
               {tab === 'tabelas' && 'Tabelas eSocial'}
               {tab === 'certificado' && 'Certificado A1'}
             </button>
@@ -418,9 +475,9 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                 </div>
                 <button 
                   onClick={handleSyncCep}
-                  disabled={isSyncingCep || selectedStates.length === 0}
+                  disabled={isSyncingCep || selectedStates.length === 0 || !isDeveloper}
                   className={`w-full py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all flex items-center justify-center gap-3 ${
-                    isSyncingCep || selectedStates.length === 0 ? 'bg-[#374151] text-slate-500 cursor-not-allowed' : 'bg-[#4F46E5] text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20'
+                    isSyncingCep || selectedStates.length === 0 || !isDeveloper ? 'bg-[#374151] text-slate-500 cursor-not-allowed' : 'bg-[#4F46E5] text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20'
                   }`}
                 >
                   <CloudDownload size={18} className={isSyncingCep ? 'animate-bounce' : ''}/> 
@@ -491,7 +548,8 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                   <input 
                     type="number" 
                     step="0.01"
-                    className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600"
+                    disabled={!canEditConfig}
+                    className={`w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600 ${!canEditConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
                     value={taxConfig.patronalRate * 100}
                     onChange={(e) => setTaxConfig({...taxConfig, patronalRate: parseFloat(e.target.value) / 100})}
                   />
@@ -501,7 +559,8 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                   <input 
                     type="number" 
                     step="0.01"
-                    className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600"
+                    disabled={!canEditConfig}
+                    className={`w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600 ${!canEditConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
                     value={taxConfig.ratRate * 100}
                     onChange={(e) => setTaxConfig({...taxConfig, ratRate: parseFloat(e.target.value) / 100})}
                   />
@@ -511,7 +570,8 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                   <input 
                     type="number" 
                     step="0.01"
-                    className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600"
+                    disabled={!canEditConfig}
+                    className={`w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600 ${!canEditConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
                     value={taxConfig.terceirosRate * 100}
                     onChange={(e) => setTaxConfig({...taxConfig, terceirosRate: parseFloat(e.target.value) / 100})}
                   />
@@ -521,7 +581,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
 
             <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FGTS & Outros</h4>
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FGTS & Benefícios (VA/VR Padrão)</h4>
                 <Calculator size={14} className="text-indigo-600"/>
               </div>
               <div className="space-y-3">
@@ -530,18 +590,32 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                   <input 
                     type="number" 
                     step="0.01"
-                    className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600"
+                    disabled={!canEditConfig}
+                    className={`w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600 ${!canEditConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
                     value={taxConfig.fgtsRate * 100}
                     onChange={(e) => setTaxConfig({...taxConfig, fgtsRate: parseFloat(e.target.value) / 100})}
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-600">Multa Rescisória</span>
+                  <span className="text-xs font-bold text-slate-600">Vale Alimentação (Padrão)</span>
                   <input 
                     type="number" 
                     step="0.01"
-                    className="w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600"
-                    defaultValue={40}
+                    disabled={!canEditConfig}
+                    className={`w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600 ${!canEditConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    value={taxConfig.defaultVA || 0}
+                    onChange={(e) => setTaxConfig({...taxConfig, defaultVA: parseFloat(e.target.value)})}
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Vale Refeição (Padrão)</span>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    disabled={!canEditConfig}
+                    className={`w-20 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-right font-black text-xs text-indigo-600 ${!canEditConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    value={taxConfig.defaultVR || 0}
+                    onChange={(e) => setTaxConfig({...taxConfig, defaultVR: parseFloat(e.target.value)})}
                   />
                 </div>
               </div>
@@ -552,7 +626,16 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                 <h4 className="text-sm font-black uppercase tracking-widest mb-2">Salvar Alterações</h4>
                 <p className="text-[10px] text-indigo-100 font-medium">As novas alíquotas serão aplicadas em todos os cálculos de folha a partir do próximo fechamento.</p>
               </div>
-              <button className="w-full py-3 bg-white text-indigo-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-50 transition-all shadow-lg">Atualizar Parâmetros</button>
+              <button 
+                onClick={handleSaveTaxConfig}
+                disabled={!canEditConfig || isLoadingConfig}
+                className={`w-full py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 ${
+                  !canEditConfig || isLoadingConfig ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-indigo-600 hover:bg-indigo-50'
+                }`}
+              >
+                {isLoadingConfig ? <RefreshCw size={14} className="animate-spin"/> : null}
+                {canEditConfig ? 'Atualizar Parâmetros' : 'Acesso Restrito'}
+              </button>
             </div>
           </div>
 
@@ -685,7 +768,14 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Tabelas Tributárias Oficiais</h3>
                 <p className="text-sm text-slate-500 font-medium">Consulte as bases de cálculo vigentes para o ano-calendário 2024.</p>
               </div>
-              <button className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-2"><RefreshCw size={14}/> Sincronizar com Receita</button>
+              <button 
+                disabled={!isDeveloper}
+                className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  !isDeveloper ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <RefreshCw size={14}/> {isDeveloper ? 'Sincronizar com Receita' : 'Acesso Restrito'}
+              </button>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">

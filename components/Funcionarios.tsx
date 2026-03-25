@@ -7,12 +7,13 @@ import {
   User, Phone, Mail, Award, Tag, History, Users2, Star, TrendingUp,
   MessageSquare, CheckCircle2, XCircle, Calculator
 } from 'lucide-react';
-import { Payroll, Dependent, UserAuth } from '../types';
+import { Payroll, Dependent, UserAuth, TaxConfig } from '../types';
 import { DEFAULT_TAX_CONFIG } from '../constants';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { TemplateCrachaFuncionario } from './TemplateCrachaFuncionario';
 import { dbService } from '../services/databaseService';
+import IndexedDBService from '../src/services/indexedDBService';
 import { useAudit } from '../src/hooks/useAudit';
 
 interface FuncionariosProps {
@@ -100,6 +101,21 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<EmployeeTab>('pessoais');
   const [isSearchingCEP, setIsSearchingCEP] = useState(false);
+  const [taxConfig, setTaxConfig] = useState<TaxConfig>(DEFAULT_TAX_CONFIG);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const savedConfig = await IndexedDBService.get('system_config', 'tax_config');
+        if (savedConfig) {
+          setTaxConfig(savedConfig);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configurações fiscais:', error);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const [formData, setFormData] = useState<Partial<Payroll>>({
     employeeName: '', cpf: '', rg: '', email: '', matricula: '',
@@ -135,6 +151,16 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
       setFormData(prev => ({ ...prev, matricula: next }));
     }
   }, [isModalOpen, formData.matricula, employees.length]);
+
+  useEffect(() => {
+    const valorDiario = formData.vt_valor_diario || 0;
+    const qtdVales = formData.vt_qtd_vales_dia || 0;
+    const total = valorDiario * qtdVales;
+    
+    if (formData.vale_transporte_total !== total) {
+      setFormData(prev => ({ ...prev, vale_transporte_total: total }));
+    }
+  }, [formData.vt_valor_diario, formData.vt_qtd_vales_dia]);
 
   const filtered = employees.filter(e => 
     e.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -237,7 +263,18 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
   };
 
   const handleEdit = (emp: Payroll) => {
-    const empWithMatricula = { ...emp, matricula: emp.matricula || getNextEmployeeMatricula() };
+    const empWithMatricula = { 
+      ...emp, 
+      matricula: emp.matricula || getNextEmployeeMatricula(),
+      vt_ativo: !!emp.vt_ativo,
+      va_ativo: !!emp.va_ativo,
+      vr_ativo: !!emp.vr_ativo,
+      ps_ativo: !!emp.ps_ativo,
+      po_ativo: !!emp.po_ativo,
+      dsr_ativo: emp.dsr_ativo !== undefined ? !!emp.dsr_ativo : true,
+      periculosidade_ativo: !!emp.periculosidade_ativo,
+      is_pcd: !!emp.is_pcd
+    };
     setEditingEmployee(empWithMatricula);
     setFormData(empWithMatricula);
     setIsModalOpen(true);
@@ -264,7 +301,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
       banco: '', codigo_banco: '', agencia: '', conta: '',
       tipo_conta: 'CORRENTE', titular: '', chave_pix: '',
       vt_ativo: false, vale_transporte_total: 0, va_ativo: false,
-      vale_alimentacao: 0, vr_ativo: false, vale_refeicao: 0,
+      vale_alimentacao: taxConfig.defaultVA || 0, vr_ativo: false, vale_refeicao: taxConfig.defaultVR || 0,
       ps_ativo: false, plano_saude_colaborador: 0, po_ativo: false,
       plano_saude_dependentes: 0, vale_farmacia: 0, seguro_vida: 0,
       faltas: 0, atrasos: 0, adiantamento: 0, pensao_alimenticia: 0,
@@ -1046,7 +1083,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                           <div className="flex gap-2">
                             <input type="number" placeholder="Valor/Dia" value={formData.vt_valor_diario} onChange={(e) => setFormData({...formData, vt_valor_diario: parseFloat(e.target.value)})} className="w-20 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-right" />
                             <input type="number" placeholder="Qtd/Dia" value={formData.vt_qtd_vales_dia} onChange={(e) => setFormData({...formData, vt_qtd_vales_dia: parseInt(e.target.value)})} className="w-16 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-right" />
-                            <input type="number" placeholder="Total" value={formData.vale_transporte_total} onChange={(e) => setFormData({...formData, vale_transporte_total: parseFloat(e.target.value)})} className="w-24 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-right" />
+                            <input type="number" placeholder="Total" value={formData.vale_transporte_total} readOnly className="w-24 px-3 py-1 bg-slate-100 border-2 border-slate-900 rounded-lg text-xs font-black text-right text-slate-900" />
                           </div>
                         </div>
                         <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100">

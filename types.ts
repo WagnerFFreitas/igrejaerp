@@ -205,8 +205,15 @@ export interface PayrollCalculation {
     fgts: number;              // FGTS (não desconta, só informa)
     union?: number;            // Contribuição sindical
     healthInsurance?: number;  // Plano de saúde
+    dentalInsurance?: number;  // Plano odontológico
+    mealAllowance?: number;    // Vale alimentação
     mealTicket?: number;       // Vale refeição
     transport?: number;        // Vale transporte
+    pharmacy?: number;         // Vale farmácia
+    lifeInsurance?: number;    // Seguro de vida
+    advance?: number;          // Adiantamento
+    consignado?: number;       // Consignado
+    coparticipation?: number;  // Coparticipações
     absences?: number;         // Faltas
     delays?: number;           // Atrasos
     alimony?: number;          // Pensão alimentícia
@@ -303,8 +310,15 @@ export interface PayrollInput {
   delayMinutes?: number;           // Minutos atrasado
   alimony?: number;                // Pensão alimentícia
   healthInsurance?: number;        // Plano de saúde
-  mealTicket?: number;             // Vale refeição
+  dentalInsurance?: number;        // Plano odontológico
+  mealAllowance?: number;          // Vale alimentação (VA)
+  mealTicket?: number;             // Vale refeição (VR)
   transport?: number;              // Vale transporte
+  pharmacy?: number;               // Vale farmácia
+  lifeInsurance?: number;          // Seguro de vida
+  advance?: number;                // Adiantamento
+  consignado?: number;             // Consignado
+  coparticipation?: number;        // Coparticipações
   inssManual?: number;             // INSS manual (se informado)
   irrfManual?: number;             // IRRF manual (se informado)
   otherDeductions?: number;        // Outros descontos
@@ -352,6 +366,8 @@ export interface TaxConfig {
   patronalRate?: number;
   ratRate?: number;
   terceirosRate?: number;
+  defaultVA?: number;
+  defaultVR?: number;
   thirdPartyEntities?: {
     sindicatoRate: number;
     confederacaoRate: number;

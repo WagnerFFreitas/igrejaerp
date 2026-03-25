@@ -372,7 +372,7 @@ const App: React.FC = () => {
       case 'rh': return <RecursosHumanos employees={unitEmployees} />;
       case 'dp': return <Funcionarios employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} />;
       case 'leaves': return <Afastamentos leaves={unitLeaves} setLeaves={setLeaves} currentUnitId={currentUnitId} employees={unitEmployees} />;
-      case 'payroll': return <ProcessamentoFolha employees={unitEmployees} setEmployees={setEmployees} />;
+      case 'payroll': return <ProcessamentoFolha employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} />;
       case 'events': return <Eventos />;
       case 'reports': return <Relatorios transactions={unitTransactions} members={unitMembers} />;
       case 'messages': return <Comunicacao members={unitMembers} employees={unitEmployees} />;

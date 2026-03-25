@@ -43,6 +43,8 @@ export const DEFAULT_TAX_CONFIG: TaxConfig = {
     { limit: Infinity, rate: 0.275, deduction: 896.00 }
   ],
   fgtsRate: 0.08,
+  defaultVA: 0,
+  defaultVR: 0,
   thirdPartyEntities: {
     sindicatoRate: 0.02,
     confederacaoRate: 0.0111,

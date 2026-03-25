@@ -26,7 +26,7 @@
  * - Mantém histórico completo
  */
 
-import { Employee, PayrollCalculation, PaySlip, PayrollConfig, PayrollInput } from '../types';
+import { Employee, PayrollCalculation, PaySlip, PayrollConfig, PayrollInput, TaxConfig } from '../types';
 import {
   calcularINSS,
   calcularIRRF,
@@ -40,6 +40,7 @@ import {
   calcularFerias,
   roundMoney,
 } from '../utils/payrollCalculations';
+import { DEFAULT_TAX_CONFIG } from '../constants';
 
 /**
  * CLASSE DO SERVICE DE FOLHA
@@ -70,7 +71,8 @@ export class PayrollService {
    */
   generateMonthlyPayroll(
     input: PayrollInput,
-    config?: Partial<PayrollConfig>
+    config?: Partial<PayrollConfig>,
+    taxConfig: TaxConfig = DEFAULT_TAX_CONFIG
   ): PayrollCalculation {
     const { employee, competencyMonth } = input;
     
@@ -102,7 +104,7 @@ export class PayrollService {
     
     // 6. FGTS (custo empregador, não desconta)
     const fgtsBase = grossSalary;
-    const fgtsRate = input.fgtsRate || 0.08;
+    const fgtsRate = taxConfig.fgtsRate || 0.08;
     const fgtsValue = calcularFGTS(fgtsBase, fgtsRate);
     
     // 7. Outros descontos
@@ -111,14 +113,18 @@ export class PayrollService {
     
     // 8. Totais de descontos
     const totalDeductions = inssValue + irrfValue + (input.healthInsurance || 0) + 
-                           (input.mealTicket || 0) + (input.transport || 0) + 
-                           absencesValue + (input.otherDeductions || 0);
+                           (input.dentalInsurance || 0) + 
+                           (input.mealAllowance || 0) + (input.mealTicket || 0) + 
+                           (input.transport || 0) + (input.pharmacy || 0) + 
+                           (input.lifeInsurance || 0) + (input.advance || 0) + 
+                           (input.consignado || 0) + (input.coparticipation || 0) + 
+                           absencesValue + (input.alimony || 0) + (input.otherDeductions || 0);
     
     // 9. Salário líquido
     const netSalary = grossSalary + familySalaryValue - totalDeductions;
     
     // 10. Custo total empregador
-    const costs = this.getEmployerCosts(grossSalary);
+    const costs = this.getEmployerCosts(grossSalary, taxConfig);
     const employerCost = grossSalary + costs.fgts + costs.inssPatronal + costs.outros;
     
     // 11. Monta objeto de cálculo
@@ -144,7 +150,14 @@ export class PayrollService {
         fgts: fgtsValue,
         union: 0,
         healthInsurance: input.healthInsurance || 0,
+        dentalInsurance: input.dentalInsurance || 0,
+        mealAllowance: input.mealAllowance || 0,
         mealTicket: input.mealTicket || 0,
+        pharmacy: input.pharmacy || 0,
+        lifeInsurance: input.lifeInsurance || 0,
+        advance: input.advance || 0,
+        consignado: input.consignado || 0,
+        coparticipation: input.coparticipation || 0,
         transport: input.transport || 0,
         absences: absencesValue,
         delays: 0,
@@ -245,19 +258,19 @@ export class PayrollService {
    * RETORNO:
    * number → Total de encargos
    */
-  private getEmployerCosts(grossSalary: number): {
+  private getEmployerCosts(grossSalary: number, taxConfig: TaxConfig = DEFAULT_TAX_CONFIG): {
     inssPatronal: number;
     fgts: number;
     outros: number;
   } {
-    // INSS Patronal (20% sobre a folha)
-    const inssPatronal = grossSalary * 0.20;
+    // INSS Patronal (20% sobre a folha ou conforme config)
+    const inssPatronal = grossSalary * (taxConfig.patronalRate || 0.20);
     
-    // FGTS (8%)
-    const fgts = grossSalary * 0.08;
+    // FGTS (8% ou conforme config)
+    const fgts = grossSalary * (taxConfig.fgtsRate || 0.08);
     
-    // Outros (SESC, SENAI, SEBRAE, INCRA, etc.) ~5.8%
-    const outros = grossSalary * 0.058;
+    // Outros encargos (RAT + Terceiros)
+    const outros = grossSalary * ((taxConfig.ratRate || 0.02) + (taxConfig.terceirosRate || 0.058));
     
     return {
       inssPatronal: roundMoney(inssPatronal),
