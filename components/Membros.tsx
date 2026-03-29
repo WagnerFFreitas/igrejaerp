@@ -4,17 +4,21 @@ import {
   Loader2, Save, Trash2, Camera, Heart, Baby, Flame, Award, Map, AlertCircle, 
   DollarSign, Star, Users, TrendingUp, Download, Phone, Mail, Briefcase, 
   Info, Sparkles, BookOpen, MapPin, Calendar, History, Tag, Landmark, Users2,
-  MessageSquare, CheckCircle2, XCircle, Filter
+  MessageSquare, CheckCircle2, CheckCircle, XCircle, Filter, Shield, FileText, FileSignature
 } from 'lucide-react';
-import { Member, Transaction, FinancialAccount, MemberContribution, Dependent, UserAuth } from '../types';
+import TermoAdesaoLGPD from './TermoAdesaoLGPD';
+import { Member, Transaction, FinancialAccount, MemberContribution, Dependent, UserAuth, LGPDConsent, LGPDPolicy, Unit } from '../types';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { dbService } from '../services/databaseService';
 import { StorageService } from '../src/services/storageService';
 import { TemplateCarteiraMembro } from './TemplateCarteiraMembro';
 import { useAudit } from '../src/hooks/useAudit';
+import LGPDService from '../services/lgpdService';
+import LGPDConsentModal from './LGPDConsentModal';
+import { ImprimeCadMembro } from './ImprimeCadMembro';
 
-type MemberTab = 'pessoais' | 'familia' | 'endereco' | 'vida_crista' | 'ministerios' | 'financeiro' | 'rh' | 'outros';
+type MemberTab = 'pessoais' | 'familia' | 'endereco' | 'vida_crista' | 'ministerios' | 'financeiro' | 'rh' | 'outros' | 'lgpd';
 
 interface MembrosProps {
   members: Member[];
@@ -61,7 +65,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
   const [isIDCardOpen, setIsIDCardOpen] = useState(false);
 
   // Hook de auditoria
-  const { logAction } = useAudit(user);
+  const { logAction } = useAudit(user || null);
 
   // Função para identificar campos alterados
   const getChangedFields = (oldData: Member, newData: Member): string[] => {
@@ -92,6 +96,25 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
   const [isSearchingCEP, setIsSearchingCEP] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('');
+
+  const [filterRole, setFilterRole] = useState('');
+  const [filterMinistry, setFilterMinistry] = useState('');
+  const [filterTithable, setFilterTithable] = useState('');
+
+  // Estados impressão cadastro
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // Estados LGPD
+  const [showLGPDModal, setShowLGPDModal] = useState(false);
+  const [showTermoLGPD, setShowTermoLGPD] = useState(false);
+  const [currentPolicy, setCurrentPolicy] = useState<LGPDPolicy | null>(null);
+  const [memberConsents, setMemberConsents] = useState<LGPDConsent[]>([]);
+  const [lgpdReport, setLgpdReport] = useState<any>(null);
+
+  // Estado da Unidade
+  const [currentUnitData, setCurrentUnitData] = useState<Unit | null>(null);
 
   const stats = useMemo(() => ({
     active: members.filter(m => m.status === 'ACTIVE').length,
@@ -118,6 +141,67 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     return `M${paddedNumber}/${currentYear}`;
   };
 
+  const openDocumentInNewTab = (dataUrl: string, fileName: string) => {
+    if (!dataUrl) return;
+    
+    const parts = dataUrl.split(';base64,');
+    if (parts.length !== 2) {
+      window.open(dataUrl, '_blank');
+      return;
+    }
+    
+    let contentType = parts[0].split(':')[1];
+    if (contentType.includes(';')) contentType = contentType.split(';')[0];
+    
+    // Validar se é PDF pela assinatura dos dados (JVBER = %PDF-)
+    const base64Data = parts[1];
+    const isPDFSignature = base64Data.substring(0, 5) === 'JVBER';
+    const isPDF = isPDFSignature || contentType === 'application/pdf' || contentType === 'image/pdf' || fileName.toLowerCase().endsWith('.pdf');
+    
+    // Reconstruir o dataUrl com o tipo correto se for PDF
+    // Isso é crucial porque se o original for application/octet-stream, o navegador disparará download.
+    const viewUrl = isPDF ? `data:application/pdf;base64,${base64Data}` : dataUrl;
+    const finalFileName = isPDF && !fileName.toLowerCase().endsWith('.pdf') ? `${fileName}.pdf` : fileName;
+
+    // Criar o HTML da página de visualização
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${finalFileName}</title>
+          <style>
+            body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: ${isPDF ? '#525659' : '#000'}; }
+            .container { display: flex; justify-content: center; align-items: center; height: 100%; width: 100%; }
+            img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            object, embed { border: none; width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            ${isPDF 
+              ? `<object data="${viewUrl}" type="application/pdf" width="100%" height="100%">
+                  <embed src="${viewUrl}" type="application/pdf" width="100%" height="100%" />
+                 </object>`
+              : `<img src="${viewUrl}" alt="${finalFileName}" />`
+            }
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Abrir em nova aba com document.write (técnica fallback robusta)
+    const newWin = window.open('', '_blank');
+    if (newWin) {
+      newWin.document.write(html);
+      newWin.document.close();
+    } else {
+      alert('O bloqueador de pop-ups impediu a visualização. Por favor, autorize pop-ups para este site.');
+    }
+    
+    // Nota: O URL.revokeObjectURL(url) não pode ser feito imediatamente aqui,
+    // mas o navegador limpa ao fechar a aba/janela original.
+  };
+
   const [formData, setFormData] = useState<Partial<Member>>({
     name: '', matricula: '', cpf: '', rg: '', email: '', phone: '', whatsapp: '', profession: '',
     status: 'ACTIVE', role: 'MEMBER', gender: 'M', maritalStatus: 'SINGLE',
@@ -128,12 +212,75 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     dependents: [], bloodType: 'A+', emergencyContact: '', tags: [], familyId: ''
   });
 
+  // useEffect anterior removido pois agora abrimos em nova aba diretamente
+  
   useEffect(() => {
     if (isModalOpen && !formData.matricula) {
       const next = getNextMemberMatricula();
       setFormData(prev => ({ ...prev, matricula: next }));
     }
   }, [isModalOpen, formData.matricula, members.length]);
+
+  // Carregar política LGPD atual
+  useEffect(() => {
+    const loadLGPDData = async () => {
+      try {
+        const policy = await LGPDService.getCurrentPolicy(currentUnitId);
+        setCurrentPolicy(policy);
+      } catch (error) {
+        console.error('Erro ao carregar política LGPD:', error);
+      }
+    };
+    
+    loadLGPDData();
+  }, [currentUnitId]);
+
+  // Carregar dados da Unidade
+  useEffect(() => {
+    const loadUnitData = async () => {
+      try {
+        const units = await dbService.getUnits();
+        const unit = units.find(u => u.id === currentUnitId);
+        if (unit) {
+          setCurrentUnitData(unit);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar unidade:', error);
+      }
+    };
+    if (currentUnitId) loadUnitData();
+  }, [currentUnitId]);
+
+  // Carregar consentimentos do membro selecionado
+  useEffect(() => {
+    const loadMemberConsents = async () => {
+      if (editingMember?.id) {
+        try {
+          const consents = await LGPDService.getUserConsents(editingMember.id, currentUnitId);
+          setMemberConsents(consents);
+          
+          // Atualizar formData com consentimentos existentes, preservando o anexo se houver
+          setFormData(prev => ({ 
+            ...prev, 
+            lgpdConsent: {
+              ...(prev.lgpdConsent || {}),
+              dataProcessing: consents.find(c => c.consentType === 'DATA_PROCESSING')?.granted || false,
+              communication: consents.find(c => c.consentType === 'COMMUNICATION')?.granted || false,
+              marketing: consents.find(c => c.consentType === 'MARKETING')?.granted || false,
+              financial: consents.find(c => c.consentType === 'FINANCIAL')?.granted || false,
+              consentDate: consents[0]?.consentDate,
+              policyVersion: consents[0]?.policyVersion,
+              // O documentUrl já está no prev.lgpdConsent se foi carregado do banco ou anexado
+            }
+          }));
+        } catch (error) {
+          console.error('Erro ao carregar consentimentos do membro:', error);
+        }
+      }
+    };
+    
+    loadMemberConsents();
+  }, [editingMember?.id, currentUnitId]);
 
   const titheMap = useMemo(() => {
     const months = [];
@@ -154,11 +301,32 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     return months;
   }, [formData.contributions]);
 
-  const filteredMembers = members.filter(m => 
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (m.cpf && m.cpf.includes(searchTerm)) ||
-    (m.tags && m.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-  );
+  const filteredMembers = members.filter(m => {
+    const searchLower = (searchTerm || '').toLowerCase();
+    const normalizeDigits = (val: string) => (val || '').replace(/\D/g, '');
+    const searchDigits = normalizeDigits(searchTerm);
+
+    const matchesSearch = 
+      (m.name || '').toLowerCase().includes(searchLower) ||
+      (m.matricula || '').toLowerCase().includes(searchLower) ||
+      (m.cpf || '').toLowerCase().includes(searchLower) ||
+      (m.email || '').toLowerCase().includes(searchLower) ||
+      (m.phone || '').toLowerCase().includes(searchLower) ||
+      (m.whatsapp || '').toLowerCase().includes(searchLower) ||
+      (m.tags || []).some(tag => tag.toLowerCase().includes(searchLower)) ||
+      (searchDigits !== '' && normalizeDigits(m.matricula || '').includes(searchDigits)) ||
+      (searchDigits !== '' && normalizeDigits(m.cpf || '').includes(searchDigits));
+
+    const matchesStatus = !filterStatus || m.status === filterStatus;
+    const matchesRole = !filterRole || m.role === filterRole;
+    const matchesMinistry = !filterMinistry || m.mainMinistry === filterMinistry;
+    const matchesTithable = !filterTithable || (filterTithable === 'SIM' ? m.isTithable : !m.isTithable);
+
+    // Se searchTerm estiver vazio, matchesSearch deve ser sempre true
+    const finalSearchMatch = searchTerm === '' ? true : matchesSearch;
+
+    return finalSearchMatch && matchesStatus && matchesRole && matchesMinistry && matchesTithable;
+  });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -193,6 +361,66 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
         }));
       }
     } catch (e) { console.error(e); } finally { setIsSearchingCEP(false); }
+  };
+
+  const handleLGPDConsent = async (consent: LGPDConsent) => {
+    try {
+      await LGPDService.saveConsent(consent);
+      
+      // Atualizar formData com os consentimentos
+      setFormData(prev => ({
+        ...prev,
+        lgpdConsent: {
+          ...(prev.lgpdConsent || {}),
+          dataProcessing: consent.consentType === 'DATA_PROCESSING' ? consent.granted : (prev.lgpdConsent?.dataProcessing || false),
+          communication: consent.consentType === 'COMMUNICATION' ? consent.granted : (prev.lgpdConsent?.communication || false),
+          marketing: consent.consentType === 'MARKETING' ? consent.granted : (prev.lgpdConsent?.marketing || false),
+          financial: consent.consentType === 'FINANCIAL' ? consent.granted : (prev.lgpdConsent?.financial || false),
+          consentDate: consent.consentDate,
+          policyVersion: consent.policyVersion
+          // documentUrl é preservado pelo spread
+        }
+      }));
+
+      // Registrar auditoria
+      await logAction('CREATE', 'LGPDConsent', consent.id, `Consentimento LGPD registrado para ${formData.name}`, {
+        consentType: consent.consentType,
+        granted: consent.granted,
+        policyVersion: consent.policyVersion
+      });
+
+      console.log('✅ Consentimento LGPD salvo com sucesso');
+      alert('Consentimento LGPD salvo com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao salvar consentimento LGPD:', error);
+      alert('Erro ao salvar consentimento LGPD. Tente novamente.');
+    }
+  };
+
+  const handleGenerateLGPDReport = async () => {
+    try {
+      const report = await LGPDService.generateConsentReport(currentUnitId);
+      setLgpdReport(report);
+      
+      // Exportar relatório em JSON
+      const dataStr = JSON.stringify(report, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio-lgpd-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ Relatório LGPD gerado com sucesso');
+      alert('Relatório LGPD gerado e baixado com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao gerar relatório LGPD:', error);
+      alert('Erro ao gerar relatório LGPD. Tente novamente.');
+    }
   };
 
   const handleSave = async () => {
@@ -341,10 +569,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
             <Printer size={14} /> Imprimir carteirinha ({selectedMemberIds.length})
           </button>
           <button 
-            onClick={() => selectedMemberIds.length > 0 && handleDirectPrint()} 
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all ${selectedMemberIds.length > 0 ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+            onClick={() => setShowPrintModal(true)}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all bg-slate-600 text-white hover:bg-slate-700"
           >
-            <Printer size={14} /> Imprimir cadastro ({selectedMemberIds.length})
+            <Printer size={14} /> Imprimir Cadastro
+            {selectedMemberIds.length > 0 && <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded text-[9px]">{selectedMemberIds.length} sel.</span>}
           </button>
           <button onClick={() => { 
             setEditingMember(null); 
@@ -405,16 +634,69 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Buscar por nome, e-mail ou CPF..." 
+            placeholder="Buscar por nome, matrícula, e-mail ou CPF..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
         </div>
-        <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all whitespace-nowrap">
+        <button
+          onClick={() => setShowFilters(p => !p)}
+          className={`flex items-center justify-center gap-2 px-6 py-3 border rounded-xl font-bold text-sm transition-all whitespace-nowrap ${showFilters ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+        >
           <Filter size={18} /> Filtros Avançados
+          {(filterStatus || filterRole || filterMinistry || filterTithable) && (
+            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block"/>
+          )}
         </button>
       </div>
+
+      {showFilters && (
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Status</label>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos</option>
+              <option value="ACTIVE">Ativo</option>
+              <option value="INACTIVE">Inativo</option>
+              <option value="PENDING">Pendente</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Cargo/Função</label>
+            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos</option>
+              <option value="MEMBER">Membro</option>
+              <option value="LEADER">Líder</option>
+              <option value="VOLUNTEER">Voluntário</option>
+              <option value="VISITOR">Visitante</option>
+              <option value="STAFF">Staff</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Ministério</label>
+            <select value={filterMinistry} onChange={e => setFilterMinistry(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos</option>
+              {[...new Set(members.map(m => m.mainMinistry).filter(Boolean))].map(min => (
+                <option key={min} value={min}>{min}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Dizimista</label>
+            <select value={filterTithable} onChange={e => setFilterTithable(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos</option>
+              <option value="SIM">Sim</option>
+              <option value="NAO">Não</option>
+            </select>
+          </div>
+          {(filterStatus || filterRole || filterMinistry || filterTithable) && (
+            <button onClick={() => { setFilterStatus(''); setFilterRole(''); setFilterMinistry(''); setFilterTithable(''); }} className="col-span-2 md:col-span-4 text-xs font-bold text-rose-500 hover:text-rose-700 text-center py-1">
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden">
         <table className="w-full text-left">
@@ -492,7 +774,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 <td className="px-2 py-4 text-right">
                   <div className="flex justify-end gap-3 text-slate-400">
                     <button onClick={() => { setEditingMember(member); setSelectedMemberIds([member.id]); setIsIDCardOpen(true); }} className="hover:text-slate-900"><QrCode size={16} /></button>
-                    <button onClick={() => window.print()} className="hover:text-slate-900"><Printer size={16} /></button>
+                    <button onClick={() => { setSelectedMemberIds([member.id]); setShowPrintModal(true); }} className="hover:text-slate-900" title="Imprimir Cadastro"><Printer size={16} /></button>
                     <button onClick={() => { 
                       const memberWithMatricula = { 
                         ...member, 
@@ -536,6 +818,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 { id: 'financeiro', label: 'Financeiro', icon: <DollarSign size={14}/> },
                 { id: 'rh', label: 'Gestão de RH', icon: <Briefcase size={14}/> },
                 { id: 'outros', label: 'Observações', icon: <Info size={14}/> },
+                { id: 'lgpd', label: 'LGPD', icon: <Shield size={14}/> },
               ].map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id as MemberTab)} className={`flex items-center gap-2 py-3 px-1 text-[10px] font-black uppercase tracking-tight transition-all relative whitespace-nowrap ${activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
                   {tab.icon} {tab.label}
@@ -580,6 +863,20 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                     <InputField label="Nome do Pai" value={formData.fatherName} onChange={(v:any) => setFormData({...formData, fatherName: v})} />
                     <InputField label="Nome da Mãe" value={formData.motherName} onChange={(v:any) => setFormData({...formData, motherName: v})} />
+                    <InputField label="E-mail Pessoal" value={(formData as any).email_pessoal} onChange={(v:any) => setFormData({...formData, email_pessoal: v} as any)} placeholder="email@pessoal.com" />
+                    <InputField label="Celular" value={(formData as any).celular} onChange={(v:any) => setFormData({...formData, celular: v} as any)} placeholder="(00) 00000-0000" />
+                    <InputField label="Escolaridade" value={(formData as any).escolaridade} onChange={(v:any) => setFormData({...formData, escolaridade: v} as any)} placeholder="Ex: Ensino Superior" />
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider">É PCD?</label>
+                      <div className="flex gap-3">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
+                          <input type="checkbox" checked={!!(formData as any).is_pcd} onChange={e => setFormData({...formData, is_pcd: e.target.checked} as any)} className="w-4 h-4 accent-indigo-600" /> Sim
+                        </label>
+                        {(formData as any).is_pcd && (
+                          <input className="flex-1 px-3 py-1 border border-slate-200 rounded-xl text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Tipo de deficiência" value={(formData as any).tipo_deficiencia || ''} onChange={e => setFormData({...formData, tipo_deficiencia: e.target.value} as any)} />
+                        )}
+                      </div>
+                    </div>
                     <InputField label="Observações" value={formData.observations} onChange={(v:any) => setFormData({...formData, observations: v})} className="col-span-2" />
                   </div>
                 </div>
@@ -929,13 +1226,190 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                    </div>
                 </div>
               )}
+
+              {activeTab === 'lgpd' && (
+                <div className="space-y-8">
+                  {/* Resumo de Consentimentos Atuais */}
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <h4 className="text-[10px] font-black text-indigo-600 uppercase mb-6 flex items-center gap-2">
+                      <Shield size={14} />
+                      Consentimentos LGPD Atuais
+                    </h4>
+                    
+                    {memberConsents.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {memberConsents.map((consent, index) => (
+                          <div key={index} className="bg-white p-4 rounded-xl border border-slate-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="font-semibold text-slate-900">
+                                {consent.consentType === 'DATA_PROCESSING' && 'Tratamento de Dados'}
+                                {consent.consentType === 'COMMUNICATION' && 'Comunicação'}
+                                {consent.consentType === 'MARKETING' && 'Marketing'}
+                                {consent.consentType === 'FINANCIAL' && 'Financeiro'}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                consent.granted 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {consent.granted ? 'Concedido' : 'Revogado'}
+                              </span>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm text-slate-600">
+                              <div>Data: {new Date(consent.consentDate).toLocaleDateString('pt-BR')}</div>
+                              <div>Versão: {consent.policyVersion}</div>
+                              {consent.revokedDate && (
+                                <div>Revogado em: {new Date(consent.revokedDate).toLocaleDateString('pt-BR')}</div>
+                              )}
+                              {consent.revokedReason && (
+                                <div>Motivo: {consent.revokedReason}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : formData.lgpdConsent?.documentUrl ? (
+                      <div className="text-center py-6 bg-white rounded-xl border border-green-200">
+                        <Shield className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                        <p className="font-bold text-green-700 mb-1">Termo Assinado Anexado</p>
+                        <p className="text-xs text-slate-500 mb-4 px-4">O documento de consentimento físico foi digitalizado e arquivado com sucesso.</p>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (formData.lgpdConsent?.documentUrl) {
+                              openDocumentInNewTab(
+                                formData.lgpdConsent.documentUrl, 
+                                `Termo-LGPD-${formData.name || 'Membro'}`
+                              );
+                            }
+                          }}
+                          className="px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold uppercase hover:bg-green-100 transition-all inline-flex items-center gap-2 transform active:scale-95"
+                        >
+                          <Search size={14} /> Visualizar Termo em Nova Aba
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <Shield className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                        <p>Nenhum consentimento LGPD registrado no sistema digital.</p>
+                        <p className="text-[11px] px-6 mt-2">Clique no botão "LGPD" abaixo para registrar digitalmente, ou anexe o documento impresso e assinado no botão lateral correspondente.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ações de Gestão */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <h4 className="text-[10px] font-black text-blue-600 uppercase mb-4 flex items-center gap-2">
+                        <Download size={14} />
+                        Relatórios
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setShowTermoLGPD(true)}
+                          className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <FileText size={16} />
+                          Imprimir Termo LGPD
+                        </button>
+                        
+                        <div className="relative mt-3">
+                          <input
+                            type="file"
+                            accept="application/pdf,image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    lgpdConsent: {
+                                      ...(prev.lgpdConsent || {
+                                        dataProcessing: true, communication: true, marketing: true, financial: true, policyVersion: currentPolicy?.version || '1.0'
+                                      }),
+                                      documentUrl: reader.result as string
+                                    }
+                                  }));
+                                  alert('O Termo foi lido pelo navegador! Não esqueça de Salvar o Registro Ministerial para enviar ao banco de dados.');
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            title="Anexar documento impresso/assinado"
+                          />
+                          <button
+                            type="button"
+                            className="w-full py-3 bg-slate-600 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 pointer-events-none"
+                          >
+                            <FileSignature size={16} />
+                            Anexar Termo Assinado
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <h4 className="text-[10px] font-black text-red-600 uppercase mb-4 flex items-center gap-2">
+                        <AlertCircle size={14} />
+                        Direitos LGPD
+                      </h4>
+                      
+                      <div className="space-y-3 text-sm text-slate-600">
+                        <p>• <strong>Acesso:</strong> Você pode solicitar todos os seus dados pessoais.</p>
+                        <p>• <strong>Correção:</strong> Solicitar correção de dados incorretos.</p>
+                        <p>• <strong>Portabilidade:</strong> Exportar seus dados em formato estruturado.</p>
+                        <p>• <strong>Esquecimento:</strong> Solicitar exclusão de seus dados.</p>
+                        <p>• <strong>Revogação:</strong> Retirar consentimentos a qualquer momento.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informações da Política Atual */}
+                  {currentPolicy && (
+                    <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200">
+                      <h4 className="text-[10px] font-black text-blue-600 uppercase mb-4 flex items-center gap-2">
+                        <BookOpen size={14} />
+                        Política de Privacidade Atual
+                      </h4>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div><strong>Versão:</strong> {currentPolicy.version}</div>
+                        <div><strong>Vigência:</strong> {new Date(currentPolicy.effectiveDate).toLocaleDateString('pt-BR')}</div>
+                        <div><strong>Status:</strong> 
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                            currentPolicy.isActive 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {currentPolicy.isActive ? 'Ativa' : 'Inativa'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="p-4 border-t bg-slate-50 flex gap-3">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 font-bold uppercase text-[11px] bg-white border border-slate-200 rounded-2xl">Cancelar</button>
-              <button onClick={handleSave} disabled={isSaving} className="flex-2 py-3 font-black uppercase text-[11px] bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-700 disabled:bg-indigo-400">
+            <div className="p-6 border-t bg-slate-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="px-8 py-3 font-bold uppercase text-[11px] bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              
+              <button 
+                onClick={handleSave} 
+                disabled={isSaving} 
+                className="px-10 py-3 font-black uppercase text-[11px] bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-700 disabled:bg-indigo-400 transition-all"
+              >
                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16}/>}
-                {isSaving ? 'Salvando...' : 'Salvar Registro Ministerial'}
+                {isSaving ? 'Salvando...' : 'Salvar Registro'}
               </button>
             </div>
           </div>
@@ -980,6 +1454,62 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
            </div>
         </div>
       )}
+
+      {/* Impressão de cadastro — componente dedicado */}
+      {showPrintModal && (
+        <ImprimeCadMembro
+          members={members}
+          onClose={() => setShowPrintModal(false)}
+          preSelected={selectedMemberIds.length > 0 ? members.filter(m => selectedMemberIds.includes(m.id)) : undefined}
+        />
+      )}
+
+      {/* Modal LGPD */}
+      {showLGPDModal && (
+        <LGPDConsentModal
+          isOpen={showLGPDModal}
+          onClose={() => setShowLGPDModal(false)}
+          onConsent={handleLGPDConsent}
+          userType="MEMBER"
+          userId={formData.id || ''}
+          userName={formData.name || ''}
+          currentConsent={memberConsents.find(c => c.userId === formData.id)}
+          currentPolicy={currentPolicy || undefined}
+        />
+      )}
+
+      {/* Termo LGPD imprimível */}
+      {showTermoLGPD && editingMember && (
+        <TermoAdesaoLGPD
+          nome={formData.name || editingMember.name || ''}
+          cpf={formData.cpf || editingMember.cpf}
+          rg={formData.rg || editingMember.rg}
+          endereco={
+            formData.address?.street
+              ? `${formData.address.street}, ${formData.address.number || 's/n'} – ${formData.address.neighborhood || ''} – ${formData.address.city || ''}/${formData.address.state || ''}`
+              : undefined
+          }
+          telefone={formData.phone || formData.whatsapp || editingMember.phone}
+          igrejaNome={currentUnitData?.name}
+          igrejaCnpj={currentUnitData?.cnpj}
+          igrejaEndereco={
+            currentUnitData?.address 
+              ? `${currentUnitData.address} - ${currentUnitData.city}/${currentUnitData.state}`
+              : undefined
+          }
+          igrejaContato={user?.name || ''}
+          consentimentos={{
+            dataProcessing: formData.lgpdConsent?.dataProcessing,
+            communication: formData.lgpdConsent?.communication,
+            marketing: formData.lgpdConsent?.marketing,
+            financial: formData.lgpdConsent?.financial,
+            policyVersion: formData.lgpdConsent?.policyVersion || currentPolicy?.version,
+          }}
+          onClose={() => setShowTermoLGPD(false)}
+        />
+      )}
+
+      {/* VisualizadorLGPD removido em favor da abertura em nova aba */}
     </div>
   );
 };

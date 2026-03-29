@@ -30,6 +30,8 @@
  * - Você pode mover dinheiro entre elas (transferências)
  */
 
+import { db } from '../src/services/firebaseService';
+import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { dbService } from './databaseService';
 import { FinancialAccount, Transaction } from '../types';
 
@@ -592,6 +594,51 @@ export class AccountService {
       if (!account.minimumBalance) return false;  // Não tem mínimo definido
       return account.currentBalance < account.minimumBalance;
     });
+  }
+
+  /**
+   * EXCLUIR CONTA
+   * ============
+   * 
+   * O QUE FAZ?
+   * Remove uma conta do sistema
+   * 
+   * PARÂMETRO:
+   * - accountId: string → ID da conta para excluir
+   * 
+   * RETORNO:
+   * Promise<void> → Remove do banco de dados
+   */
+  async deleteAccount(accountId: string): Promise<void> {
+    try {
+      // Remove do Firebase se disponível
+      if (db) {
+        try {
+          const docRef = doc(db, 'accounts', accountId);
+          await deleteDoc(docRef);
+        } catch (error) {
+          console.warn("❌ Erro ao remover do Firebase:", error);
+        }
+      }
+
+      // Remove do IndexedDB/localStorage via dbService
+      try {
+        const accounts = await dbService.getAccounts();
+        const updatedAccounts = accounts.filter((a: any) => a.id !== accountId);
+        
+        // Salva as contas atualizadas
+        for (const account of updatedAccounts) {
+          await dbService.saveAccount(account);
+        }
+      } catch (error) {
+        console.warn("❌ Erro ao remover do IndexedDB:", error);
+      }
+
+      console.log('✅ Conta excluída com sucesso:', accountId);
+    } catch (error) {
+      console.error('❌ Erro ao excluir conta:', error);
+      throw error;
+    }
   }
 }
 

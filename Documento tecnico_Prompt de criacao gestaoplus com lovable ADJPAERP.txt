@@ -1,0 +1,402 @@
+🏛️ Prompt de Criação: GestãoPlus - Sistema Integrado de RH e Gestão Eclesiástica
+
+Visão Geral do Projeto
+Crie uma aplicação web SaaS chamada GestãoPlus - um sistema integrado de gestão para Departamento Pessoal (DP/RH) e Administração Eclesiástica, projetado para o mercado brasileiro. O sistema deve ser multi-empresa/multi-igreja, com controle de acesso baseado em perfis, conformidade com LGPD e integração com eSocial.
+
+Stack Tecnológico:
+React 18+ com TypeScript
+Vite como bundler
+Tailwind CSS para estilização
+shadcn/ui como biblioteca de componentes
+Lucide React para ícones
+React Router DOM para navegação
+React Hook Form + Zod para formulários
+Recharts para gráficos
+date-fns para manipulação de datas
+Lovable Cloud (Supabase) para backend
+
+🎨 Design System
+
+Paleta de Cores
+Primária: Azul corporativo profissional
+Secundária/Gold: Dourado para elementos relacionados à igreja
+Background: Tons neutros claros/escuros (suporte a tema claro/escuro)
+Semânticas: Success (verde), Warning (amarelo), Destructive (vermelho)
+
+Tipografia
+Display: Playfair Display (títulos e branding)
+Body: Inter (textos e interface)
+Layout
+Sidebar fixa à esquerda (256px) com navegação hierárquica
+Header sticky com busca global e notificações
+Cards elevados com sombras suaves
+Responsivo com menu hambúrguer em mobile
+
+🔐 Autenticação e Perfis de Acesso
+
+Tela de Login
+Campos: Email e Senha
+Opções: "Lembrar-me" e "Esqueci minha senha"
+Branding com logo e nome do sistema
+Perfis de Acesso (RBAC)
+Administrador Geral - Acesso total
+RH/DP - Módulo de pessoal completo
+Financeiro - Financeiro igreja + folha de pagamento
+Secretaria - Membros + eventos + comunicação
+Pastor - Vida cristã + membros + eventos
+Usuário Somente Leitura - Visualização sem edição
+
+📊 Dashboard Principal
+
+Cards Estatísticos
+Total de Funcionários (com variação mensal)
+Membros Ativos da Igreja
+Folha de Pagamento do Mês
+Próximos Eventos
+Ações Rápidas
+Novo Funcionário
+Novo Membro
+Lançar Dízimo
+Gerar Relatório
+Agendar Evento
+Ver Funcionários
+Atividades Recentes
+Lista cronológica das últimas ações no sistema
+Ícones coloridos por tipo de atividade
+
+👥 Módulo Departamento Pessoal (DP/RH)
+
+1. Lista de Funcionários
+Filtros:
+Busca por nome/CPF/matrícula
+Status: Ativo, Férias, Afastado, Desligado
+Tipo de contrato: CLT, PJ, Estágio, Temporário
+Departamento/Setor
+Ações em Lote:
+
+Impressão de Crachás (padrão CR-80: 5,4cm x 8,6cm)
+Exportar lista
+Tabela com colunas:
+
+Foto, Nome, Cargo, Departamento, Admissão, Status, Ações
+2. Formulário de Funcionário (Multi-abas)
+
+Aba 1: Dados Pessoais
+Identificação: Nome completo, CPF, RG (número, órgão, UF, emissão), Data nascimento, Sexo, Estado civil, Nacionalidade, Naturalidade (cidade/UF)
+Contato: Email, Telefone, Celular
+Endereço: CEP (com busca automática), Logradouro, Número, Complemento, Bairro, Cidade, UF
+Dados Adicionais: Escolaridade, Raça/Cor (conforme IBGE), Pessoa com deficiência (tipo), Tipo sanguíneo, Nome da mãe, Nome do pai
+
+Aba 2: Contrato de Trabalho
+Dados do Contrato: Matrícula, Data admissão, Tipo contrato (CLT/PJ/Estágio/Temporário), Cargo, CBO, Departamento/Setor, Centro de custo, Local de trabalho
+Regime: Categoria eSocial, Regime previdenciário, Natureza da atividade, Indicador de admissão
+Sindical: Sindicato, Contribuição sindical
+Término: Data término (contratos temporários), Motivo desligamento
+
+Aba 3: Jornada de Trabalho
+Horário: Tipo jornada (fixa/flexível/escala), Horas semanais, Entrada, Saída, Intervalo
+Escala: Dias da semana trabalhados
+Configurações: Permite hora extra, Adicional noturno, Periculosidade, Insalubridade (grau)
+
+Aba 4: Banco de Horas
+Configuração: Banco de horas ativo (sim/não), Saldo atual, Data início
+Histórico: Tabela com data, tipo (crédito/débito), horas, motivo, saldo resultante
+Lançamentos: Formulário para adicionar créditos/débitos
+
+Aba 5: Documentos
+CTPS: Número, Série, UF, Data emissão
+PIS/PASEP: Número, Data cadastro
+CNH: Número, Categoria, Validade
+Título de Eleitor: Número, Zona, Seção
+Certificado Reservista: Número, Categoria
+Upload de Documentos: Área para anexar PDFs/imagens
+
+Aba 6: Benefícios
+Vale Transporte: Ativo, Valor diário, Linhas utilizadas
+Vale Alimentação/Refeição: Tipo, Valor mensal, Desconto em folha
+Plano de Saúde: Operadora, Tipo plano, Valor, Dependentes inclusos
+Plano Odontológico: Operadora, Valor
+Seguro de Vida: Valor cobertura, Beneficiários
+Outros: Auxílio creche, Auxílio educação, Gympass
+
+Aba 7: Dados eSocial
+Classificação: Categoria trabalhador, Regime previdenciário, Natureza atividade
+Vínculos Anteriores: Histórico de empresas anteriores
+Observações: Campo livre para anotações eSocial
+
+Aba 8: Dependentes
+Para cada dependente:
+Nome completo, CPF, Data nascimento, Grau de parentesco
+Deduz IRRF (sim/não)
+Salário família (sim/não)
+Plano de saúde (sim/não)
+Possui deficiência (tipo)
+
+3. Sistema de Crachás
+Modal de Impressão
+Seleção múltipla de funcionários
+Campos configuráveis: Nome da empresa, Validade
+Preview em tempo real
+Layout do Crachá (CR-80)
+
+Frente:
+Logo da empresa (topo)
+Foto do funcionário (área central)
+Nome completo
+Cargo
+Matrícula
+QR Code com dados
+
+Verso:
+Número de registro
+Data de admissão
+Validade
+Tipo sanguíneo
+Telefone de emergência
+Texto institucional
+Impressão
+Folha A4 paisagem com 6 crachás (2x3)
+Frentes na primeira página, versos na segunda
+Margens e espaçamentos para corte
+
+4. Remuneração
+Salário base
+Adicionais fixos (periculosidade, insalubridade, função)
+Histórico salarial
+
+5. Folha de Pagamento
+Cálculo Individual
+Proventos:
+
+Salário base
+Horas extras 50% e 100%
+Adicional noturno
+Descanso Semanal Remunerado (DSR)
+Periculosidade (30%)
+Insalubridade (10/20/40%)
+Salário família
+Outros adicionais
+
+Descontos:
+INSS (cálculo progressivo por faixas)
+IRRF (com dedução por dependentes)
+Vale transporte (máximo 6%)
+Vale alimentação/refeição
+Plano de saúde
+Outros descontos
+
+Encargos Patronais:
+INSS Patronal (20% + RAT)
+FGTS (8%)
+Terceiros (Sistema S)
+Provisões de férias e 13º
+Resumo da Folha
+Total de proventos, descontos, líquido
+Total de encargos patronais
+Custo total do funcionário
+
+6. Gestão de Afastamentos
+
+Tipos:
+Férias (com cálculo de 1/3)
+Licença médica (com CID)
+Licença maternidade/paternidade
+Acidente de trabalho
+Licença casamento (gala)
+Licença óbito (nojo)
+Serviço militar
+Licença não remunerada
+
+Campos por afastamento:
+Funcionário, Tipo, Data início, Data fim (previsão)
+Código CID-10, Nome do médico, CRM, Número do atestado
+Observações, Documentos anexos
+
+7. Encargos Sociais
+Dashboard com totais de INSS, FGTS, IRRF
+Guias para recolhimento
+Histórico mensal
+
+⛪ Módulo Igreja
+
+1. Lista de Membros
+Filtros:
+Busca por nome
+Status: Ativo, Inativo, Congregado, Visitante
+Ministério/Departamento
+Cargo eclesiástico
+
+2. Formulário de Membro
+Dados Pessoais
+Nome, CPF, RG, Data nascimento, Sexo, Estado civil
+Endereço completo, Telefones, Email
+Vida Cristã
+Data de conversão, Local de conversão
+Data de batismo nas águas, Igreja do batismo
+Data de batismo no Espírito Santo
+Igreja de origem, Data de chegada na igreja atual
+Curso de discipulado (data conclusão)
+Participação
+Ministérios (múltipla escolha): Louvor, Infantil, Jovens, Casais, Intercessão, Diaconia, etc.
+Cargo eclesiástico: Membro, Obreiro, Diácono, Presbítero, Evangelista, Pastor
+Células/Pequenos grupos
+Observações
+
+3. Financeiro da Igreja
+Lançamentos
+Tipo: Dízimo, Oferta, Campanha, Doação, Outro
+Dados: Membro (opcional), Valor, Data, Forma de pagamento, Observação
+Despesas
+Categorias: Manutenção, Utilidades, Salários, Missões, Eventos, Material, Outros
+Dados: Descrição, Valor, Data, Fornecedor, Nota fiscal
+Relatórios
+Entradas x Saídas por período
+Dízimos por membro
+Campanhas e metas
+Gráficos de evolução
+
+4. Eventos e Agenda
+Tipos de Evento
+Culto regular, Culto especial, Reunião de oração
+Encontro de jovens, casais, mulheres, homens
+Conferência, Congresso, Retiro
+Batismo, Santa Ceia
+Campos do Evento
+Título, Tipo, Data/hora início, Data/hora fim
+Local, Descrição, Responsável
+Recorrência (único, semanal, mensal)
+Escala de Voluntários
+Ministérios escalados por evento
+Nomes dos voluntários por função
+
+5. Comunicação
+Envio de avisos por email/SMS
+Mural de comunicados
+Aniversariantes do mês
+
+🏢 Módulo Administração
+
+1. Obreiros e Pastores
+Cadastro específico com dados ministeriais
+Histórico de ordenação
+Igrejas onde serviu
+
+2. Patrimônio
+Cadastro de Bens: Descrição, Categoria, Data aquisição, Valor, Localização, Estado de conservação, Número de patrimônio
+Categorias: Imóveis, Veículos, Equipamentos de som, Instrumentos musicais, Móveis, Informática
+Controle de Depreciação: Valor atual, Taxa anual
+Manutenções: Histórico de reparos e custos
+
+3. Gestão de Usuários
+Lista de usuários do sistema
+Atribuição de perfis
+Ativação/desativação
+Reset de senha
+Log de acessos
+
+4. Relatórios Gerenciais
+Relatório de funcionários
+Relatório de folha de pagamento
+Relatório de membros
+Relatório financeiro
+Exportação em PDF/Excel
+
+⚙️ Configurações do Sistema
+
+1. Dados da Empresa/Igreja
+Razão social, CNPJ, Inscrição estadual/municipal
+Endereço completo
+Logo para documentos e crachás
+Dados bancários
+
+2. Tabelas Tributárias
+INSS (cálculo progressivo):
+Faixa	Limite	Alíquota
+1ª	R$ 1.412,00	7,5%
+2ª	R$ 2.666,68	9,0%
+3ª	R$ 4.000,03	12,0%
+4ª	R$ 7.786,02	14,0%
+
+IRRF:
+Faixa	Limite	Alíquota	Dedução
+Isento	R$ 2.259,20	0%	R$ 0
+2ª	R$ 2.826,65	7,5%	R$ 169,44
+3ª	R$ 3.751,05	15%	R$ 381,44
+4ª	R$ 4.664,68	22,5%	R$ 662,77
+5ª	Acima	27,5%	R$ 896,00
+Outras configurações:
+
+Dedução por dependente IRRF: R$ 189,59
+FGTS: 8%
+INSS Patronal: 20% + RAT (1-3%)
+Limite vale transporte: 6%
+
+3. Segurança
+Política de senhas
+Autenticação em dois fatores (2FA)
+Tempo de sessão
+Logs de auditoria
+
+4. Integrações
+Configuração de SMTP para emails
+Webhook para integrações externas
+API para sistemas terceiros
+
+5. Aparência
+Tema claro/escuro
+Cores personalizadas
+Logo customizada
+
+📱 Requisitos Técnicos
+
+Performance
+Lazy loading de rotas
+Paginação em listas grandes
+Cache de dados frequentes
+Otimização de imagens
+Responsividade
+Mobile-first approach
+Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
+Menu colapsável em mobile
+Tabelas com scroll horizontal em telas pequenas
+Acessibilidade
+Labels em todos os campos
+Contraste adequado
+Navegação por teclado
+Aria labels em elementos interativos
+Segurança
+Validação client-side e server-side
+Sanitização de inputs
+Proteção contra XSS/CSRF
+Criptografia de dados sensíveis
+RLS (Row Level Security) no banco
+
+🗃️ Estrutura do Banco de Dados
+
+Tabelas Principais
+users - Usuários do sistema
+companies - Empresas/Igrejas
+employees - Funcionários
+employee_dependents - Dependentes
+employee_documents - Documentos anexos
+employee_benefits - Benefícios
+employee_leaves - Afastamentos
+payroll - Folha de pagamento
+payroll_items - Itens da folha
+members - Membros da igreja
+member_ministries - Ministérios do membro
+financial_entries - Lançamentos financeiros
+events - Eventos
+event_volunteers - Voluntários dos eventos
+assets - Patrimônio
+audit_logs - Logs de auditoria
+
+🚀 Instruções de Implementação
+Iniciar pelo Design System - Configurar cores, tipografia e componentes base
+Estrutura de Layout - Sidebar, Header, e sistema de rotas
+Autenticação - Login, perfis, proteção de rotas
+Módulo DP/RH - Core do sistema, implementar primeiro
+Módulo Igreja - Após estabilizar o RH
+Administração - Patrimônio, usuários, relatórios
+Configurações - Tabelas tributárias, integrações
+Refinamentos - Performance, acessibilidade, testes

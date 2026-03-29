@@ -310,7 +310,7 @@ export const reportsService = {
   }> {
     const kpis = await analyticsService.getKPIsPatrimonio(unitId);
     
-    const assetsRef = collection(this.db, 'patrimonio/assets');
+    const assetsRef = collection(this.db, 'assets');
     const q = query(assetsRef, where('unitId', '==', unitId));
     const snapshot = await getDocs(q);
     

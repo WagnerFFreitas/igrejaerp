@@ -1,0 +1,110 @@
+Dados do empregado:
+
+Nome completo: João Silva
+
+CPF: 123.456.789-00
+
+RG: 98765432-1 SP/SP
+
+Data de nascimento: 15/05/1990
+
+Nacionalidade: Brasileiro
+
+Estado civil: Solteiro
+
+Endereço: Rua das Flores, 123 - Bairro Feliz - Cidade Alegre
+
+Telefone: (11) 1234-5678
+
+E-mail: joao.silva@email.com
+
+Dados do cargo/função:
+
+Cargo/função: Analista de marketing
+
+Data de admissão: 01/09/2023
+
+Tipo de contrato: Indeterminado
+
+Salário: R$ 3.000,00 (três mil reais)
+
+Jornada de trabalho: 44 horas semanais
+
+Outras informações:
+
+Número do PIS/PASEP: 12345678900
+
+Beneficiário de plano de saúde: Sim
+
+Beneficiário de plano de previdência privada: Não
+
+Benefícios extras: vale-alimentação, vale-transporte
+
+Dados bancários para pagamento:
+
+Banco: Banco do Brasil
+
+Agência: 1234-5
+
+Conta Corrente: 5678-9
+
+
+
+
+
+
+Esses são os dados essenciais para identificar e contatar o colaborador, incluindo:
+
+Nome completo: utilizado para identificação formal e legal;
+Data de nascimento: essencial para registros legais, aposentadoria e benefícios;
+Número de CPF e RG: documentos de identificação necessários para o cadastro trabalhista;
+Estado civil e dependentes: informações para benefícios, como plano de saúde ou seguro de vida;
+Endereço residencial e contato: inclui endereço completo, telefone e e-mail.
+2. Informações bancárias
+Essas informações são essenciais para garantir que o pagamento dos salários seja processado corretamente:
+
+Banco e agência: informações para processar a folha de pagamento.
+Número da conta bancária: para depósito do salário.
+3. Documentos relacionados ao trabalho
+A empresa precisa de documentos que comprovem a elegibilidade para trabalhar e que garantam a conformidade com a legislação:
+
+Carteira de Trabalho e Previdência Social (CTPS): A CTPS é obrigatória para registrar o histórico profissional do colaborador;
+PIS/PASEP: número utilizado para o cadastro do colaborador em programas de benefícios, como FGTS e seguro-desemprego;
+Título de eleitor: em alguns casos, exigido como parte da documentação completa do colaborador.
+4. Histórico profissional e acadêmico
+Coletar informações sobre a experiência profissional e a formação acadêmica do colaborador é crucial para o RH, especialmente no momento de processos seletivos e promoções:
+
+Experiência profissional anterior: registro dos últimos empregos, cargos, e tempo de serviço;
+Formação acadêmica: nível de escolaridade, cursos técnicos ou superiores;
+Certificações e treinamentos: habilidades adicionais e certificações obtidas que sejam relevantes para a função atual.
+5. Informações trabalhistas
+Essas informações são necessárias para formalizar o vínculo empregatício e assegurar a conformidade com as leis trabalhistas:
+
+Data de admissão e cargo: Dados relacionados ao início do vínculo com a empresa e o cargo que será ocupado;
+Salário e benefícios: Informações sobre o valor da remuneração e os benefícios que o colaborador tem direito;
+Jornada de trabalho e turno: Definição das horas de trabalho e da carga horária semanal.
+6. Informações sobre benefícios
+O cadastro individual também deve incluir os benefícios corporativos oferecidos ao colaborador:
+
+Vale-transporte, vale-alimentação e refeição: Informações para a concessão e cálculo de benefícios que impactam diretamente o dia a dia do colaborador;
+Plano de saúde e odontológico: Detalhes sobre a adesão aos planos, quem são os dependentes e como o benefício será custeado (se compartilhado entre empresa e colaborador ou não).
+7. Dados para a segurança do trabalho
+As informações relacionadas à saúde e segurança do colaborador também são fundamentais:
+
+Exames admissionais e periódicos: Registro de exames exigidos por lei, garantindo que o colaborador esteja apto para desempenhar suas funções;
+Perfil Profissiográfico Previdenciário (PPP): Documento obrigatório para trabalhadores em atividades de risco.
+8. Acordos e contratos
+O registro do colaborador deve incluir também documentos que oficializam a relação de trabalho:
+
+Contrato de trabalho: Documento que formaliza os direitos e deveres de ambas as partes;
+Termos de confidencialidade e outros acordos: Documentos adicionais que podem ser exigidos em determinadas funções ou indústrias.
+9. Conformidade com a LGPD
+Com a implementação da Lei Geral de Proteção de Dados, é fundamental que o cadastro de funcionários também inclua consentimentos explícitos para a coleta, uso e armazenamento dos dados pessoais:
+
+Autorização para tratamento de dados: Documento que formaliza o consentimento do colaborador quanto ao uso de seus dados pela empresa;
+Política de privacidade: Documento que descreve como as informações serão protegidas e usadas pela empresa.
+10. Registros de avaliações e feedbacks
+Também é importante manter um registro contínuo de avaliações de desempenho e feedbacks:
+
+Histórico de avaliações de desempenho: Registro de avaliações periódicas de desempenho, utilizado para promoções e desenvolvimento de carreira.
+Planos de desenvolvimento individual (PDI): Documentos que traçam o planejamento de crescimento e desenvolvimento do colaborador dentro da empresa.

@@ -1,0 +1,25 @@
+Sistema IgrejaERP
+
+1-Mudar o nome DashBoard Executivo para Tela Inicial;
+2-Verificar os ranking das avaliações dos funcionários na tela inicial se não seria melhor ficar na opção Recursos Humanos;
+3-O botão imprimir cadastro dos membros ao abrir o painel de impressão a folha esta branca;
+4-O botão imprimir cadastro dos membros antes de imprimir deve pedir a faixa que ira imprimir ou seja inicio e fim (exemplo M01 a M05, ou seja deve imprimir o M01, M02, M03, M04 e M05)
+5-O botão Relatório da opção financeiro ao abrir, a opção imprimir abre o painel de impressão, mas com a folha em branco;
+6-O botão imprimir cadastro dos funcionário ao abrir o painel de impressão a folha esta branca;
+7-O botão imprimir cadastro dos funcionário antes de imprimir deve pedir a faixa que ira imprimir ou seja inicio e fim (exemplo F01 a F05, ou seja deve imprimir o F01, F02, F03, F04 e F05);
+8-A opção de cadastro de funcionário não tem o recurso de filtragem semelhante a da opção de cadastro de membros;
+9-a opção Afastamentos & Licenças não tem a opção de imprimir o relatório;
+10-a Afastamentos & Licenças não tem a opção de filtragem avançada;
+11-O botão processar mês atual não esta abrindo o painel de impressão após se fornecido a faixa que será impressa;
+12-Usar o código da opção agenda do sistema web que esta na pasta \meu;
+13-a opção relatório o botão imprimir ao ser acionado abre o painel da impressora porem coma folha em branco;
+14-adicionar o recurso da ia do sistema web no local com os arquivos na pasta \meu;
+15-O portal do membro esta funcionando?
+16-Verificar se existe a tela de configurar permissões pelo administrador do sistema e o desenvolvedor;
+16-Somente o desenvolvedor tem acesso a todos recursos, sem restrição, principalmente as configurações das alíquotas fiscais do governo na opção configuração para quando houve uma atualização de alíquota valores de desconto seja feita a atualização por ele;
+17-O usuário administrador tem acesso aos recurso e opções não sensíveis, como as alíquotas fiscal, como INSS, FGTS, percentual de desconto do vale transporte, percentual de desconto do vale refeição e alimentação e etc.
+18-Ajustar o tamanho da tela de login, pois a parte e baixo esta sendo cortada.
+
+
+
+

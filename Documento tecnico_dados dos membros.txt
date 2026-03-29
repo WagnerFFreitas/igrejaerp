@@ -1,0 +1,369 @@
+Dados Pessoais
+Nome Completo
+
+CPF
+
+RG
+
+Data de Nascimento
+
+Sexo (Masculino / Feminino)
+
+Estado Civil (Solteiro / Casado / ...)
+
+Tipo Sanguíneo (O+, O-, ...)
+
+Nacionalidade (Brasileiro(a), ...)
+
+Naturalidade (Cidade/UF)
+
+Escolaridade (Fundamental completo, ...)
+
+Raça/Cor (Branco, Negro, Pardo, ...)
+
+Nome completo da mãe
+
+Nome completo do pai
+
+E-mail pessoal
+
+E-mail Corporativo
+
+Telefone
+
+Celular (com WhatsApp)
+
+Contato de Emergência: Nome - Telefone
+
+Vínculo com Membro (ID)
+
+ID do Membro
+
+Pessoa com Deficiência (Sim / Não)
+
+Tipo de Deficiência (Motora, Auditiva, ...)
+
+Observações sobre deficiência
+
+Endereço Residencial
+CEP
+
+Logradouro
+
+Número
+
+Complemento
+
+Bairro
+
+Cidade
+
+Estado
+
+País
+
+Documentos Pessoais
+CTPS (Número)
+
+CTPS (Série)
+
+CTPS (UF)
+
+CTPS Data Emissão
+
+PIS/PASEP
+
+PIS Data Cadastro
+
+RG Órgão Emissor
+
+RG Data Emissão
+
+Título de Eleitor
+
+Zona Eleitoral
+
+Seção Eleitoral
+
+Certificado de Reservista
+
+Número do certificado
+
+Categoria Reservista
+
+CNH Número
+
+CNH Categoria
+
+CNH Validade
+
+Upload de Documentos (PDF, JPG, PNG até 10MB)
+
+Contrato
+Matrícula
+
+Tipo de Contrato (CLT, ...)
+
+Data de Admissão
+
+Data Término Contrato
+
+Exame Admissional
+
+Cargo do funcionário
+
+Função desempenhada
+
+Código CBO
+
+Departamento (Serviços gerais, Pastor, ...)
+
+Centro de custo
+
+Local de Trabalho (Filial/Unidade)
+
+Nome do sindicato
+
+Convenção Coletiva
+
+Ref. da convenção
+
+Remuneração
+
+Salário Base
+
+Tipo de Salário (mensal, quinzenal, ...)
+
+Forma de Pagamento (pix, cheque, dinheiro)
+
+Dia do Pagamento (5, 10, 15, ...)
+
+Regime de Trabalho (presencial, home office, ...)
+
+Primeiro Emprego
+
+Optante FGTS
+
+Insalubridade
+
+Grau Insalubridade
+
+Periculosidade (30%)
+
+Adicional Noturno
+
+Jornada de Trabalho
+Carga Horária Semanal (20, 30, 44, ...)
+
+Escala de Trabalho (5x2, 6x1, ...)
+
+Horário de Entrada
+
+Horário de Saída
+
+Início Intervalo
+
+Fim Intervalo
+
+Duração Intervalo (min)
+
+Segunda a Sexta (Entrada, Saída, Intervalo)
+
+Sábado (se aplicável)
+
+Trabalha em feriados
+
+Controle de Ponto
+
+Tipo de Registro de Ponto
+
+Tolerância (minutos)
+
+Código do Horário
+
+Utiliza Banco de Horas
+
+Controla Intervalo
+
+Horas Extras Autorizadas
+
+Banco de Horas
+Resumo do Banco de Horas
+
+Crédito Total
+
+Débito Total
+
+Saldo Atual
+
+Período de Apuração
+
+Data Início do Acordo
+
+Data Fim do Acordo
+
+Limite de Saldo (horas)
+
+Período de Compensação
+
+Multiplicador HE Diurna
+
+Multiplicador HE Noturna
+
+Histórico de Lançamentos (Data, Tipo, Horas, Motivo, Status)
+
+Dados Bancários para Pagamento
+Banco
+
+Código do Banco
+
+Agência
+
+Dígito Agência
+
+Conta
+
+Dígito Conta
+
+Tipo de Conta
+
+Titular
+
+Chave PIX
+
+Tipo Chave PIX
+
+Benefícios
+Vale-Transporte
+
+Optante
+
+Valor Diário
+
+Quantidade de Vales/Dia
+
+Linhas/Trajeto
+
+Vale-Alimentação
+
+Valor Mensal
+
+Vale-Refeição
+
+Valor Diário
+
+Operadora VA/VR
+
+% Desconto Funcionário
+
+Plano de Saúde
+
+Possui
+
+Operadora
+
+Tipo de Plano
+
+Valor Mensal
+
+% Desconto Funcionário
+
+Nº Carteirinha
+
+Inclui Dependentes
+
+Plano Odontológico
+
+Possui
+
+Operadora
+
+Valor Mensal
+
+% Desconto Funcionário
+
+Seguro de Vida
+
+Valor Cobertura
+
+Auxílio Creche
+
+Valor
+
+Auxílio Educação
+
+Valor
+
+Gympass/Wellhub
+
+Plano
+
+eSocial
+Categoria do Trabalhador
+
+Matrícula eSocial
+
+Natureza da Atividade
+
+Tipo Regime Previdenciário
+
+Tipo Regime Trabalhista
+
+Indicativo de Admissão
+
+Tipo de Jornada eSocial
+
+Descrição da Jornada
+
+Contrato Tempo Parcial
+
+Teletrabalho/Home Office
+
+Cláusula Asseguratória
+
+Sucessão Trabalhista / Transferência
+
+Tipo de Admissão
+
+CNPJ Empresa Anterior
+
+Matrícula Anterior
+
+Data Admissão Origem
+
+Dependentes
+Nome Completo
+
+CPF
+
+RG
+
+PIS
+
+CTPS
+
+Data de Nascimento
+
+Tipo Sanguíneo
+
+E-mail Corporativo
+
+Contato de Emergência
+
+Vínculo com Membro (ID)
+
+ID do Membro
+
+CEP
+
+Logradouro
+
+Número
+
+Bairro
+
+Cidade
+
+Estado
+
+Complemento

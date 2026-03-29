@@ -1,7 +1,7 @@
 // Serviço de persistência local usando IndexedDB
 export class IndexedDBService {
   private static dbName = 'ADJPA_ERP_DB';
-  private static version = 5; // Atualizado para versão 5 para garantir criação de todas as tabelas
+  private static version = 6; // Atualizado para versão 6 para incluir lgpd_data
   private static db: IDBDatabase | null = null;
   private static initPromise: Promise<void> | null = null;
 
@@ -15,27 +15,31 @@ export class IndexedDBService {
         reject(new Error('Tempo limite excedido ao abrir o IndexedDB. Verifique se o navegador está bloqueando o acesso ao banco de dados.'));
       }, 10000);
 
-      // Bump version to 5 to trigger upgrade and ensure all stores are created
-      IndexedDBService.version = 5;
       const request = indexedDB.open(IndexedDBService.dbName, IndexedDBService.version);
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
         console.log(`📝 Atualizando IndexedDB para versão ${IndexedDBService.version}...`);
         
-        // Criar stores
-        const stores = [
+        // Criar stores padrão (keyPath: 'id')
+        const standardStores = [
           'members', 'transactions', 'accounts', 'employees', 
           'assets', 'leaves', 'system_users', 'audit_logs', 
           'system_config', 'payroll'
         ];
 
-        stores.forEach(storeName => {
+        standardStores.forEach(storeName => {
           if (!db.objectStoreNames.contains(storeName)) {
             db.createObjectStore(storeName, { keyPath: 'id' });
             console.log(`📁 Store criado: ${storeName}`);
           }
         });
+
+        // Criar stores especiais
+        if (!db.objectStoreNames.contains('lgpd_data')) {
+          db.createObjectStore('lgpd_data', { keyPath: 'key' });
+          console.log('📁 Store criado: lgpd_data');
+        }
         
         console.log('📁 IndexedDB stores criados/atualizados');
       };

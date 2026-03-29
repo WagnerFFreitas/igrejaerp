@@ -15,7 +15,118 @@ export const MOCK_MEMBERS: Member[] = [
   { id: 'm6', matricula: 'M06/2026', name: 'Juliana Lima', email: 'juliana.lima@email.com', phone: '(11) 95544-3322', birthDate: '1992-03-30', membershipDate: '2021-06-25', status: 'ACTIVE', role: 'MEMBER', address: { zipCode: '00000-000', street: 'Av. Central', number: '987', neighborhood: 'Centro', city: 'São Paulo', state: 'SP' }, unitId: 'u-sede', gender: 'F', maritalStatus: 'SINGLE', isTithable: false, isRegularGiver: false, participatesCampaigns: false, contributions: [], avatar: '', cpf: '666.666.666-66', rg: '66666666' }
 ];
 
-export const MOCK_ACCOUNTS: FinancialAccount[] = [];
+export const MOCK_ACCOUNTS: FinancialAccount[] = [
+  {
+    id: 'a1',
+    name: 'Caixa Principal',
+    type: 'CASH',
+    currentBalance: 5000,
+    minimumBalance: 1000,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a2',
+    name: 'Banco do Brasil - Conta Corrente',
+    type: 'BANK',
+    currentBalance: 25000,
+    minimumBalance: 5000,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a3',
+    name: 'Itaú - Conta Corrente',
+    type: 'BANK',
+    currentBalance: 18000,
+    minimumBalance: 3000,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a4',
+    name: 'Caixa - Unidade Leste',
+    type: 'CASH',
+    currentBalance: 2000,
+    minimumBalance: 500,
+    status: 'ACTIVE',
+    unitId: 'u-filial1',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a5',
+    name: 'Caixa Econômica Federal - Poupança',
+    type: 'SAVINGS',
+    currentBalance: 35000,
+    minimumBalance: 10000,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a6',
+    name: 'Bradesco - Conta Corrente',
+    type: 'BANK',
+    currentBalance: 12000,
+    minimumBalance: 2000,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a7',
+    name: 'Santander - Conta Corrente',
+    type: 'BANK',
+    currentBalance: 15000,
+    minimumBalance: 2500,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a8',
+    name: 'Banco Inter - Conta Digital',
+    type: 'BANK',
+    currentBalance: 8000,
+    minimumBalance: 1000,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a9',
+    name: 'NuBank - Conta Corrente',
+    type: 'BANK',
+    currentBalance: 9000,
+    minimumBalance: 1500,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  },
+  {
+    id: 'a10',
+    name: 'XP Investimentos - CDB',
+    type: 'INVESTMENT',
+    currentBalance: 45000,
+    minimumBalance: 0,
+    status: 'ACTIVE',
+    unitId: 'u-sede',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-03-26T00:00:00Z'
+  }
+];
 export const MOCK_TRANSACTIONS: Transaction[] = [
   { id: 't1', description: 'Dízimo: João Silva', amount: 1500, date: '2026-03-01', competencyDate: '2026-03-01', type: 'INCOME', category: 'Dizimo', operationNature: 'nat6', costCenter: 'cc1', projectId: 'proj1', accountId: 'a1', status: 'PAID', unitId: 'u-sede', paymentMethod: 'PIX', memberId: 'm1' },
   { id: 't2', description: 'Dízimo: Maria Oliveira', amount: 2000, date: '2026-03-05', competencyDate: '2026-03-05', type: 'INCOME', category: 'Dizimo', operationNature: 'nat6', costCenter: 'cc1', projectId: 'proj1', accountId: 'a1', status: 'PAID', unitId: 'u-sede', paymentMethod: 'PIX', memberId: 'm2' },

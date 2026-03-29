@@ -1,6 +1,6 @@
 
-import { Member, Payroll, Transaction, FinancialAccount, Unit, Asset, EmployeeLeave } from '../types';
-import { MOCK_UNITS, MOCK_MEMBERS, MOCK_TRANSACTIONS, MOCK_ACCOUNTS } from '../constants';
+import { Member, Payroll, Transaction, FinancialAccount, Unit, Asset, EmployeeLeave, ChurchEvent } from '../types';
+import { MOCK_UNITS, MOCK_MEMBERS, MOCK_TRANSACTIONS, MOCK_ACCOUNTS, MOCK_EVENTS } from '../constants';
 import { db } from '../src/services/firebaseService';
 import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import IndexedDBService from '../src/services/indexedDBService';
@@ -76,7 +76,14 @@ export class DatabaseService {
     try {
       const q = query(collection(db, 'units'));
       const querySnapshot = await this.withTimeout(getDocs(q), 5000);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
+      const tempUnits = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
+      
+      if (tempUnits.length > 0) {
+        return tempUnits;
+      } else {
+        console.warn("ADJPA ERP: Firebase configurado mas coleção units vazia. Usando dados MOCK.");
+        return MOCK_UNITS;
+      }
     } catch (error) {
       console.warn("Erro ao carregar unidades, usando dados de demonstração:", error);
       return MOCK_UNITS;
@@ -695,6 +702,65 @@ export class DatabaseService {
     } catch (error) {
       console.error("Erro ao buscar ativos no Firebase:", error);
       return [];
+    }
+  }
+
+  // Eventos
+  async getEvents(unitId?: string): Promise<ChurchEvent[]> {
+    if (!this.isFirebaseConfigured()) {
+      return MOCK_EVENTS;
+    }
+    try {
+      const q = unitId 
+        ? query(collection(db, 'events'), where('unitId', '==', unitId))
+        : query(collection(db, 'events'));
+      const querySnapshot = await this.withTimeout(getDocs(q), 5000);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChurchEvent));
+    } catch (error) {
+      console.warn("Erro ao carregar eventos:", error);
+      return MOCK_EVENTS;
+    }
+  }
+
+  async saveEvent(event: Omit<ChurchEvent, 'id'> & { id?: string }): Promise<string> {
+    if (!this.isFirebaseConfigured()) {
+      const id = event.id || Math.random().toString(36).substr(2, 9);
+      const newEvent = { ...event, id } as ChurchEvent;
+      const index = MOCK_EVENTS.findIndex(e => e.id === id);
+      if (index >= 0) {
+        MOCK_EVENTS[index] = newEvent;
+      } else {
+        MOCK_EVENTS.push(newEvent);
+      }
+      return id;
+    }
+    try {
+      if (event.id) {
+        const docRef = doc(db, 'events', event.id);
+        const { id, ...data } = event;
+        await this.withTimeout(updateDoc(docRef, data), 5000);
+        return id;
+      } else {
+        const docRef = await this.withTimeout(addDoc(collection(db, 'events'), event), 5000);
+        return docRef.id;
+      }
+    } catch (error) {
+      console.error("Erro ao salvar evento:", error);
+      throw error;
+    }
+  }
+
+  async deleteEvent(id: string): Promise<void> {
+    if (!this.isFirebaseConfigured()) {
+      const index = MOCK_EVENTS.findIndex(e => e.id === id);
+      if (index >= 0) MOCK_EVENTS.splice(index, 1);
+      return;
+    }
+    try {
+      await this.withTimeout(deleteDoc(doc(db, 'events', id)), 5000);
+    } catch (error) {
+      console.error("Erro ao excluir evento:", error);
+      throw error;
     }
   }
 }

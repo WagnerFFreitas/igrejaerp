@@ -1,0 +1,1427 @@
+================================================================================
+ESTRATÉGIA DE IMPLEMENTAÇÃO — ADJPA ERP
+Análise dos Documentos Técnicos vs. Estado Atual do Projeto
+Revisado em: 25/03/2026 (verificação campo a campo no código-fonte)
+================================================================================
+
+
+1. VISÃO GERAL
+================================================================================
+
+A maioria dos campos descritos nos documentos técnicos já está mapeada no
+types.ts e nos formulários de Funcionarios.tsx e Membros.tsx. O projeto está
+bem avançado. Esta revisão foi feita campo a campo diretamente no código-fonte
+para garantir precisão.
+
+
+2. JÁ IMPLEMENTADO NO PROJETO
+================================================================================
+
+- Cadastro completo de funcionários (80+ campos no tipo Payroll)
+- Cadastro completo de membros (50+ campos no tipo Member)
+- Folha de pagamento com cálculo de INSS, IRRF, FGTS
+- Geração de crachás e carteirinhas em PDF
+- Controle financeiro (receitas, despesas, contas bancárias)
+- Conciliação bancária
+- Gestão de patrimônio com depreciação
+- Férias e afastamentos
+- Auditoria do sistema
+- Backup e restore de dados
+- Integração ViaCEP
+- Configurações fiscais (tabelas INSS/IRRF)
+- eSocial (campos e estrutura)
+- Banco de horas (estrutura)
+- Dependentes
+- Portal do membro
+- Eventos (básico)
+- Comunicação (básico)
+
+
+3. CAMPOS AUSENTES NA INTERFACE (verificados diretamente no código)
+================================================================================
+
+3.1 FUNCIONÁRIOS — Aba Dados Pessoais
+--------------------------------------
+TODOS OS CAMPOS JÁ ESTÃO IMPLEMENTADOS NA UI.
+Confirmados no código: sexo, estado_civil, nacionalidade, naturalidade,
+escolaridade, raca_cor, nome_mae, nome_pai, email_pessoal, telefone,
+celular, deficiencia_obs.
+Nenhuma ação necessária nesta seção.
+
+3.2 FUNCIONÁRIOS — Aba Contrato
+---------------------------------
+PARCIALMENTE IMPLEMENTADO.
+Já existem na UI: forma_pagamento, dia_pagamento.
+AUSENTES na UI (existem no tipo):
+- primeiro_emprego (sim/não)
+- optante_fgts (sim/não)
+
+3.3 FUNCIONÁRIOS — Aba Dados Bancários
+----------------------------------------
+AUSENTES na UI (existem no tipo):
+- banco_digito_agencia
+- banco_digito_conta
+- banco_tipo_chave_pix (CPF, CNPJ, e-mail, telefone, aleatória)
+
+3.4 FUNCIONÁRIOS — Aba Benefícios
+-----------------------------------
+PARCIALMENTE IMPLEMENTADO.
+Já existem na UI: va_operadora, vr_operadora, ps_operadora, ps_tipo_plano,
+ps_carteirinha, po_operadora, po_carteirinha, auxilio_creche,
+auxilio_educacao, gympass_plano.
+AUSENTES na UI (existem no tipo):
+- ps_desconto_percentual
+- po_desconto_percentual
+- vr_desconto_percentual
+- ps_inclui_dependentes
+- vr_valor_diario
+- va_valor_mensal
+- po_valor_mensal
+
+3.5 MEMBROS — Formulário completo
+----------------------------------
+VERIFICADO COM LISTA REAL DE CAMPOS FORNECIDA PELO USUÁRIO.
+O formulário de membros já possui todas as abas e a grande maioria dos campos.
+
+Já existem: matrícula, nome, CPF, RG, e-mail, telefone, WhatsApp, nascimento,
+sexo, profissão, status, cargo/função, nome do pai, nome da mãe, observações,
+estado civil, cônjuge, dependentes, endereço completo, vida cristã completa,
+ministérios completo, financeiro completo, tipo sanguíneo, contato emergência,
+necessidades especiais, dados bancários, timeline, tags.
+
+AUSENTES e RELEVANTES para o contexto eclesiástico:
+- celular (campo separado do WhatsApp)
+- email_pessoal (campo separado do e-mail atual)
+- escolaridade (útil para alocação em ministérios e cursos)
+- is_pcd + tipo_deficiencia (importante para acessibilidade e cuidado pastoral)
+
+DESCARTADOS por baixa relevância no contexto de igreja:
+- raca_cor — obrigatório em RH/eSocial, sem aplicação prática para membros
+- nacionalidade — relevante apenas em igrejas com muitos estrangeiros
+- naturalidade — sem uso prático no contexto eclesiástico
+- deficiencia_obs — já coberto pelo campo "Necessidades Especiais" existente
+
+
+4. RECURSOS FUNCIONAIS AUSENTES (verificados diretamente no código)
+================================================================================
+
+4.1 Avaliação de Desempenho / PDI (RecursosHumanos.tsx)
+---------------------------------------------------------
+AUSENTE. As estrelas de avaliação são hardcoded (fixas em 4/5 para todos).
+O que falta:
+- Formulário para registrar avaliação periódica por funcionário
+- Histórico de avaliações com data e pontuação
+- Campo de Plano de Desenvolvimento Individual (PDI)
+- Metas e observações por avaliação
+
+4.2 Histórico Salarial
+-----------------------
+AUSENTE. Não existe registro de alterações de salário.
+O que falta:
+- Tabela de histórico de salário por funcionário
+  (data, valor anterior, valor novo, motivo)
+- Exibição na aba de contrato ou folha do funcionário
+
+4.3 Escala de Voluntários em Eventos
+--------------------------------------
+CONCLUÍDO. Já implementado com modal completo de gerenciamento,
+ministérios, funções e seleção de voluntários da lista de membros.
+
+4.4 Recorrência de Eventos
+----------------------------
+CONCLUÍDO. Já implementado com padrões WEEKLY e MONTHLY e
+geração automática de ocorrências.
+- Opção de recorrência: único, semanal, mensal
+- Geração automática das próximas ocorrências
+
+4.5 Aniversariantes do Mês
+----------------------------
+AUSENTE. Não existe em nenhum componente.
+O que falta:
+- Widget no dashboard ou na tela de membros
+- Lista de membros e funcionários aniversariantes no mês atual
+- Destaque visual para aniversariantes do dia
+
+4.6 Filtros Avançados em Membros
+----------------------------------
+AUSENTE. O botão "Filtros Avançados" existe mas não executa nenhuma ação.
+O que falta:
+- Filtro por status (Ativo, Inativo, Pendente)
+- Filtro por ministério
+- Filtro por cargo eclesiástico
+- Filtro por dizimista (sim/não)
+- Filtro por faixa etária
+
+4.7 Relatório de Encargos Sociais
+-----------------------------------
+CONCLUÍDO. Já implementado em Relatorios.tsx com cálculo consolidado
+de INSS, FGTS e IRRF, exibição na UI e exportação em JSON.
+
+4.8 Upload de Documentos
+--------------------------
+CONCLUÍDO. Lógica de upload real implementada via StorageService,
+com indicador de loading, confirmação visual e validação de 10MB.
+
+4.9 Consentimento LGPD
+------------------------
+AUSENTE nos formulários. Existe apenas um badge "Conformidade LGPD v2.1"
+decorativo na tela de Auditoria.
+O que falta:
+- Campo de autorização para tratamento de dados no cadastro de membros
+- Campo de autorização no cadastro de funcionários
+- Data do consentimento e versão da política aceita
+
+4.10 Tema Escuro
+-----------------
+AUSENTE. Apenas tema claro disponível.
+O que falta:
+- Toggle de tema claro/escuro nas configurações
+- Persistência da preferência no localStorage
+
+
+5. ESTRATÉGIA DE IMPLEMENTAÇÃO POR PRIORIDADE
+================================================================================
+
+PRIORIDADE ALTA — impacto direto no uso diário
+------------------------------------------------
+1. Completar campos faltantes no formulário de Membros
+   (celular, e-mail pessoal, escolaridade, is_pcd + tipo_deficiencia)
+
+2. Completar campos ausentes na aba Benefícios de Funcionários
+   CONCLUÍDO — verificado que todos os campos funcionais já existem na UI
+   e os valores padrão são gerenciados centralmente nas Configurações.
+   Os campos de % desconto são apenas informativos e de baixa prioridade.
+
+3. Filtros avançados em Membros
+   (por status, ministério, cargo eclesiástico, dizimista)
+
+4. Aniversariantes do mês
+   (widget simples no dashboard ou na tela de membros)
+
+PRIORIDADE MÉDIA — agrega valor operacional
+--------------------------------------------
+5. Completar campos ausentes na aba Contrato de Funcionários
+   (primeiro_emprego, optante_fgts)
+
+6. Completar campos ausentes na aba Dados Bancários de Funcionários
+   (dígito agência, dígito conta, tipo chave PIX)
+
+7. Ativar lógica real de upload de documentos na aba Documentos
+   (usar StorageService já existente no projeto)
+
+8. Escala de voluntários em Eventos
+   CONCLUÍDO — já implementado com modal completo de gerenciamento,
+   ministérios, funções e seleção de voluntários da lista de membros.
+
+9. Recorrência de eventos (semanal/mensal)
+   CONCLUÍDO — já implementado com padrões WEEKLY e MONTHLY e
+   geração automática de ocorrências.
+
+10. Relatório de encargos sociais consolidado (INSS/FGTS/IRRF mensal)
+
+PRIORIDADE BAIXA — nice to have
+---------------------------------
+11. Avaliação de desempenho e PDI no módulo RH
+
+12. Histórico salarial por funcionário
+
+13. Campo de consentimento LGPD nos formulários
+
+14. Tema escuro
+
+
+6. OBSERVAÇÕES TÉCNICAS
+================================================================================
+
+- Os campos de prioridade alta (3.5 Membros) já existem na interface
+  TypeScript (types.ts), portanto NÃO requerem alteração de banco de dados
+  — apenas adição de inputs nos formulários existentes.
+
+- Os campos de prioridade média (3.2, 3.3, 3.4 restantes) também já existem
+  no tipo Payroll — apenas falta a UI.
+
+- O upload de documentos (item 7) já tem a estrutura visual pronta e o
+  StorageService disponível — falta apenas conectar os dois.
+
+- Os recursos funcionais (avaliação, histórico salarial, escala de
+  voluntários) requerem novos tipos e possivelmente novas coleções no
+  Firestore.
+
+- A recorrência de eventos é a funcionalidade de maior complexidade técnica
+  desta lista, pois requer lógica de geração de datas e armazenamento de
+  regras de recorrência.
+
+- O tema escuro pode ser implementado com Tailwind CSS dark mode +
+  localStorage, sem dependências adicionais.
+
+
+================================================================================
+Fim do documento
+================================================================================
+
+
+
+
+
+Análise: O que os documentos propõem vs. o que já existe
+Já implementado no projeto
+A maioria dos campos dos documentos técnicos já está mapeada no types.ts e nos formulários de Funcionarios.tsx e Membros.tsx. O projeto está bem avançado.
+
+Campos e recursos que FALTAM e têm valor real
+1. Funcionários — campos ausentes nos formulários (existem no tipo mas não na UI)
+
+sexo, estado_civil, nacionalidade, naturalidade, escolaridade, raca_cor — aba Dados Pessoais
+nome_mae, nome_pai — aba Dados Pessoais
+email_pessoal, telefone, celular — aba Dados Pessoais
+primeiro_emprego, optante_fgts — aba Contrato
+forma_pagamento, dia_pagamento — aba Dados Bancários
+banco_digito_agencia, banco_digito_conta, banco_tipo_chave_pix — aba Dados Bancários
+vr_valor_diario, vr_operadora, vr_desconto_percentual — aba Benefícios
+va_operadora, va_valor_mensal — aba Benefícios
+ps_operadora, ps_tipo_plano, ps_desconto_percentual, ps_carteirinha, ps_inclui_dependentes — aba Benefícios
+po_operadora, po_valor_mensal, po_desconto_percentual, po_carteirinha — aba Benefícios
+auxilio_creche, auxilio_educacao, gympass_plano — aba Benefícios
+deficiencia_obs — aba Dados Pessoais
+Upload de documentos (PDF/imagem) — aba Documentos
+2. Membros — campos ausentes
+
+escolaridade, raca_cor, nacionalidade, naturalidade — aba Dados Pessoais
+nome_mae, nome_pai — aba Família
+email_pessoal (separado do corporativo) — aba Dados Pessoais
+celular separado de telefone — aba Dados Pessoais
+contato_emergencia com nome + telefone — aba Dados Pessoais
+is_pcd, tipo_deficiencia, deficiencia_obs — aba Dados Pessoais
+3. Recursos funcionais ausentes com alto valor
+
+Avaliação de desempenho / PDI — o RecursosHumanos.tsx tem estrelas fixas (hardcoded), sem funcionalidade real. Os documentos propõem histórico de avaliações e plano de desenvolvimento individual
+Histórico salarial — não existe registro de alterações de salário ao longo do tempo
+Escala de voluntários em eventos — Eventos.tsx não tem campo de voluntários/ministérios escalados
+Recorrência de eventos — único, semanal, mensal — não implementado
+Aniversariantes do mês — mencionado no doc de comunicação, útil e simples de implementar
+Filtros avançados em Membros — o botão "Filtros Avançados" existe mas não faz nada
+Conformidade LGPD — campo de consentimento de tratamento de dados no cadastro de membros e funcionários
+Tema escuro — mencionado no prompt de criação, não implementado
+Relatório de encargos sociais — dashboard com totais de INSS/FGTS/IRRF mensal, guias para recolhimento
+Estratégia de implementação (por prioridade)
+Prioridade Alta — impacto direto no uso diário
+
+Completar campos faltantes nas abas de Funcionários (pessoais, bancários, benefícios) — os campos já existem no tipo, só falta a UI
+Completar campos faltantes nas abas de Membros (pessoais, família)
+Filtros avançados em Membros (por status, ministério, cargo eclesiástico)
+Aniversariantes do mês — widget no dashboard ou na tela de membros
+Prioridade Média — agrega valor operacional
+
+Detalhamento de benefícios (operadora, carteirinha, desconto %) nas abas de Funcionários
+Escala de voluntários em Eventos
+Recorrência de eventos (semanal/mensal)
+Relatório de encargos sociais (INSS/FGTS/IRRF consolidado mensal)
+Prioridade Baixa — nice to have
+
+Avaliação de desempenho / PDI no módulo RH
+Histórico salarial por funcionário
+Upload de documentos (PDF/imagem) na aba Documentos
+Campo de consentimento LGPD
+Tema escuro
+Quer que eu comece a implementar por alguma dessas prioridades?
+
+Credits used: 1,51
+Elapsed time: 1m 2s
+
+
+Credits used: 0
+Elapsed time: 13s
+
+Checkpoint
+Restore
+crie antes um arquivo txt com este resultado
+
+Kiro
+Accepted creation of
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Arquivo criado: Estrategia_Implementacao_Campos_Recursos.txt
+
+Contém toda a análise organizada em seções: o que já existe, campos ausentes por módulo, recursos funcionais faltantes e a estratégia de implementação por prioridade. Quer começar por alguma das prioridades?
+
+Credits used: 1,02
+Elapsed time: 54s
+
+
+Checkpoint
+Restore
+o topico 3.1 ele como ausete ou não? pois ja contem
+
+Kiro
+Vou verificar o que realmente aparece na UI da aba Dados Pessoais de Funcionários:
+
+Searched workspace
+Find what fields are rendered in the pessoais tab of Funcionarios
+Confirmado — todos os campos do tópico 3.1 já estão implementados na UI. Vou corrigir o arquivo:
+
+Accepted edits to
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Também vou remover o item 1 da prioridade alta, já que não é mais necessário:
+
+Accepted edits to
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Corrigido. O tópico 3.1 agora indica que todos os campos já estão implementados, e a prioridade alta foi ajustada removendo o item que não era necessário.
+
+Credits used: 1,36
+Elapsed time: 40s
+
+
+Checkpoint
+Restore
+faça uma revisão a procura deste tipo erro para não haja duvidas
+
+Kiro
+Vou verificar cada tópico do documento contra o código real.
+
+Searched workspace
+Check if 3.2 contract fields exist in Funcionarios UI
+Check primeiro_emprego and optante_fgts in Funcionarios UI
+Check 3.3 bank fields in Funcionarios UI
+Check 3.4 benefits fields in Funcionarios UI
+Check ps_desconto_percentual, po_desconto_percentual, vr_desconto_percentual in Funcionarios UI
+Check 3.5 member fields in Membros UI
+Check if RH has any real evaluation functionality
+Check if Eventos has volunteer/recurrence functionality
+Check if aniversariantes exists anywhere
+Check if advanced filters exist in Membros
+Check if encargos sociais report exists
+Check if upload of documents exists in Funcionarios
+Check if LGPD consent field exists anywhere
+Check if dark theme toggle exists in Configuracoes
+Tenho todos os dados. Agora atualizo o arquivo com precisão:
+
+Accepted edits to
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Revisão concluída. Resultado das verificações campo a campo:
+
+3.1 (Dados Pessoais Funcionários) — confirmado como já implementado, corrigido
+3.2 (Contrato) — forma_pagamento e dia_pagamento já existem; apenas primeiro_emprego e optante_fgts estão ausentes
+3.3 (Bancários) — os 3 campos de dígito/tipo PIX realmente ausentes
+3.4 (Benefícios) — maioria já existe; ausentes apenas os percentuais de desconto, inclui_dependentes e valores mensais/diários
+3.5 (Membros) — confirmado totalmente ausente na UI
+4.7 (Encargos) — parcialmente implementado, não totalmente ausente
+4.8 (Upload) — UI existe mas sem lógica real de salvamento
+Credits used: 4,99
+Elapsed time: 2m 47s
+
+
+Checkpoint
+Restore
+qual o nosso plano de implacao agora depoos da sua vericação?
+
+Kiro
+Com base na revisão, o plano de implementação em ordem é:
+
+Prioridade Alta
+
+Campos Dados Pessoais de Membros — escolaridade, raça/cor, nacionalidade, naturalidade, nome dos pais, e-mail pessoal, celular, PCD e contato de emergência. Só adicionar inputs, os campos já existem no tipo.
+
+Campos ausentes em Benefícios de Funcionários — percentuais de desconto, inclui dependentes, valores mensais/diários. Mesma situação, só UI.
+
+Filtros avançados em Membros — ativar o botão que já existe mas não faz nada.
+
+Aniversariantes do mês — widget simples no dashboard.
+
+Prioridade Média
+
+Campos Contrato de Funcionários — primeiro_emprego e optante_fgts.
+
+Campos Bancários de Funcionários — dígito agência, dígito conta, tipo chave PIX.
+
+Upload de documentos — conectar o input que já existe visualmente ao StorageService que já está no projeto.
+
+Escala de voluntários em Eventos.
+
+Recorrência de eventos.
+
+Relatório de encargos sociais consolidado.
+
+Prioridade Baixa
+
+Avaliação de desempenho / PDI no RH.
+Histórico salarial.
+Consentimento LGPD nos formulários.
+Tema escuro.
+Quer começar pelo item 1 agora?
+
+Credits used: 0,54
+Elapsed time: 10s
+
+
+Checkpoint
+Restore
+o documento esta atualizado com essa estrategia de implantação?
+
+Kiro
+Sim, o documento já está atualizado com essa estratégia — a seção 5 do arquivo contém exatamente esse plano com as três prioridades e os 14 itens numerados.
+
+Quer começar a implementação pelo item 1?
+
+Credits used: 0,51
+Elapsed time: 6s
+
+
+Checkpoint
+Restore
+este sao os campos na aba dados pessoais, o seu plano implantação nao esta correto: Nome Completo
+
+CPF
+
+RG
+
+PIS
+
+CTPS
+
+Data de Nascimento
+
+SexoMasculinoFemininoOutro
+
+Estado CivilSolteiro(a)Casado(a)Divorciado(a)Viúvo(a)
+
+Tipo SanguíneoA+A-B+B-AB+AB-O+O-
+
+Nacionalidade
+
+Naturalidade
+
+Escolaridade
+
+Raça/Cor
+
+Nome da Mãe
+
+Nome do Pai
+
+E-mail Pessoal
+
+E-mail Corporativo
+
+Telefone Fixo
+
+Celular (WhatsApp)
+
+Contato de Emergência
+
+Vínculo com Membro (ID)
+
+É PCD (Pessoa com Deficiência)
+
+Observações de Saúde
+
+Kiro
+Entendido. A aba Dados Pessoais de Funcionários já tem todos esses campos. Vou verificar agora a aba de Membros para confirmar o que realmente falta lá:
+
+Searched workspace
+Check what fields exist in the pessoais tab of Membros
+Check all fields rendered in pessoais tab of Membros
+Read file(s)
+
+Membros.tsx 548 - 681
+Agora tenho a visão completa. A aba Dados Pessoais de Membros tem: nome, CPF, RG, e-mail, telefone, WhatsApp, nascimento, sexo, profissão, status, cargo, nome do pai, nome da mãe e observações.
+
+O que realmente falta na aba Dados Pessoais de Membros:
+
+Estado civil (está na aba Família, não em Pessoais)
+Escolaridade
+Raça/Cor
+Nacionalidade
+Naturalidade
+E-mail pessoal (só tem um campo "E-mail" genérico)
+Celular separado do WhatsApp
+É PCD + tipo de deficiência + observações de deficiência
+Vou corrigir o documento:
+
+
+2 edits to file
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Documento corrigido. O item 3.5 agora reflete a realidade: nome do pai e mãe já existem, estado civil está na aba Família (não é ausência), e os campos realmente faltantes são escolaridade, raça/cor, nacionalidade, naturalidade, e-mail pessoal, celular separado, e os campos de PCD.
+
+Quer começar a implementação pelo item 1?
+
+Credits used: 2,15
+Elapsed time: 56s
+
+
+Checkpoint
+Restore
+os dados que forneci sao da aba de dados pessoais dos funcionarios
+
+Kiro
+Entendido. Você confirmou que a aba Dados Pessoais de Funcionários já tem todos esses campos. Isso significa que o tópico 3.1 está correto — já marcado como implementado.
+
+Agora preciso fazer o mesmo para os Membros — verificar o que realmente aparece na tela. Você consegue me informar quais campos aparecem na aba Dados Pessoais do cadastro de Membros? Ou prefere que eu analise diretamente pelo código?
+
+Credits used: 0,54
+Elapsed time: 7s
+
+
+Checkpoint
+Restore
+esse sao todos os campos de t9das as abas do formulario dos membros: Matrícula
+
+M01/2026
+
+Nome Completo
+
+Lucas Pereira
+
+CPF
+
+123.456.789-00
+
+RG
+
+MG-12.345.678
+
+E-mail
+
+lucas.p@email.com
+
+Telefone
+
+(11) 96655-4433
+
+WhatsApp
+
+Nascimento
+
+18/07/1988
+
+Sexo
+
+Masculino
+
+Profissão
+
+Engenheiro
+
+Status
+
+Ativo
+
+Cargo/Função
+
+Membro
+
+Nome do Pai
+
+José Silva
+
+Nome da Mãe
+
+Maria Silva
+
+Observações
+
+Informação Realista     Estado Civil
+
+Estado CivilSolteiro(a)Casado(a)Divorciado(a)Viúvo(a)
+
+Vínculo Familiar
+
+Agrupe membros da mesma família para gestão unificada.
+
+ID da Família
+
+Dependentes / Composição Familiar
+
+Nenhum dependente cadastrado.
+
+Nome
+
+VínculoFilho(a)CônjugePaiMãeOutro
+
+Nascimento
+
+AdicionarCEP
+
+Cidade
+
+Rua
+
+Nº
+
+Complemento
+
+Bairro
+
+Estado
+
+Cancelar
+
+Cancelar
+
+   Data de Conversão
+
+Local de Conversão
+
+Data de Batismo
+
+Igreja do Batismo
+
+Pastor que Batizou
+
+Batismo no Espírito SantoSimNão
+
+Igreja de Origem
+
+Curso de DiscipuladoNão IniciadoEm AndamentoConcluído
+
+Escola BíblicaAtivoInativoNão Frequenta
+
+Cancelar     Cargo Eclesiástico
+
+Data Consagração
+
+Ministério Principal
+
+Função no Ministério
+
+Outros Ministérios
+
+Data Membresia
+
+Talentos
+
+Dons Espirituais
+
+Célula/Grupo
+
+Cancelar    É Dizimista?SimNão
+
+É Ofertante Regular?SimNão
+
+Participa de Campanhas?SimNão
+
+Registrar Nova Contribuição
+
+Valor (R$)
+
+TipoDízimoOfertaCampanha
+
+Data
+
+Lançar
+
+Mapa de Fidelidade (Dízimos - Últimos 12 Meses)
+
+Pago
+
+Pendente
+
+abr.
+
+2025
+
+mai.
+
+2025
+
+jun.
+
+2025
+
+jul.
+
+2025
+
+ago.
+
+2025
+
+set.
+
+2025
+
+out.
+
+2025
+
+nov.
+
+2025
+
+dez.
+
+2025
+
+jan.
+
+2026
+
+fev.
+
+2026
+
+mar.
+
+2026
+
+Histórico de Contribuições
+
+Dizimo
+
+12/02/2026 - Dízimo: Lucas Pereira
+
+R$ 5000.00
+
+Dizimo
+
+12/03/2026 - Dízimo: Lucas Pereira
+
+R$ 10000.00
+
+Cancelar    Informações de Saúde
+
+Tipo SanguíneoA+A-B+B-O+O-AB+AB-
+
+Contato Emergência
+
+Necessidades Especiais
+
+Dados Bancários
+
+Banco
+
+Agência
+
+Conta
+
+Chave PIX
+
+Cancelar   Jornada do Membro (Timeline)
+
+Conversão
+
+Pendente
+
+Batismo
+
+Pendente
+
+Membresia
+
+Pendente
+
+Consagração
+
+Pendente
+
+Etiquetas / Tags
+
+Observações Gerais
+
+Cancelar
+
+Kiro
+Agora com a lista completa, vou cruzar com o que os documentos técnicos pedem e identificar o que realmente falta nos Membros.
+
+Campos presentes no formulário atual de Membros:
+
+Matrícula, Nome, CPF, RG, E-mail, Telefone, WhatsApp, Nascimento, Sexo, Profissão, Status, Cargo/Função, Nome do Pai, Nome da Mãe, Observações
+Família: Estado Civil, Cônjuge, Casamento, ID Família, Dependentes
+Endereço: CEP, Cidade, Rua, Nº, Complemento, Bairro, Estado
+Vida Cristã: Conversão, Batismo, Espírito Santo, Igreja Origem, Discipulado, Escola Bíblica
+Ministérios: Cargo Eclesiástico, Consagração, Ministério Principal, Função, Outros Ministérios, Data Membresía, Talentos, Dons, Célula
+Financeiro: Dizimista, Ofertante, Campanhas, Contribuições, Histórico
+RH/Outros: Tipo Sanguíneo, Contato Emergência, Necessidades Especiais, Dados Bancários, Timeline, Tags, Observações Gerais
+O que os documentos técnicos pedem e realmente falta:
+
+Escolaridade
+Raça/Cor
+Nacionalidade
+Naturalidade
+E-mail pessoal (separado do e-mail atual)
+Celular (separado do WhatsApp)
+É PCD + Tipo de Deficiência + Observações de Deficiência
+Vou atualizar o documento:
+
+Accepted edits to
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Documento atualizado. O que realmente falta nos Membros são apenas 9 campos: escolaridade, raça/cor, nacionalidade, naturalidade, e-mail pessoal, celular, PCD, tipo de deficiência e observações de deficiência. Todos os outros já estão implementados.
+
+Quer começar a implementação agora?
+
+Credits used: 0,95
+Elapsed time: 30s
+
+
+Checkpoint
+Restore
+essas informacoes sao relevante para o formulario dos membros?
+
+Kiro
+Boa pergunta. Vamos analisar cada um com contexto de igreja:
+
+Relevantes — vale adicionar:
+
+celular (separado do WhatsApp) — útil para contato direto
+e-mail pessoal — útil se o e-mail atual for corporativo
+is_pcd + tipo_deficiencia — importante para acessibilidade e cuidado pastoral
+deficiencia_obs — complementa o campo "Necessidades Especiais" que já existe (pode até ser o mesmo)
+Discutível — depende do uso:
+
+escolaridade — útil se a igreja usa para alocação em ministérios ou cursos
+nacionalidade / naturalidade — útil para igrejas com membros estrangeiros ou missões
+Pouco relevante para membros de igreja:
+
+raca_cor — obrigatório em RH por lei (eSocial), mas para membros de igreja não tem aplicação prática clara
+Conclusão: dos 9 campos listados, apenas 4 têm relevância real para o contexto eclesiástico: celular, e-mail pessoal, PCD e escolaridade. Os demais fazem mais sentido no módulo de Funcionários, onde já estão implementados.
+
+Quer que eu atualize o documento refletindo isso e remova os irrelevantes do plano de membros?
+
+Credits used: 0,58
+Elapsed time: 23s
+
+
+Checkpoint
+Restore
+sim
+
+Kiro
+Understood.
+
+Accepted edits to
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Também atualizo a prioridade alta para refletir isso:
+
+Accepted edits to
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Documento atualizado. O plano de membros agora tem apenas os 4 campos com real utilidade no contexto eclesiástico. Quer começar a implementação?
+
+Credits used: 1,25
+Elapsed time: 27s
+
+
+Checkpoint
+Restore
+im, mas nao altere nada alem disto
+
+Kiro
+Vou adicionar apenas os 4 campos na aba Dados Pessoais de Membros, sem tocar em mais nada.
+
+Read file(s)
+
+Membros.tsx 570 - 596
+Accepted edits to
+
+Membros.tsx
+
+
+Checked diagnostics
+
+Membros.tsx
+Feito. Adicionei apenas os 4 campos na seção de dados pessoais dos membros:
+
+E-mail Pessoal
+Celular
+Escolaridade
+É PCD (com campo de tipo de deficiência que aparece quando marcado)
+Nada mais foi alterado.
+
+Credits used: 1,59
+Elapsed time: 36s
+
+
+Checkpoint
+Restore
+qual e o proximo?
+
+Kiro
+Pelo plano, o próximo é o item 2:
+
+Completar campos ausentes na aba Benefícios de Funcionários:
+
+ps_desconto_percentual — % desconto plano de saúde
+po_desconto_percentual — % desconto plano odontológico
+vr_desconto_percentual — % desconto vale refeição
+ps_inclui_dependentes — checkbox inclui dependentes
+vr_valor_diario — valor diário VR
+va_valor_mensal — valor mensal VA
+po_valor_mensal — valor mensal plano odontológico
+Quer que eu implemente?
+
+Credits used: 0,57
+Elapsed time: 8s
+
+
+Checkpoint
+Restore
+Na aba ben8ficio tem estes campos: Vales & Auxílios
+
+Vale Transporte
+
+Vale Alimentação
+
+Vale Refeição
+
+Auxílio Moradia
+
+Saúde & Seguros
+
+Plano de Saúde
+
+Plano Odontológico
+
+Plano Saúde Dependentes
+
+Vale Farmácia
+
+Seguro de Vida
+
+Auxílio Creche
+
+Auxílio Educação
+
+Gympass/Wellhub
+
+Kiro
+Preciso ver o detalhe de cada benefício — quais subcampos aparecem dentro de cada um (operadora, valor, % desconto, etc.). Você consegue expandir cada item e me mostrar os campos internos? Por exemplo, ao ativar "Plano de Saúde", quais campos aparecem?
+
+Credits used: 0,56
+Elapsed time: 10s
+
+
+Checkpoint
+Restore
+e isso?
+
+
+
+
+
+
+
+
+
+
+Kiro
+Perfeito. Agora vejo claramente o que já existe na UI. Cruzando com os campos ausentes do documento:
+
+Já existem na UI:
+
+Vale Transporte: Valor/Dia, Qtd, Total
+Vale Alimentação: Operadora, Valor
+Vale Refeição: Operadora, Valor
+Plano de Saúde: Valor, Operadora, Tipo Plano, Nº Carteirinha
+Plano Odontológico: Valor, Operadora, Nº Carteirinha
+Plano Saúde Dependentes: Valor
+Vale Farmácia, Seguro de Vida, Auxílio Creche, Auxílio Educação, Gympass
+Realmente ausentes (do documento técnico):
+
+ps_desconto_percentual — % desconto plano de saúde
+po_desconto_percentual — % desconto plano odontológico
+vr_desconto_percentual — % desconto vale refeição
+ps_inclui_dependentes — checkbox inclui dependentes no plano de saúde
+va_valor_mensal — VA tem só "Operadora + Total", falta campo de valor mensal separado
+po_valor_mensal — odonto tem só "Valor", sem campo mensal explícito
+Esses campos têm relevância real para folha de pagamento (o desconto % impacta o cálculo). Quer que eu os adicione?
+
+Credits used: 0,61
+Elapsed time: 13s
+
+
+Checkpoint
+Restore
+veja na folha de pagamento se ja noa tem este campos, pois deve ser automatico
+
+Kiro
+Boa observação. Vou verificar:
+
+Searched workspace
+Check if discount percentages are used in payroll calculation
+Check payrollService to see how discounts are calculated
+A folha usa os valores finais diretamente (plano_saude_colaborador, plano_odontologico, vale_refeicao) — não usa os percentuais de desconto no cálculo. Ou seja, o valor que o funcionário paga já é inserido diretamente no campo de valor, e a folha simplesmente desconta esse valor.
+
+Os campos ps_desconto_percentual, po_desconto_percentual e vr_desconto_percentual existem no tipo mas não são usados em nenhum cálculo — são apenas informativos.
+
+Conclusão: não há nada a implementar no item 2. A aba de benefícios já tem todos os campos funcionais que impactam a folha. Os percentuais de desconto seriam apenas informativos e de baixa prioridade.
+
+Vou atualizar o documento e o próximo item passa a ser o item 3 — Filtros avançados em Membros. Confirma?
+
+Credits used: 1,29
+Elapsed time: 30s
+
+
+Checkpoint
+Restore
+vrja tambem na opcao configuracao na aba parametros fiscais e benificios 
+
+Kiro
+Understood.
+
+Credits used: 0,58
+Elapsed time: 7s
+
+
+Checkpoint
+Restore
+contin7a
+
+Kiro
+Vou verificar a aba de parâmetros fiscais e benefícios nas Configurações:
+
+Searched workspace
+Find the fiscal parameters and benefits tab content in Configuracoes
+Read file(s)
+
+Configuracoes.tsx 536 - 701
+Confirmado. A aba Parâmetros Fiscais & Benefícios já tem:
+
+INSS Patronal, RAT, Terceiros
+FGTS
+Vale Alimentação padrão (defaultVA)
+Vale Refeição padrão (defaultVR)
+Tabelas INSS e IRRF
+E quando salva, aplica automaticamente os valores de VA e VR em todos os funcionários. O sistema já funciona de forma centralizada.
+
+Conclusão: o item 2 do plano está completamente coberto — tanto na aba de benefícios do funcionário quanto nas configurações globais. Vou atualizar o documento e seguir para o item 3 — Filtros avançados em Membros. Confirma?
+
+Credits used: 1,33
+Elapsed time: 28s
+
+
+Checkpoint
+Restore
+sim
+
+Kiro
+Primeiro atualizo o documento, depois implemento.
+
+Accepted edits to
+
+Estrategia_Implementacao_Campos_Recursos.txt
+
+
+Agora implemento os filtros avançados em Membros:
+
+Read file(s)
+
+components/Membros.tsx 60 - 101
+
+components/Membros.tsx 395 - 431
+Agora vou adicionar o estado dos filtros e implementar a funcionalidade:
+
+Accepted edits to
+
+Membros.tsx
+
+
+Agora atualizo o filteredMembers para aplicar os filtros:
+
+Accepted edits to
+
+Membros.tsx
+
+
+Agora substituo o botão inativo pelo painel de filtros funcional:
+
+Accepted edits to
+
+Membros.tsx
+
+
+Checked diagnostics
+
+Membros.tsx
+Pronto. Filtros avançados implementados com:
+
+Status (Ativo/Inativo/Pendente)
+Cargo/Função
+Ministério (dinâmico, baseado nos dados reais)
+Dizimista (Sim/Não)
+Indicador visual quando filtro está ativo
+Botão "Limpar filtros"
+Próximo é o item 4 — Aniversariantes do mês. Quer continuar?
+
+Credits used: 3,29
+Elapsed time: 1m 27s
+
+
+Checkpoint
+Restore
+sim
+
+Kiro
+Vou verificar onde fica melhor posicionar — no dashboard ou na tela de membros:
+
+Searched workspace
+Check what components are in PainelGeral/Dashboard to find best placement
+O PainelGeral já recebe members e employees — é o lugar ideal. Vou adicionar um widget de aniversariantes:
+
+Read file(s)
+
+components/PainelGeral.tsx 1 - 101
+
+components/PainelGeral.tsx 130 - 201
+Agora adiciono o widget de aniversariantes antes do fechamento do componente:
+
+
+3 edits to file
+
+PainelGeral.tsx
+
+
+Accepted edits to
+
+PainelGeral.tsx
+
+
+Error(s) while editing
+
+PainelGeral.tsx
+
+Unable to replace text, trying a different approach...
+Accepted edits to
+
+PainelGeral.tsx
+
+
+Agora adiciono o widget no JSX antes do fechamento:
+
+Accepted edits to
+
+PainelGeral.tsx
+
+
+Checked diagnostics
+
+PainelGeral.tsx
+Pronto. Widget de aniversariantes adicionado no dashboard com:
+
+Lista de membros e funcionários aniversariantes no mês atual
+Ordenado por dia do mês
+Destaque especial para aniversariantes do dia com 🎂
+Contador total do mês
+Próximo é o item 5 — campos primeiro_emprego e optante_fgts na aba Contrato de Funcionários. Quer continuar?
+
+Credits used: 3,5
+Elapsed time: 2m 33s
+
+
+Checkpoint
+Restore
+sim
+
+Kiro
+Vou localizar a aba de contrato em Funcionarios.tsx:
+
+Searched workspace
+Find the contrato tab in Funcionarios to locate where to add the fields
+Read file(s)
+
+Funcionarios.tsx 752 - 801
+Encontrei o local exato. Vou adicionar os dois campos no final da aba contrato:
+
+Accepted edits to
+
+Funcionarios.tsx
+
+
+Checked diagnostics
+
+Funcionarios.tsx
+Pronto. Campos Primeiro Emprego e Optante FGTS adicionados como checkboxes no final da aba Contrato.
+
+Próximo é o item 6 — dígito agência, dígito conta e tipo chave PIX na aba Dados Bancários. Quer continuar?
+
+Credits used: 1,79
+Elapsed time: 57s
+
+
+Checkpoint
+Restore
+sim
+
+Kiro
+Understood.
+
+Credits used: 0,33
+Elapsed time: 9s
+
+
+Checkpoint
+Restore
+continua
+
+Kiro
+Vou localizar a aba bancários em Funcionarios.tsx:
+
+Searched workspace
+Find the bancarios tab in Funcionarios
+Read file(s)
+
+Funcionarios.tsx 909 - 961
+Accepted edits to
+
+Funcionarios.tsx
+
+
+Checked diagnostics
+
+Funcionarios.tsx
+Pronto. Adicionados na aba Dados Bancários:
+
+Dígito Agência
+Dígito Conta
+Tipo Chave PIX (select: CPF, CNPJ, E-mail, Telefone, Aleatória)
+Próximo é o item 7 — ativar o upload real de documentos (conectar o input existente ao StorageService). Quer continuar?
+
+Credits used: 1,87
+Elapsed time: 1m
+
+
+Checkpoint
+Restore
+sim
+
+Kiro
+Vou ver como o StorageService funciona e como está a aba de documentos:
+
+Read file(s)
+
+storageService.ts
+O StorageService.uploadEmployeeDocument já existe e funciona. Agora vou ver a aba de documentos:
+
+Read file(s)
+
+Funcionarios.tsx 1203 - 1271
+Agora vou substituir os inputs de arquivo sem lógica por uma função real de upload:
+
+Searched workspace
+Check if StorageService is already imported in Funcionarios
+Accepted edits to
+
+Funcionarios.tsx
+
+
+Agora adiciono o estado para controlar os uploads e substituo a aba de documentos:
+
+Accepted edits to
+
+Funcionarios.tsx
+
+
+Agora adiciono a função de upload e substituo a área de upload:
+
+Accepted edits to
+
+Funcionarios.tsx
+
+
+Agora substituo os inputs de arquivo estáticos por inputs funcionais:
+
+Accepted edits to
+
+Funcionarios.tsx
+
+
+Checked diagnostics
+
+Funcionarios.tsx
+Pronto. Upload de documentos agora funcional:
+
+Ícone de loading durante o envio
+Ícone verde de confirmação após envio bem-sucedido
+Validação de tamanho (máx 10MB)
+Aceita PDF, JPG, PNG
+Usa o StorageService.uploadEmployeeDocument já existente
+
+✅ ITEM 8 CONCLUÍDO — Escala de voluntários em Eventos
+- ✅ Interface VolunteerSchedule criada em types.ts
+- ✅ Componente Eventos.tsx completamente reestruturado
+- ✅ Sistema de escala de voluntários com:
+  - Campo de ministérios escalados por evento
+  - Lista de voluntários por função dentro do evento
+  - Gestão de confirmação de participação
+  - Estatísticas de escalamento (necessários/escalados/confirmados)
+  - Integração com membros existentes do sistema
+  - Interface responsiva e intuitiva
+  - Suporte para 11 ministérios pré-configurados
+  - Múltiplas funções por ministério
+  - Sistema de observações e contatos
+
+Próximo é o item 9 — [A definir]
+AUSENTE. Eventos.tsx só tem título, data, local e descrição.
+O que falta:
+- Campo de ministérios escalados por evento
+- Lista de voluntários por função dentro do evento
+----------------------------
+AUSENTE. Cada evento é único, sem repetição.
+O que falta:
+- Opção de recorrência: único, semanal, mensal
+- Geração automática das próximas ocorrências
+
+✅ ITEM 9 CONCLUÍDO — Sistema de Recorrência de Eventos
+- ✅ Interface ChurchEvent atualizada com campos de recorrência
+- ✅ Campos adicionados: isRecurring, recurrencePattern, recurrenceEndDate, parentEventId, isGeneratedEvent
+- ✅ Componente Eventos.tsx atualizado com:
+  - Checkbox para ativar recorrência
+  - Select para padrão (Único/Semanal/Mensal)
+  - Campo para data final da recorrência
+  - Função generateRecurringEvents() para criar ocorrências automáticas
+  - Geração de eventos com IDs únicos e relacionamentos
+  - Exibição visual de recorrência nos cards
+  - Indicadores para eventos gerados automaticamente
+  - Validação e tratamento de datas
+  - Interface intuitiva com ícones e tooltips
+
+Próximo é o item 10 — [A definir]
+10. Relatório de encargos sociais consolidado (INSS/FGTS/IRRF mensal)
+
+ ITEM 10 CONCLUÍDO — Relatório de Encargos Sociais Consolidado
+-  Interface SocialChargesReport criada em types.ts
+-  Campos detalhados para cálculos de encargos:
+  - FGTS (8%) com base e valor
+  - INSS Empregador (20%) com base e valor
+  - RAT (1%) com base e valor
+  - Terceiros (5.5%) com base e valor
+  - INSS Empregado (7.5%) com base e valor
+  - IRRF com base, alíquota e valor
+-  Componente Relatorios.tsx atualizado com:
+  - Seção dedicada ao relatório de encargos sociais
+  - Seleção de mês de competência
+  - Cálculos automáticos de todos os encargos
+  - Resumo financeiro com totais e médias
+  - Detalhes dos encargos por categoria
+  - Preview em tempo real dos valores
+  - Exportação em JSON com dados completos
+  - Interface responsiva e intuitiva
+  - Integração com dados de funcionários existentes
+  - Validação de funcionários ativos (sem data de demissão)
+
+11. Avaliação de desempenho e PDI no módulo RH
+
+12. Histórico salarial por funcionário
+
+13. Campo de consentimento LGPD nos formulários
+
+14. Tema escuro

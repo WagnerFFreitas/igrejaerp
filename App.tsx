@@ -14,7 +14,6 @@ import { Relatorios } from './components/Relatorios';
 import { Auditoria } from './components/Auditoria';
 import { PortalMembro } from './components/PortalMembro';
 import { Configuracoes } from './components/Configuracoes';
-import { DashboardExecutivo } from './components/DashboardExecutivo';
 import { UserAuth, Payroll, Member, Transaction, FinancialAccount, Asset, EmployeeLeave, UserRole } from './types';
 import { dbService } from './services/databaseService';
 import { MOCK_LEAVES, MOCK_ASSETS } from './constants';
@@ -23,6 +22,7 @@ import { AuditService } from './src/services/auditService';
 import { UserService } from './src/services/userService';
 import { useAudit } from './src/hooks/useAudit';
 import { DataInitializer } from './src/services/dataInitializer';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { 
   User as UserIcon, Key, LogIn, Church, AlertCircle, Loader2, Cloud, ShieldCheck
 } from 'lucide-react';
@@ -209,6 +209,7 @@ const App: React.FC = () => {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [leaves, setLeaves] = useState<EmployeeLeave[]>([]);
+  const [evaluations, setEvaluations] = useState<Record<string, any[]>>({});
 
   // Inicializar IndexedDB e usuários padrão
   useEffect(() => {
@@ -345,7 +346,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <DashboardExecutivo user={currentUser} currentUnitId={currentUnitId} />;
+      case 'dashboard': return <PainelGeral user={currentUser} members={unitMembers} employees={unitEmployees} />;
       case 'members': return (
         <Membros 
           members={unitMembers} 
@@ -369,13 +370,13 @@ const App: React.FC = () => {
         />
       );
       case 'assets': return <Patrimonio currentUnitId={currentUnitId} user={currentUser} />;
-      case 'rh': return <RecursosHumanos employees={unitEmployees} />;
-      case 'dp': return <Funcionarios employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} />;
+      case 'rh': return <RecursosHumanos employees={unitEmployees} currentUnitId={currentUnitId} evaluations={evaluations} />;
+      case 'dp': return <Funcionarios employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} evaluations={evaluations} setEvaluations={setEvaluations} />;
       case 'leaves': return <Afastamentos leaves={unitLeaves} setLeaves={setLeaves} currentUnitId={currentUnitId} employees={unitEmployees} />;
       case 'payroll': return <ProcessamentoFolha employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} />;
-      case 'events': return <Eventos />;
-      case 'reports': return <Relatorios transactions={unitTransactions} members={unitMembers} />;
-      case 'messages': return <Comunicacao members={unitMembers} employees={unitEmployees} />;
+      case 'events': return <Eventos currentUnitId={currentUnitId} members={unitMembers} />;
+      case 'reports': return <Relatorios transactions={unitTransactions} members={unitMembers} employees={unitEmployees} />;
+      case 'messages': return <Comunicacao members={unitMembers} employees={unitEmployees} currentUnitId={currentUnitId} user={currentUser} />;
       case 'audit': return <Auditoria />;
       case 'portal': return <PortalMembro />;
       case 'settings': return <Configuracoes user={currentUser} />;
@@ -384,18 +385,20 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout 
-      activeTab={activeTab} 
-      setActiveTab={setActiveTab} 
-      user={currentUser}
-      onLogout={() => setCurrentUser(null)}
-      currentUnitId={currentUnitId}
-      onUnitChange={setCurrentUnitId}
-    >
-      <div className="max-w-[1600px] mx-auto">
-        {renderContent()}
-      </div>
-    </Layout>
+    <ThemeProvider>
+      <Layout 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        user={currentUser}
+        onLogout={() => setCurrentUser(null)}
+        currentUnitId={currentUnitId}
+        onUnitChange={setCurrentUnitId}
+      >
+        <div className="max-w-[1600px] mx-auto">
+          {renderContent()}
+        </div>
+      </Layout>
+    </ThemeProvider>
   );
 };
 

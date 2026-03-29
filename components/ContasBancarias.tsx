@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { FinancialAccountEnhanced, AccountService, accountService } from '../services/accountService';
 import { Transaction } from '../types';
+import { POPULAR_BANKS, ACCOUNT_TYPES } from '../constants/banks';
 
 /**
  * PROPRIEDADES DO COMPONENTE
@@ -101,6 +102,9 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
   
   // Modal de nova conta
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  
+  // ID da conta sendo editada
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   
   // Modal de transferência
   const [transferModal, setTransferModal] = useState<TransferModalData>({
@@ -262,6 +266,47 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
     } catch (error) {
       console.error('Erro ao buscar extrato:', error);
       alert('Erro ao carregar extrato.');
+    }
+  };
+  
+  /**
+   * EDITAR CONTA
+   * =============
+   */
+  const handleEditAccount = (account: FinancialAccountEnhanced) => {
+    setFormData({
+      name: account.name,
+      accountType: account.accountType,
+      type: account.type,
+      bankCode: account.bankCode,
+      bankName: account.bankName,
+      agencyNumber: account.agencyNumber,
+      accountNumber: account.accountNumber,
+      currentBalance: account.currentBalance,
+      minimumBalance: account.minimumBalance,
+      status: account.status,
+      isActive: account.isActive
+    });
+    setEditingAccountId(account.id);
+    setModalOpen(true);
+  };
+  
+  /**
+   * EXCLUIR CONTA
+   * ==============
+   */
+  const handleDeleteAccount = async (accountId: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+    
+    try {
+      await accountService.deleteAccount(accountId);
+      await loadAccounts();
+      alert('Conta excluída com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir conta:', error);
+      alert('Erro ao excluir conta.');
     }
   };
   
@@ -461,9 +506,19 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
                       </button>
                       
                       <button
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                        onClick={() => handleEditAccount(account)}
+                        className="text-slate-400 hover:text-blue-600 transition-colors"
+                        title="Editar Conta"
                       >
-                        <MoreVertical size={15} />
+                        <RefreshCcw size={15} />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDeleteAccount(account.id)}
+                        className="text-slate-400 hover:text-red-600 transition-colors"
+                        title="Excluir Conta"
+                      >
+                        <X size={15} />
                       </button>
                     </div>
                   </td>
@@ -590,23 +645,105 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ onClose, onSave }) => {
                   type: e.target.value === 'CASH' ? 'CASH' : 'BANK'
                 })}
               >
-                <option value="CASH">Caixa (Espécie)</option>
-                <option value="BANK">Conta Corrente</option>
-                <option value="SAVINGS">Poupança</option>
-                <option value="INVESTMENT">Investimento</option>
+                {ACCOUNT_TYPES.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
               </select>
             </div>
             
+            {/* Campo de banco - aparece apenas se não for caixa */}
+            {formData.accountType !== 'CASH' && (
+              <div>
+                <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
+                  Banco
+                </label>
+                <select
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
+                  value={formData.bankCode || ''}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    bankCode: e.target.value,
+                    bankName: POPULAR_BANKS.find(b => b.code === e.target.value)?.name || ''
+                  })}
+                >
+                  <option value="">Selecione um banco...</option>
+                  {POPULAR_BANKS.map(bank => (
+                    <option key={bank.code} value={bank.code}>{bank.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          
+          {/* Campos bancários - aparecem apenas se não for caixa */}
+          {formData.accountType !== 'CASH' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
+                  Agência
+                </label>
+                <input
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
+                  value={formData.agencyNumber || ''}
+                  onChange={(e) => setFormData({ ...formData, agencyNumber: e.target.value })}
+                  placeholder="0000"
+                />
+              </div>
+              
+              <div>
+                <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
+                  Conta
+                </label>
+                <input
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
+                  value={formData.accountNumber || ''}
+                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                  placeholder="00000-0"
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
                 Saldo Inicial
               </label>
               <input
                 type="number"
-                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs text-indigo-700 outline-none"
+                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
                 value={formData.currentBalance}
-                onChange={(e) => setFormData({ ...formData, currentBalance: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, currentBalance: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
               />
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
+                Saldo Mínimo
+              </label>
+              <input
+                type="number"
+                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
+                value={formData.minimumBalance || ''}
+                onChange={(e) => setFormData({ ...formData, minimumBalance: parseFloat(e.target.value) || undefined })}
+                placeholder="0.00"
+              />
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
+                Status
+              </label>
+              <select
+                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
+                value={formData.status || 'ACTIVE'}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+              >
+                <option value="ACTIVE">Ativa</option>
+                <option value="INACTIVE">Inativa</option>
+                <option value="BLOCKED">Bloqueada</option>
+              </select>
             </div>
           </div>
           

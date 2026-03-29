@@ -10,12 +10,13 @@ import { DEFAULT_TAX_CONFIG } from '../constants';
 import CryptoService from '../src/services/cryptoService';
 import IndexedDBService from '../src/services/indexedDBService';
 import { dbService } from '../services/databaseService';
+import { ThemeSettings } from './ConfiguracoesTheme';
 
 interface ConfiguracoesProps {
   user: UserAuth;
 }
 
-type ConfigTab = 'backup' | 'fiscal' | 'certificado' | 'tabelas';
+type ConfigTab = 'backup' | 'fiscal' | 'certificado' | 'tabelas' | 'theme';
 
 export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
   const isDeveloper = user.role === 'DEVELOPER';
@@ -192,29 +193,19 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
           accounts: [],
           employees: [],
           assets: [],
-          leaves: []
+          leaves: [],
+          payroll: [],
+          units: [],
+          system_config: []
         }
       };
 
-      // Função para buscar dados do IndexedDB e criptografar dados sensíveis
+      // Função para buscar dados do IndexedDB
       const getFromIndexedDB = async (storeName: string) => {
         try {
-          let data = await IndexedDBService.getAll(storeName);
+          const data = await IndexedDBService.getAll(storeName);
           
-          // Criptografar dados sensíveis dependendo do tipo
-          if (storeName === 'members') {
-            data = data.map(member => CryptoService.sanitizeMember(member));
-          }
-          
-          if (storeName === 'employees') {
-            data = data.map(employee => CryptoService.sanitizeEmployee(employee));
-          }
-          
-          if (storeName === 'transactions') {
-            data = data.map(transaction => CryptoService.sanitizeTransaction(transaction));
-          }
-          
-          console.log(`📊 ${storeName}: ${data.length} itens encontrados (dados sensíveis criptografados)`);
+          console.log(`📊 ${storeName}: ${data.length} itens encontrados`);
           return data;
         } catch (error) {
           console.error(`❌ Erro ao buscar ${storeName}:`, error);
@@ -231,6 +222,9 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       const employees = await getFromIndexedDB('employees');
       const assets = await getFromIndexedDB('assets');
       const leaves = await getFromIndexedDB('leaves');
+      const payroll = await getFromIndexedDB('payroll');
+      const units = await getFromIndexedDB('units');
+      const system_config = await getFromIndexedDB('system_config');
 
       backupData.data.members = members;
       backupData.data.transactions = transactions;
@@ -238,6 +232,9 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       backupData.data.employees = employees;
       backupData.data.assets = assets;
       backupData.data.leaves = leaves;
+      backupData.data.payroll = payroll;
+      backupData.data.units = units;
+      backupData.data.system_config = system_config;
 
       // Estatísticas do backup
       const stats = {
@@ -247,7 +244,10 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         accounts: accounts.length,
         employees: employees.length,
         assets: assets.length,
-        leaves: leaves.length
+        leaves: leaves.length,
+        payroll: payroll.length,
+        units: units.length,
+        system_config: system_config.length
       };
       
       stats.totalItems = Object.values(stats).reduce((sum, count) => sum + count, 0);
@@ -279,7 +279,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       URL.revokeObjectURL(url);
 
       // Alert de sucesso
-      alert(`✅ Backup concluído!\n\n📊 Estatísticas:\n• Membros: ${stats.members}\n• Transações: ${stats.transactions}\n• Contas: ${stats.accounts}\n• Funcionários: ${stats.employees}\n• Ativos: ${stats.assets}\n• Folhas: ${stats.leaves}\n• Total: ${stats.totalItems} itens\n\n🔒 Segurança: Dados sensíveis foram mascarados para proteção`);
+      alert(`✅ Backup concluído!\n\n📊 Estatísticas:\n• Membros: ${stats.members}\n• Transações: ${stats.transactions}\n• Contas: ${stats.accounts}\n• Funcionários: ${stats.employees}\n• Ativos: ${stats.assets}\n• Folhas: ${stats.leaves}\n• Folha de Pagamento: ${stats.payroll}\n• Unidades: ${stats.units}\n• Configurações: ${stats.system_config}\n• Total: ${stats.totalItems} itens\n\n🔒 Segurança: Dados sensíveis foram mascarados para proteção`);
 
     } catch (error) {
       console.error("❌ Erro ao gerar backup:", error);
@@ -309,7 +309,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         }
 
         // Confirmar restauração
-        const confirmMessage = `⚠️ ATENÇÃO: Isso irá SUBSTITUIR todos os dados atuais!\n\n📊 Dados do backup:\n• Membros: ${backup.statistics.members}\n• Transações: ${backup.statistics.transactions}\n• Contas: ${backup.statistics.accounts}\n• Funcionários: ${backup.statistics.employees}\n• Ativos: ${backup.statistics.assets}\n• Folhas: ${backup.statistics.leaves}\n• Total: ${backup.statistics.totalItems} itens\n\nDeseja continuar?`;
+        const confirmMessage = `⚠️ ATENÇÃO: Isso irá SUBSTITUIR todos os dados atuais!\n\n📊 Dados do backup:\n• Membros: ${backup.statistics.members}\n• Transações: ${backup.statistics.transactions}\n• Contas: ${backup.statistics.accounts}\n• Funcionários: ${backup.statistics.employees}\n• Ativos: ${backup.statistics.assets}\n• Folhas: ${backup.statistics.leaves}\n• Folha de Pagamento: ${backup.statistics.payroll}\n• Unidades: ${backup.statistics.units}\n• Configurações: ${backup.statistics.system_config}\n• Total: ${backup.statistics.totalItems} itens\n\nDeseja continuar?`;
         
         if (!confirm(confirmMessage)) {
           console.log("❌ Restore cancelado pelo usuário");
@@ -346,7 +346,10 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
           accounts: await saveToIndexedDB('accounts', backup.data.accounts || []),
           employees: await saveToIndexedDB('employees', backup.data.employees || []),
           assets: await saveToIndexedDB('assets', backup.data.assets || []),
-          leaves: await saveToIndexedDB('leaves', backup.data.leaves || [])
+          leaves: await saveToIndexedDB('leaves', backup.data.leaves || []),
+          payroll: await saveToIndexedDB('payroll', backup.data.payroll || []),
+          units: await saveToIndexedDB('units', backup.data.units || []),
+          system_config: await saveToIndexedDB('system_config', backup.data.system_config || [])
         };
 
         const totalRestored = Object.values(results).reduce((sum: number, count: number) => sum + count, 0);
@@ -354,7 +357,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         console.log("✅ Restore concluído:", results);
         console.log("🔄 Recarregando página para atualizar dados...");
         
-        alert(`✅ Restore concluído com sucesso!\n\n📊 Itens restaurados:\n• Membros: ${results.members}\n• Transações: ${results.transactions}\n• Contas: ${results.accounts}\n• Funcionários: ${results.employees}\n• Ativos: ${results.assets}\n• Folhas: ${results.leaves}\n• Total: ${totalRestored} itens\n\n🔄 A página será recarregada para atualizar os dados.`);
+        alert(`✅ Restore concluído com sucesso!\n\n📊 Itens restaurados:\n• Membros: ${results.members}\n• Transações: ${results.transactions}\n• Contas: ${results.accounts}\n• Funcionários: ${results.employees}\n• Ativos: ${results.assets}\n• Folhas: ${results.leaves}\n• Folha de Pagamento: ${results.payroll}\n• Unidades: ${results.units}\n• Configurações: ${results.system_config}\n• Total: ${totalRestored} itens\n\n🔄 A página será recarregada para atualizar os dados.`);
         
         // Recarregar página para atualizar os dados
         setTimeout(() => {
@@ -390,7 +393,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
           <p className="text-slate-500 font-medium">Parâmetros do sistema, tabelas tributárias e segurança de dados.</p>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-2xl">
-          {(['backup', 'fiscal', 'tabelas', 'certificado'] as ConfigTab[]).map((tab) => (
+          {(['backup', 'fiscal', 'tabelas', 'certificado', 'theme'] as ConfigTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -404,6 +407,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
               {tab === 'fiscal' && 'Parâmetros Fiscais & Benefícios'}
               {tab === 'tabelas' && 'Tabelas eSocial'}
               {tab === 'certificado' && 'Certificado A1'}
+              {tab === 'theme' && 'Tema'}
             </button>
           ))}
         </div>
@@ -425,9 +429,6 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 p-8 flex-wrap">
-              <button onClick={handleRemoveDuplicates} disabled={isRemovingDuplicates} className="bg-rose-600 text-white px-8 py-4 rounded-2xl font-black text-[11px] tracking-widest uppercase shadow-xl hover:bg-rose-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                <Users size={16}/> {isRemovingDuplicates ? 'Limpando...' : 'Remover Duplicatas'}
-              </button>
               <button onClick={handleBackup} className="bg-[#111827] text-white px-8 py-4 rounded-2xl font-black text-[11px] tracking-widest uppercase shadow-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3">
                 <Download size={16}/> Baixar Cópia de Segurança
               </button>
@@ -833,6 +834,8 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
            </div>
         </div>
       )}
+
+      {activeTab === 'theme' && <ThemeSettings />}
     </div>
   );
 };

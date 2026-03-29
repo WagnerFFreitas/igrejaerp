@@ -1,0 +1,669 @@
+# DOCUMENTAÇÃO TÉCNICA COMPLETA - ADJPA ERP
+
+## VISÃO GERAL DO SISTEMA
+
+O ADJPA ERP é um sistema completo de gestão empresarial desenvolvido especificamente para igrejas e organizações religiosas. O sistema integra múltiplos módulos para gerenciar todos os aspectos operacionais, financeiros e administrativos da organização.
+
+### TECNOLOGIAS UTILIZADAS
+
+- **Frontend**: React 18 + TypeScript
+- **Styling**: Tailwind CSS
+- **Ícones**: Lucide React
+- **PDF Generation**: jsPDF + html2canvas
+- **Build Tool**: Vite
+- **Database**: PostgreSQL (via serviços)
+- **Storage**: LocalStorage (dados locais)
+
+---
+
+## ARQUITETURA DO SISTEMA
+
+### ESTRUTURA DE ARQUIVOS
+
+```
+/
+├── App.tsx                 # Componente principal e roteamento
+├── types.ts               # Definições TypeScript
+├── constants.tsx          # Dados mock e configurações
+├── index.tsx             # Ponto de entrada da aplicação
+├── components/           # Componentes da interface
+│   ├── Layout.tsx        # Layout principal com menu
+│   ├── Dashboard.tsx     # Tela inicial com resumos
+│   ├── Members.tsx       # Gestão de membros
+│   ├── Finance.tsx       # Controle financeiro
+│   ├── DP.tsx           # Departamento Pessoal (crachás)
+│   ├── RH.tsx           # Recursos Humanos
+│   ├── Payroll.tsx      # Folha de pagamento
+│   ├── Assets.tsx       # Gestão de patrimônio
+│   ├── Leaves.tsx       # Férias e afastamentos
+│   ├── Events.tsx       # Gestão de eventos
+│   ├── Communication.tsx # Sistema de comunicação
+│   ├── Reports.tsx      # Relatórios gerenciais
+│   ├── Audit.tsx        # Auditoria do sistema
+│   ├── MemberPortal.tsx # Portal do membro
+│   └── Settings.tsx     # Configurações
+├── services/            # Serviços de integração
+│   ├── databaseService.ts # Conexão com banco
+│   └── geminiService.ts   # Integração IA
+└── img/                 # Recursos de imagem
+    └── logo.jpg         # Logo da organização
+```
+
+---
+
+## MÓDULOS DO SISTEMA
+
+### 1. AUTENTICAÇÃO E USUÁRIOS
+
+#### Tipos de Usuário
+- **ADMIN**: Acesso total ao sistema
+- **SECRETARY**: Gestão de membros e eventos
+- **TREASURER**: Controle financeiro
+- **PASTOR**: Acesso pastoral e relatórios
+- **RH**: Recursos humanos
+- **DP**: Departamento pessoal
+- **FINANCEIRO**: Gestão financeira
+- **DEVELOPER**: Privilégios de desenvolvimento
+
+#### Campos do Usuário (UserAuth)
+```typescript
+{
+  id: string                    // Identificador único
+  name: string                  // Nome completo
+  username: string              // Nome de usuário
+  role: UserRole               // Nível de acesso
+  avatar?: string              // URL da foto
+  unitId: string               // Unidade padrão
+}
+```
+
+---
+
+### 2. GESTÃO DE MEMBROS
+
+#### Interface Member - 50+ Campos
+```typescript
+{
+  // IDENTIFICAÇÃO BÁSICA
+  id: string                    // ID único
+  unitId: string               // Unidade da igreja
+  name: string                 // Nome completo
+  cpf: string                  // CPF
+  rg: string                   // RG
+  email: string                // E-mail
+  phone: string                // Telefone
+  whatsapp?: string            // WhatsApp
+  profession?: string          // Profissão
+  
+  // STATUS E FUNÇÃO
+  role: 'MEMBER' | 'VISITOR' | 'VOLUNTEER' | 'STAFF' | 'LEADER'
+  status: 'ACTIVE' | 'INACTIVE' | 'PENDING'
+  
+  // VIDA CRISTÃ
+  conversionDate?: string      // Data de conversão
+  conversionPlace?: string     // Local da conversão
+  baptismDate?: string         // Data do batismo
+  baptismChurch?: string       // Igreja do batismo
+  baptizingPastor?: string     // Pastor que batizou
+  holySpiritBaptism?: 'SIM' | 'NAO'
+  
+  // FORMAÇÃO ECLESIÁSTICA
+  membershipDate?: string      // Data de ingresso
+  churchOfOrigin?: string      // Igreja de origem
+  discipleshipCourse?: 'NAO_INICIADO' | 'EM_ANDAMENTO' | 'CONCLUIDO'
+  biblicalSchool?: 'ATIVO' | 'INATIVO' | 'NAO_FREQUENTA'
+  
+  // MINISTÉRIOS
+  mainMinistry?: string        // Ministério principal
+  ministryRole?: string        // Função no ministério
+  otherMinistries?: string[]   // Outros ministérios
+  ecclesiasticalPosition?: string // Cargo eclesiástico
+  consecrationDate?: string    // Data de consagração
+  
+  // CONTROLE FINANCEIRO
+  isTithable: boolean          // É dizimista
+  isRegularGiver: boolean      // Contribui regularmente
+  participatesCampaigns: boolean // Participa de campanhas
+  contributions: MemberContribution[] // Histórico
+  
+  // DADOS PESSOAIS
+  birthDate: string            // Data de nascimento
+  gender: 'M' | 'F' | 'OTHER'
+  maritalStatus: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED'
+  spiritualGifts?: string      // Dons espirituais
+  cellGroup?: string           // Célula/grupo
+  
+  // ENDEREÇO COMPLETO
+  address: {
+    zipCode: string            // CEP
+    street: string             // Rua
+    number: string             // Número
+    complement?: string        // Complemento
+    neighborhood: string       // Bairro
+    city: string              // Cidade
+    state: string             // Estado
+  }
+  
+  // INFORMAÇÕES ADICIONAIS
+  observations?: string        // Observações
+  specialNeeds?: string        // Necessidades especiais
+  talents?: string            // Talentos
+  avatar: string              // Foto do membro
+}
+```
+
+#### Funcionalidades do Módulo Membros
+- Cadastro completo de membros
+- Histórico de contribuições
+- Geração de carteirinhas de membro
+- Controle de ministérios
+- Relatórios de crescimento
+- Portal do membro
+
+---
+
+### 3. DEPARTAMENTO PESSOAL (DP)
+
+#### Interface Payroll - 80+ Campos
+```typescript
+{
+  // IDENTIFICAÇÃO
+  id: string                   // ID único
+  unitId: string              // Unidade
+  membro_id?: string          // ID do membro (se aplicável)
+  matricula: string           // Matrícula
+  
+  // DADOS PESSOAIS
+  employeeName: string        // Nome completo
+  cpf: string                // CPF
+  rg: string                 // RG
+  pis: string                // PIS/PASEP
+  ctps: string               // Carteira de Trabalho
+  titulo_eleitor?: string    // Título de eleitor
+  reservista?: string        // Certificado reservista
+  aso_data?: string          // Data do ASO
+  blood_type?: string        // Tipo sanguíneo
+  emergency_contact?: string  // Contato de emergência
+  photo?: string             // Foto em base64
+  
+  // DADOS PROFISSIONAIS
+  cargo: string              // Cargo
+  funcao: string             // Função
+  departamento: string       // Departamento
+  cbo: string               // CBO
+  data_admissao: string     // Data de admissão
+  data_demissao?: string    // Data de demissão
+  birthDate: string         // Data de nascimento
+  tipo_contrato: 'CLT' | 'PJ' | 'VOLUNTARIO' | 'TEMPORARIO'
+  jornada_trabalho: string  // Jornada
+  regime_trabalho: 'PRESENCIAL' | 'HIBRIDO' | 'REMOTO'
+  
+  // REMUNERAÇÃO
+  salario_base: number       // Salário base
+  tipo_salario: 'MENSAL' | 'HORISTA' | 'COMISSIONADO'
+  sindicato?: string         // Sindicato
+  convencao_coletiva?: string // Convenção coletiva
+  
+  // HORAS EXTRAS
+  he50_qtd: number          // HE 50%
+  he100_qtd: number         // HE 100%
+  dsr_ativo: boolean        // DSR ativo
+  adic_noturno_qtd: number  // Adicional noturno
+  
+  // ADICIONAIS DE RISCO
+  insalubridade_grau: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'
+  periculosidade_ativo: boolean
+  
+  // OUTROS PROVENTOS
+  comissoes: number         // Comissões
+  gratificacoes: number     // Gratificações
+  premios: number           // Prêmios
+  ats_percentual: number    // ATS %
+  auxilio_moradia: number   // Auxílio moradia
+  arredondamento: number    // Arredondamento
+  
+  // DEPENDENTES
+  dependentes_qtd: number   // Quantidade
+  dependentes_lista?: Dependent[] // Lista detalhada
+  
+  // PCD
+  is_pcd: boolean          // É PCD
+  tipo_deficiencia: string // Tipo de deficiência
+  
+  // DADOS BANCÁRIOS
+  banco: string            // Banco
+  codigo_banco: string     // Código
+  agencia: string          // Agência
+  conta: string            // Conta
+  tipo_conta: 'CORRENTE' | 'POUPANCA'
+  titular: string          // Titular
+  chave_pix: string        // PIX
+  
+  // BENEFÍCIOS
+  vt_ativo: boolean        // Vale transporte
+  vale_transporte_total: number
+  va_ativo: boolean        // Vale alimentação
+  vale_alimentacao: number
+  vr_ativo: boolean        // Vale refeição
+  vale_refeicao: number
+  ps_ativo: boolean        // Plano de saúde
+  plano_saude_colaborador: number
+  po_ativo: boolean        // Plano odontológico
+  plano_saude_dependentes: number
+  vale_farmacia: number    // Vale farmácia
+  seguro_vida: number      // Seguro de vida
+  
+  // DESCONTOS
+  faltas: number           // Faltas
+  atrasos: number          // Atrasos
+  adiantamento: number     // Adiantamento
+  pensao_alimenticia: number // Pensão
+  consignado: number       // Consignado
+  outros_descontos: number // Outros
+  coparticipacoes: number  // Coparticipações
+  
+  // IMPOSTOS
+  inss: number            // INSS funcionário
+  fgts_retido: number     // FGTS retido
+  irrf: number            // IRRF
+  fgts_patronal: number   // FGTS patronal
+  inss_patronal: number   // INSS patronal
+  rat: number             // RAT
+  terceiros: number       // Terceiros
+  
+  // CONTROLE
+  month: string           // Mês
+  year: string            // Ano
+  total_proventos: number // Total proventos
+  total_descontos: number // Total descontos
+  salario_liquido: number // Salário líquido
+  status: 'PAID' | 'PENDING' | 'ACTIVE' | 'INACTIVE'
+  
+  // CNH
+  cnh_numero?: string     // Número CNH
+  cnh_categoria?: string  // Categoria
+  cnh_vencimento?: string // Vencimento
+  
+  // ENDEREÇO
+  address: {
+    zipCode: string       // CEP
+    street: string        // Rua
+    number: string        // Número
+    complement?: string   // Complemento
+    neighborhood: string  // Bairro
+    city: string         // Cidade
+    state: string        // Estado
+  }
+}
+```
+
+#### Funcionalidades do DP
+- Cadastro completo de funcionários
+- Geração de crachás profissionais (frente/verso)
+- Impressão em lote de crachás
+- Controle de documentos
+- Gestão de benefícios
+- Processamento de folha
+
+---
+
+### 4. CONTROLE FINANCEIRO
+
+#### Interface Transaction - 25+ Campos
+```typescript
+{
+  // IDENTIFICAÇÃO
+  id: string               // ID único
+  unitId: string          // Unidade
+  description: string     // Descrição
+  amount: number          // Valor
+  date: string           // Data
+  competencyDate?: string // Data competência
+  
+  // CLASSIFICAÇÃO
+  type: 'INCOME' | 'EXPENSE'
+  category: string        // Categoria
+  operationNature?: string // Natureza
+  costCenter?: string     // Centro de custo
+  projectId?: string      // Projeto
+  accountId: string       // Conta
+  
+  // RELACIONAMENTOS
+  memberId?: string       // Membro
+  reference?: string      // Referência
+  invoiceNumber?: string  // Nota fiscal
+  
+  // PAGAMENTO
+  paymentMethod?: 'CASH' | 'PIX' | 'CREDIT_CARD'
+  
+  // FORNECEDOR
+  providerName?: string   // Nome
+  providerCpf?: string    // CPF
+  providerCnpj?: string   // CNPJ
+  
+  // PARCELAMENTO
+  isInstallment?: boolean
+  installmentsCount?: number
+  currentInstallment?: number
+  
+  // CONTROLE
+  status?: 'PAID' | 'PENDING' | 'CANCELLED'
+  isConciliated?: boolean
+  attachmentUrl?: string
+  
+  // AUDITORIA
+  createdBy?: string      // Criado por
+  createdAt?: string      // Data criação
+  updatedAt?: string      // Atualização
+}
+```
+
+#### Funcionalidades Financeiras
+- Controle de receitas e despesas
+- Gestão de contas bancárias
+- Relatórios financeiros
+- Conciliação bancária
+- Controle de dízimos e ofertas
+- Gestão de campanhas
+
+---
+
+### 5. GESTÃO DE PATRIMÔNIO
+
+#### Interface Asset - 12 Campos
+```typescript
+{
+  id: string              // ID único
+  unitId: string         // Unidade
+  description: string    // Descrição
+  category: 'IMÓVEL' | 'VEÍCULO' | 'SOM_LUZ' | 'INSTRUMENTO' | 'MÓVEL' | 'INFORMÁTICA' | 'OUTROS'
+  acquisitionDate: string // Data aquisição
+  acquisitionValue: number // Valor aquisição
+  currentValue: number    // Valor atual
+  depreciationRate: number // Taxa depreciação
+  location: string       // Localização
+  condition: 'NOVO' | 'BOM' | 'REGULAR' | 'PRECÁRIO'
+  assetNumber: string    // Número tombamento
+  observations?: string  // Observações
+}
+```
+
+---
+
+### 6. FÉRIAS E AFASTAMENTOS
+
+#### Interface EmployeeLeave - 12 Campos
+```typescript
+{
+  id: string             // ID único
+  unitId: string        // Unidade
+  employeeId: string    // ID funcionário
+  employeeName: string  // Nome funcionário
+  type: 'VACATION' | 'MEDICAL' | 'MATERNITY' | 'PATERNITY' | 'MILITARY' | 'WEDDING' | 'BEREAVEMENT' | 'UNPAID'
+  startDate: string     // Data início
+  endDate: string       // Data fim
+  cid10?: string        // CID-10
+  doctorName?: string   // Médico
+  crm?: string          // CRM
+  status: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
+  observations?: string // Observações
+  attachmentUrl?: string // Anexo
+}
+```
+
+---
+
+### 7. ESTRUTURA ORGANIZACIONAL
+
+#### Interface Unit - 7 Campos
+```typescript
+{
+  id: string           // ID único
+  name: string         // Nome unidade
+  cnpj: string         // CNPJ
+  address: string      // Endereço
+  city: string         // Cidade
+  state: string        // Estado
+  isHeadquarter: boolean // É sede
+}
+```
+
+---
+
+### 8. DEPENDENTES
+
+#### Interface Dependent - 5 Campos
+```typescript
+{
+  id: string           // ID único
+  name: string         // Nome
+  birthDate: string    // Data nascimento
+  relationship: 'FILHO' | 'CONJUGE' | 'PAI' | 'MAE' | 'OUTRO'
+  cpf?: string         // CPF
+}
+```
+
+---
+
+### 9. CONTAS FINANCEIRAS
+
+#### Interface FinancialAccount - 5 Campos
+```typescript
+{
+  id: string           // ID único
+  unitId: string       // Unidade
+  name: string         // Nome conta
+  type: 'CASH' | 'BANK' // Tipo
+  currentBalance: number // Saldo atual
+}
+```
+
+---
+
+### 10. EVENTOS DA IGREJA
+
+#### Interface ChurchEvent - 8 Campos
+```typescript
+{
+  id: string           // ID único
+  unitId: string       // Unidade
+  title: string        // Título
+  description: string  // Descrição
+  date: string         // Data
+  time: string         // Horário
+  location: string     // Local
+  attendeesCount: number // Participantes
+  type: 'SERVICE' | 'MEETING' | 'COURSE' | 'RETREAT'
+}
+```
+
+---
+
+### 11. AUDITORIA DO SISTEMA
+
+#### Interface AuditLog - 7 Campos
+```typescript
+{
+  id: string       // ID único
+  unitId: string   // Unidade
+  userId: string   // ID usuário
+  userName: string // Nome usuário
+  action: string   // Ação
+  entity: string   // Entidade
+  date: string     // Data/hora
+  ip: string       // IP
+}
+```
+
+---
+
+## CONFIGURAÇÕES TRIBUTÁRIAS
+
+### Interface TaxConfig
+```typescript
+{
+  inssBrackets: TaxBracket[]   // Faixas INSS
+  irrfBrackets: TaxBracket[]   // Faixas IRRF
+  fgtsRate: number             // FGTS %
+  patronalRate: number         // INSS Patronal %
+  ratRate: number              // RAT %
+}
+```
+
+### Interface TaxBracket
+```typescript
+{
+  limit: number        // Limite faixa
+  rate: number         // Alíquota
+  deduction?: number   // Dedução
+}
+```
+
+---
+
+## FUNCIONALIDADES PRINCIPAIS
+
+### 1. DASHBOARD
+- Resumos executivos
+- Gráficos de crescimento
+- Indicadores financeiros
+- Alertas e notificações
+
+### 2. GESTÃO DE MEMBROS
+- Cadastro completo
+- Histórico de contribuições
+- Carteirinhas de membro
+- Portal do membro
+- Relatórios de crescimento
+
+### 3. DEPARTAMENTO PESSOAL
+- Cadastro de funcionários
+- Crachás profissionais
+- Controle de documentos
+- Gestão de benefícios
+
+### 4. RECURSOS HUMANOS
+- Folha de pagamento
+- Férias e afastamentos
+- Controle de ponto
+- Relatórios trabalhistas
+
+### 5. CONTROLE FINANCEIRO
+- Receitas e despesas
+- Contas bancárias
+- Relatórios financeiros
+- Conciliação bancária
+
+### 6. PATRIMÔNIO
+- Controle de bens
+- Depreciação automática
+- Localização de ativos
+- Relatórios patrimoniais
+
+### 7. EVENTOS
+- Agenda de eventos
+- Controle de participantes
+- Recursos necessários
+- Relatórios de eventos
+
+### 8. COMUNICAÇÃO
+- Mensagens internas
+- Notificações
+- Comunicados gerais
+- Portal do membro
+
+### 9. RELATÓRIOS
+- Relatórios gerenciais
+- Relatórios financeiros
+- Relatórios de RH
+- Relatórios de crescimento
+
+### 10. AUDITORIA
+- Log de ações
+- Controle de acesso
+- Histórico de alterações
+- Relatórios de auditoria
+
+---
+
+## RECURSOS TÉCNICOS
+
+### GERAÇÃO DE PDF
+- Crachás profissionais
+- Carteirinhas de membro
+- Relatórios financeiros
+- Holerites
+- Comprovantes
+
+### IMPRESSÃO
+- Impressão individual
+- Impressão em lote
+- Layout otimizado
+- Qualidade gráfica (300+ DPI)
+
+### VALIDAÇÕES
+- CPF/CNPJ
+- CEP (integração ViaCEP)
+- E-mail
+- Telefone
+- Campos obrigatórios
+
+### SEGURANÇA
+- Controle de acesso por perfil
+- Auditoria completa
+- Backup automático
+- Criptografia de dados sensíveis
+
+---
+
+## INTEGRAÇÕES
+
+### BANCO DE DADOS
+- PostgreSQL
+- Sincronização automática
+- Backup incremental
+- Replicação
+
+### APIS EXTERNAS
+- ViaCEP (consulta CEP)
+- Receita Federal (validação CNPJ)
+- Bancos (conciliação)
+- E-mail (notificações)
+
+### SERVIÇOS
+- Gemini AI (assistente)
+- Armazenamento em nuvem
+- Backup automático
+- Monitoramento
+
+---
+
+## RESUMO QUANTITATIVO
+
+### INTERFACES PRINCIPAIS
+- **Member**: 50+ campos
+- **Payroll**: 80+ campos  
+- **Transaction**: 25+ campos
+- **Asset**: 12 campos
+- **EmployeeLeave**: 12 campos
+- **Unit**: 7 campos
+- **Dependent**: 5 campos
+- **FinancialAccount**: 5 campos
+- **ChurchEvent**: 8 campos
+- **AuditLog**: 7 campos
+
+### TOTAL DE CAMPOS NO SISTEMA
+**Mais de 230 campos** distribuídos entre todas as interfaces, proporcionando controle completo e detalhado de todos os aspectos da organização.
+
+### MÓDULOS FUNCIONAIS
+- 10 módulos principais
+- 15+ componentes React
+- 50+ funcionalidades
+- 100+ validações
+- Suporte multi-unidade
+- Controle de acesso granular
+
+---
+
+*Documentação gerada automaticamente em 03/02/2026*
+*Sistema ADJPA ERP - Enterprise Edition v5.0*

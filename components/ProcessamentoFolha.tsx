@@ -25,6 +25,17 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
   const [rangeEnd, setRangeEnd] = useState('');
   const [pendingAction, setPendingAction] = useState<'PDF' | 'PROCESS' | null>(null);
 
+  const formatMatricula = (m: string) => {
+    if (!m) return '-';
+    if (/^F\d{2,}\/\d{4}$/.test(m)) return m;
+    const match = m.match(/^F(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1]).toString().padStart(2, '0');
+      return `F${num}/${new Date().getFullYear()}`;
+    }
+    return m;
+  };
+
   // Carregar configurações fiscais
   useEffect(() => {
     const loadConfig = async () => {
@@ -96,9 +107,16 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
 
     // Sort filtered employees by matricula
     filteredEmployees.sort((a, b) => {
-      const matA = (a.matricula || '').toString().trim();
-      const matB = (b.matricula || '').toString().trim();
-      return matA.localeCompare(matB, undefined, {numeric: true});
+      const parse = (m: string) => {
+        const withYear = m.match(/F(\d+)\/(\d+)/);
+        if (withYear) return { num: parseInt(withYear[1]), ano: parseInt(withYear[2]) };
+        const noYear = m.match(/F(\d+)/);
+        return noYear ? { num: parseInt(noYear[1]), ano: 0 } : { num: 0, ano: 0 };
+      };
+      const matA = parse(a.matricula || '');
+      const matB = parse(b.matricula || '');
+      if (matA.ano !== matB.ano) return matA.ano - matB.ano;
+      return matA.num - matB.num;
     });
 
     console.log('✅ Funcionários filtrados e ordenados:', filteredEmployees.length);
@@ -429,7 +447,18 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-xs">
-            {employees.map(emp => {
+            {[...employees].sort((a, b) => {
+              const parse = (m: string) => {
+                const withYear = m.match(/F(\d+)\/(\d+)/);
+                if (withYear) return { num: parseInt(withYear[1]), ano: parseInt(withYear[2]) };
+                const noYear = m.match(/F(\d+)/);
+                return noYear ? { num: parseInt(noYear[1]), ano: 0 } : { num: 0, ano: 0 };
+              };
+              const matA = parse(a.matricula || '');
+              const matB = parse(b.matricula || '');
+              if (matA.ano !== matB.ano) return matA.ano - matB.ano;
+              return matA.num - matB.num;
+            }).map(emp => {
               const totalProventos = emp.total_proventos || (emp.salario_base || 0);
               const totalDescontos = emp.total_descontos || ((emp.inss || 0) + (emp.irrf || 0)); 
               const salarioLiquido = emp.salario_liquido || (totalProventos - totalDescontos);
@@ -439,7 +468,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
                   <td className="px-6 py-4 text-center">
                     <input type="checkbox" checked={selectedIds.includes(emp.id)} onChange={() => setSelectedIds(prev => prev.includes(emp.id) ? prev.filter(id => id !== emp.id) : [...prev, emp.id])} className="w-4 h-4 accent-indigo-600" />
                   </td>
-                  <td className="px-4 py-4 font-bold text-slate-600">{emp.matricula}</td>
+                  <td className="px-4 py-4 font-bold text-slate-600">{formatMatricula(emp.matricula)}</td>
                   <td className="px-4 py-4">
                     <p className="font-bold text-slate-900 leading-none mb-1">{emp.employeeName}</p>
                     <p className="text-[9px] text-slate-400 font-bold uppercase">{emp.cargo}</p>

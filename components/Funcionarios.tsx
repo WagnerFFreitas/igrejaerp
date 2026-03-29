@@ -4,26 +4,35 @@ import {
   UserCheck, Printer, X, Download, Loader2, Save, Trash2, Camera, 
   Landmark, DollarSign, MapPin, Calendar, Info, Users, ShieldCheck, 
   Heart, AlertCircle, Wand2, FileText, CreditCard, Clock, Percent,
-  User, Phone, Mail, Award, Tag, History, Users2, Star, TrendingUp,
-  MessageSquare, CheckCircle2, XCircle, Calculator
+  MessageSquare, CheckCircle2, XCircle, Calculator, Shield, Target, Lightbulb, BookOpen, Filter,
+  CheckCircle, FileSignature, Mail, Phone, Users2, Tag, Star, TrendingUp, Award, History, User
 } from 'lucide-react';
-import { Payroll, Dependent, UserAuth, TaxConfig } from '../types';
+import { Payroll, Dependent, UserAuth, TaxConfig, LGPDConsent, LGPDPolicy, Unit } from '../types';
 import { DEFAULT_TAX_CONFIG } from '../constants';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { TemplateCrachaFuncionario } from './TemplateCrachaFuncionario';
 import { dbService } from '../services/databaseService';
 import IndexedDBService from '../src/services/indexedDBService';
+import { StorageService } from '../src/services/storageService';
 import { useAudit } from '../src/hooks/useAudit';
+import LGPDService from '../services/lgpdService';
+import LGPDConsentModal from './LGPDConsentModal';
+import { ImprimeCadFuncionario } from './ImprimeCadFuncionario';
+import AvaliacaoModal from './AvaliacaoModal';
+import HistoricoSalarial from './HistoricoSalarial';
+import TermoAdesaoLGPD from './TermoAdesaoLGPD';
 
 interface FuncionariosProps {
   employees: Payroll[];
   currentUnitId: string;
   setEmployees: React.Dispatch<React.SetStateAction<Payroll[]>>;
   user?: UserAuth;
+  evaluations: Record<string, any[]>;
+  setEvaluations: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
 }
 
-type EmployeeTab = 'pessoais' | 'contrato' | 'jornada' | 'banco_horas' | 'documentos' | 'endereco' | 'bancarios' | 'beneficios' | 'esocial' | 'dependentes' | 'folha';
+type EmployeeTab = 'pessoais' | 'contrato' | 'jornada' | 'banco_horas' | 'documentos' | 'endereco' | 'bancarios' | 'beneficios' | 'esocial' | 'dependentes' | 'folha' | 'lgpd' | 'avaliacao' | 'historico_salarial';
 
 const InputField = ({ label, value, onChange, placeholder, type = "text", icon: Icon, readOnly = false }: any) => (
   <div className="space-y-1.5">
@@ -58,13 +67,18 @@ const SelectField = ({ label, value, onChange, options, icon: Icon }: any) => (
   </div>
 );
 
-export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUnitId, setEmployees, user }) => {
+export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUnitId, setEmployees, user, evaluations, setEvaluations }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterCargo, setFilterCargo] = useState('');
   const [isIDCardOpen, setIsIDCardOpen] = useState(false);
+  const [showPrintCadModal, setShowPrintCadModal] = useState(false);
 
   // Hook de auditoria
-  const { logAction } = useAudit(user);
+  const { logAction } = useAudit(user || null);
 
   // Função para identificar campos alterados em funcionários
   const getChangedEmployeeFields = (oldData: Payroll, newData: Partial<Payroll>): string[] => {
@@ -102,6 +116,23 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
   const [activeTab, setActiveTab] = useState<EmployeeTab>('pessoais');
   const [isSearchingCEP, setIsSearchingCEP] = useState(false);
   const [taxConfig, setTaxConfig] = useState<TaxConfig>(DEFAULT_TAX_CONFIG);
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  
+  // Estados LGPD
+  const [showLGPDModal, setShowLGPDModal] = useState(false);
+  const [showTermoLGPD, setShowTermoLGPD] = useState(false);
+  const [currentPolicy, setCurrentPolicy] = useState<LGPDPolicy | null>(null);
+  const [employeeConsents, setEmployeeConsents] = useState<LGPDConsent[]>([]);
+  const [lgpdReport, setLgpdReport] = useState<any>(null);
+
+  // useEffect do visualizador foi removido daqui e movido para após formData
+
+  // Estado da Unidade
+  const [currentUnitData, setCurrentUnitData] = useState<Unit | null>(null);
+
+  // Estados Avaliação
+  const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false);
+  const [editingAvaliacao, setEditingAvaliacao] = useState<any>(null);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -116,6 +147,179 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     };
     loadConfig();
   }, []);
+
+  useEffect(() => {
+    const loadLGPDData = async () => {
+      if (currentUnitId) {
+        try {
+          const policy = await LGPDService.getCurrentPolicy(currentUnitId);
+          setCurrentPolicy(policy);
+        } catch (error) {
+          console.error('Erro ao carregar política LGPD:', error);
+        }
+      }
+    };
+    
+    loadLGPDData();
+  }, [currentUnitId]);
+
+  // Carregar dados da Unidade
+  useEffect(() => {
+    const loadUnitData = async () => {
+      try {
+        const units = await dbService.getUnits();
+        const unit = units.find(u => u.id === currentUnitId);
+        if (unit) {
+          setCurrentUnitData(unit);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar unidade:', error);
+      }
+    };
+    if (currentUnitId) loadUnitData();
+  }, [currentUnitId]);
+
+  // Carregar consentimentos do funcionário selecionado
+  useEffect(() => {
+    const loadEmployeeConsents = async () => {
+      if (editingEmployee?.id) {
+        try {
+          const consents = await LGPDService.getUserConsents(editingEmployee.id, currentUnitId);
+          setEmployeeConsents(consents);
+          
+          // Atualizar formData com consentimentos existentes, preservando o anexo se houver
+          setFormData(prev => ({ 
+            ...prev, 
+            lgpdConsent: {
+              ...(prev.lgpdConsent || {}),
+              dataProcessing: consents.find(c => c.consentType === 'DATA_PROCESSING')?.granted || false,
+              communication: consents.find(c => c.consentType === 'COMMUNICATION')?.granted || false,
+              marketing: consents.find(c => c.consentType === 'MARKETING')?.granted || false,
+              financial: consents.find(c => c.consentType === 'FINANCIAL')?.granted || false,
+              consentDate: consents[0]?.consentDate,
+              policyVersion: consents[0]?.policyVersion,
+              // O documentUrl já está no prev.lgpdConsent se foi carregado do banco ou anexado
+            }
+          }));
+        } catch (error) {
+          console.error('Erro ao carregar consentimentos do funcionário:', error);
+        }
+      }
+    };
+    
+    loadEmployeeConsents();
+  }, [editingEmployee?.id, currentUnitId]);
+
+  // Carregar avaliações do funcionário selecionado
+  useEffect(() => {
+    const loadEmployeeEvaluations = async () => {
+      if (editingEmployee?.id) {
+        try {
+          // Se não houver avaliações para este funcionário, criar dados mockados
+          if (!evaluations[editingEmployee.id] || evaluations[editingEmployee.id].length === 0) {
+            const mockEvaluations = [
+              {
+                id: 'eval-001',
+                evaluationPeriod: '2024-Q1',
+                evaluationDate: '2024-03-31',
+                evaluationType: 'QUARTERLY',
+                overallScore: 85,
+                overallRating: 'GOOD',
+                status: 'APPROVED',
+                evaluatorName: 'Gestor',
+                strengths: ['Liderança eficaz', 'Boa comunicação'],
+                improvementAreas: ['Gestão de tempo'],
+                competencies: [
+                  { name: 'Liderança', score: 88, level: 'AVANÇADO' },
+                  { name: 'Comunicação', score: 82, level: 'INTERMEDIÁRIO' }
+                ],
+                goals: [
+                  { title: 'Aumentar produtividade', achievement: 95, status: 'CONCLUÍDO' }
+                ],
+                pdiPlan: [
+                  { action: 'Curso de Gestão de Tempo', progress: 60, status: 'EM ANDAMENTO' }
+                ]
+              }
+            ];
+            setEvaluations(prev => ({ ...prev, [editingEmployee.id]: mockEvaluations }));
+          }
+        } catch (error) {
+          console.error('Erro ao carregar avaliações do funcionário:', error);
+        }
+      }
+    };
+    
+    loadEmployeeEvaluations();
+  }, [editingEmployee?.id, evaluations, setEvaluations]);
+
+  const handleEditAvaliacao = (evaluation: any) => {
+    setEditingAvaliacao(evaluation);
+    setShowAvaliacaoModal(true);
+  };
+
+  const handleNewAvaliacao = () => {
+    setEditingAvaliacao(null);
+    setShowAvaliacaoModal(true);
+  };
+
+  const openDocumentInNewTab = (dataUrl: string, fileName: string) => {
+    if (!dataUrl) return;
+    
+    // Identificar base64 e content type
+    const parts = dataUrl.split(';base64,');
+    if (parts.length !== 2) {
+      window.open(dataUrl, '_blank');
+      return;
+    }
+    
+    let contentType = parts[0].split(':')[1];
+    if (contentType.includes(';')) contentType = contentType.split(';')[0];
+    
+    // Validar se é PDF pela assinatura dos dados (JVBER = %PDF-)
+    const base64Data = parts[1];
+    const isPDFSignature = base64Data.substring(0, 5) === 'JVBER';
+    const isPDF = isPDFSignature || contentType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+    
+    // Reconstruir o dataUrl com o tipo correto se for PDF
+    // Isso é crucial porque se o original for application/octet-stream, o navegador disparará download.
+    const viewUrl = isPDF ? `data:application/pdf;base64,${base64Data}` : dataUrl;
+    const finalFileName = isPDF && !fileName.toLowerCase().endsWith('.pdf') ? `${fileName}.pdf` : fileName;
+
+    // Criar o HTML da página de visualização
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${finalFileName}</title>
+          <style>
+            body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: ${isPDF ? '#525659' : '#000'}; }
+            .container { display: flex; justify-content: center; align-items: center; height: 100%; width: 100%; }
+            img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            object, embed { border: none; width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            ${isPDF 
+              ? `<object data="${viewUrl}" type="application/pdf" width="100%" height="100%">
+                  <embed src="${viewUrl}" type="application/pdf" width="100%" height="100%" />
+                 </object>`
+              : `<img src="${viewUrl}" alt="${finalFileName}" />`
+            }
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Abrir em nova aba com document.write (técnica fallback robusta)
+    const newWin = window.open('', '_blank');
+    if (newWin) {
+      newWin.document.write(html);
+      newWin.document.close();
+    } else {
+      alert('O bloqueador de pop-ups impediu a visualização. Por favor, autorize pop-ups para este site.');
+    }
+  };
 
   const [formData, setFormData] = useState<Partial<Payroll>>({
     employeeName: '', cpf: '', rg: '', email: '', matricula: '',
@@ -145,6 +349,8 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     address: { zipCode: '', street: '', number: '', neighborhood: '', city: '', state: '' }
   });
 
+  // useEffect anterior removido pois agora abrimos em nova aba diretamente
+
   useEffect(() => {
     if (isModalOpen && !formData.matricula) {
       const next = getNextEmployeeMatricula();
@@ -162,28 +368,195 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     }
   }, [formData.vt_valor_diario, formData.vt_qtd_vales_dia]);
 
-  const filtered = employees.filter(e => 
-    e.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.matricula.includes(searchTerm) ||
-    e.cpf.includes(searchTerm)
-  );
+  const formatMatricula = (m: string) => {
+    if (!m) return '-';
+    // Já está no formato correto F01/2026
+    if (/^F\d{2,}\/\d{4}$/.test(m)) return m;
+    // Formato antigo F001, F002, etc — converte para F01/ano
+    const match = m.match(/^F(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1]).toString().padStart(2, '0');
+      return `F${num}/${new Date().getFullYear()}`;
+    }
+    return m;
+  };
+
+  const filtered = employees.filter(e => {
+    const searchLower = (searchTerm || '').toLowerCase();
+    const normalizeDigits = (val: string) => (val || '').replace(/\D/g, '');
+    const searchDigits = normalizeDigits(searchTerm);
+    const matriculaFormatada = formatMatricula(e.matricula).toLowerCase();
+
+    const matchesSearch = 
+      (e.employeeName || '').toLowerCase().includes(searchLower) ||
+      (e.matricula || '').toLowerCase().includes(searchLower) ||
+      matriculaFormatada.includes(searchLower) ||
+      (e.cpf || '').toLowerCase().includes(searchLower) ||
+      (e.email || '').toLowerCase().includes(searchLower) ||
+      (e.email_pessoal || '').toLowerCase().includes(searchLower) ||
+      (e.telefone || '').toLowerCase().includes(searchLower) ||
+      (e.celular || '').toLowerCase().includes(searchLower) ||
+      (e.phone || '').toLowerCase().includes(searchLower) ||
+      (searchDigits !== '' && normalizeDigits(e.matricula || '').includes(searchDigits)) ||
+      (searchDigits !== '' && normalizeDigits(matriculaFormatada || '').includes(searchDigits)) ||
+      (searchDigits !== '' && normalizeDigits(e.cpf || '').includes(searchDigits));
+
+    const matchesStatus = !filterStatus || e.status === filterStatus;
+    const matchesType = !filterType || e.tipo_contrato === filterType;
+    const matchesCargo = !filterCargo || e.cargo === filterCargo;
+    
+    return matchesSearch && matchesStatus && matchesType && matchesCargo;
+  }).sort((a, b) => {
+    const parseMatricula = (m: string) => {
+      const withYear = m.match(/F(\d+)\/(\d+)/);
+      if (withYear) return { num: parseInt(withYear[1]), ano: parseInt(withYear[2]) };
+      const noYear = m.match(/F(\d+)/);
+      if (noYear) return { num: parseInt(noYear[1]), ano: 0 };
+      return { num: 0, ano: 0 };
+    };
+
+    const matA = parseMatricula(a.matricula);
+    const matB = parseMatricula(b.matricula);
+
+    if (matA.ano !== matB.ano) return matA.ano - matB.ano;
+    return matA.num - matB.num;
+  });
+
 
   const getNextEmployeeMatricula = () => {
     const currentYear = new Date().getFullYear();
-    if (!employees || employees.length === 0) return `F01/${currentYear}`;
     
     const numbers = employees
       .filter(e => e.matricula && e.matricula.startsWith('F'))
       .map(e => {
-        const match = e.matricula.match(/F(\d+)\//);
-        return match ? parseInt(match[1]) : 0;
-      });
+        const withYear = e.matricula.match(/F(\d+)\/(\d+)/);
+        if (withYear) return { num: parseInt(withYear[1]), ano: parseInt(withYear[2]) };
+        const noYear = e.matricula.match(/F(\d+)/);
+        return noYear ? { num: parseInt(noYear[1]), ano: currentYear } : { num: 0, ano: 0 };
+      })
+      .filter(m => m.ano === currentYear)
+      .map(m => m.num);
     
     const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
     const nextNumber = maxNumber + 1;
     const paddedNumber = nextNumber.toString().padStart(2, '0');
     
     return `F${paddedNumber}/${currentYear}`;
+  };
+
+  const handleDocumentUpload = async (file: File, docType: string) => {
+    if (!file) return;
+    if (!StorageService.validateFileSize(file, 10)) {
+      alert('Arquivo muito grande. Máximo 10MB.');
+      return;
+    }
+    const employeeId = editingEmployee?.id || `E${Date.now()}`;
+    setUploadingDoc(docType);
+    try {
+      const url = await StorageService.uploadEmployeeDocument(currentUnitId, employeeId, docType, file);
+      const field = `doc_${docType}` as any;
+      setFormData(prev => ({ ...prev, [field]: url, documentos_upload: url }));
+      alert(`Documento "${docType}" enviado com sucesso.`);
+    } catch (e) {
+      alert('Erro ao enviar documento.');
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
+
+  const handleLGPDConsent = async (consent: LGPDConsent) => {
+    try {
+      await LGPDService.saveConsent(consent);
+      
+      setFormData(prev => ({
+        ...prev,
+        lgpdConsent: {
+          ...(prev.lgpdConsent || {}),
+          dataProcessing: consent.consentType === 'DATA_PROCESSING' ? consent.granted : (prev.lgpdConsent?.dataProcessing || false),
+          communication: consent.consentType === 'COMMUNICATION' ? consent.granted : (prev.lgpdConsent?.communication || false),
+          marketing: consent.consentType === 'MARKETING' ? consent.granted : (prev.lgpdConsent?.marketing || false),
+          financial: consent.consentType === 'FINANCIAL' ? consent.granted : (prev.lgpdConsent?.financial || false),
+          consentDate: consent.consentDate,
+          policyVersion: consent.policyVersion
+          // documentUrl é preservado pelo spread
+        }
+      }));
+
+      // Registrar auditoria
+      await logAction('CREATE', 'LGPDConsent', consent.id, `Consentimento LGPD registrado para ${formData.employeeName}`, {
+        consentType: consent.consentType,
+        granted: consent.granted,
+        policyVersion: consent.policyVersion
+      });
+
+      console.log('✅ Consentimento LGPD salvo com sucesso');
+      alert('Consentimento LGPD salvo com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao salvar consentimento LGPD:', error);
+      alert('Erro ao salvar consentimento LGPD. Tente novamente.');
+    }
+  };
+
+  const handleSaveAvaliacao = async (avaliacao: any) => {
+    try {
+      // Simular salvamento (em produção usaria AvaliacaoService)
+      console.log('💾 Salvando avaliação:', avaliacao);
+      
+      // Atualizar lista de avaliações do funcionário no estado compartilhado
+      if (editingEmployee?.id) {
+        const currentEvals = evaluations[editingEmployee.id] || [];
+        const existingIndex = currentEvals.findIndex(e => e.id === avaliacao.id);
+        
+        if (existingIndex >= 0) {
+          // Atualizar avaliação existente
+          const updatedEvaluations = [...currentEvals];
+          updatedEvaluations[existingIndex] = avaliacao;
+          setEvaluations(prev => ({ ...prev, [editingEmployee.id]: updatedEvaluations }));
+        } else {
+          // Adicionar nova avaliação
+          setEvaluations(prev => ({ ...prev, [editingEmployee.id]: [...currentEvals, avaliacao] }));
+        }
+      }
+      
+      // Registrar auditoria
+      await logAction('CREATE', 'AvaliacaoDesempenho', avaliacao.id, `Avaliação de desempenho registrada para ${formData.employeeName}`, {
+        evaluationType: avaliacao.evaluationType,
+        overallScore: avaliacao.overallScore,
+        status: avaliacao.status
+      });
+
+      console.log('✅ Avaliação salva com sucesso');
+      alert('Avaliação salva com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao salvar avaliação:', error);
+      alert('Erro ao salvar avaliação. Tente novamente.');
+    }
+  };
+
+  const handleGenerateLGPDReport = async () => {
+    try {
+      const report = await LGPDService.generateConsentReport(currentUnitId);
+      setLgpdReport(report);
+      
+      // Exportar relatório em JSON
+      const dataStr = JSON.stringify(report, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio-lgpd-funcionarios-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ Relatório LGPD de funcionários gerado com sucesso');
+      alert('Relatório LGPD de funcionários gerado e baixado com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao gerar relatório LGPD:', error);
+      alert('Erro ao gerar relatório LGPD. Tente novamente.');
+    }
   };
 
   const handleSave = async () => {
@@ -254,7 +627,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
       setEditingEmployee(null);
       alert("Funcionário salvo com sucesso!");
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Erro ao salvar funcionário:", error);
       alert("Falha ao salvar funcionário. " + (error.message || "Verifique o console para mais detalhes."));
     } finally {
@@ -362,7 +735,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     irrf = Math.max(0, irrf);
 
     const fgts = base * DEFAULT_TAX_CONFIG.fgtsRate;
-    const patronal = base * DEFAULT_TAX_CONFIG.patronalRate;
+    const patronal = base * (DEFAULT_TAX_CONFIG.patronalRate || 0);
     const net = base - inss - irrf;
 
     return { inss, irrf, net, patronal, fgts };
@@ -456,10 +829,11 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
             <Printer size={14} /> Imprimir Crachás ({selectedIds.length})
           </button>
           <button 
-            onClick={() => selectedIds.length > 0 && handleDirectPrint()}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all ${selectedIds.length > 0 ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+            onClick={() => setShowPrintCadModal(true)}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase shadow-md transition-all bg-slate-600 text-white hover:bg-slate-700"
           >
-            <Printer size={14} /> Imprimir cadastro ({selectedIds.length})
+            <Printer size={14} /> Imprimir Cadastro
+            {selectedIds.length > 0 && <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded text-[9px]">{selectedIds.length} sel.</span>}
           </button>
           <button 
             onClick={handleNew}
@@ -470,16 +844,70 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
         </div>
       </div>
 
-      <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-         <Search className="text-slate-300 ml-2" size={18}/>
-         <input 
-          type="text" 
-          placeholder="Pesquisar por nome ou matrícula..." 
-          className="flex-1 bg-transparent outline-none text-xs font-bold text-slate-700"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-         />
+      <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Buscar por nome, matrícula, e-mail ou CPF..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+          />
+        </div>
+        <button
+          onClick={() => setShowFilters(p => !p)}
+          className={`flex items-center justify-center gap-2 px-6 py-3 border rounded-xl font-bold text-xs transition-all whitespace-nowrap ${showFilters ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+        >
+          <Filter size={18} /> Filtros Avançados
+          {(filterStatus || filterType || filterCargo) && (
+            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block ml-1"/>
+          )}
+        </button>
       </div>
+
+      {showFilters && (
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1 ml-1">Status</label>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos os Status</option>
+              <option value="ACTIVE">Ativo</option>
+              <option value="INACTIVE">Inativo</option>
+              <option value="SUSPENDED">Afastado</option>
+              <option value="TERMINATED">Desligado</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1 ml-1">Tipo de Contrato</label>
+            <select value={filterType} onChange={e => setFilterType(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos os Tipos</option>
+              <option value="CLT">CLT</option>
+              <option value="ESTAGIO">Estágio</option>
+              <option value="AUTONOMO">Autônomo</option>
+              <option value="PJ">PJ</option>
+              <option value="TEMPORARIO">Temporário</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1 ml-1">Cargo</label>
+            <select value={filterCargo} onChange={e => setFilterCargo(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos os Cargos</option>
+              {[...new Set(employees.map(e => e.cargo).filter(Boolean))].sort().map(cargo => (
+                <option key={cargo} value={cargo}>{cargo}</option>
+              ))}
+            </select>
+          </div>
+          {(filterStatus || filterType || filterCargo) && (
+            <button 
+              onClick={() => { setFilterStatus(''); setFilterType(''); setFilterCargo(''); }} 
+              className="md:col-span-3 text-[10px] font-black uppercase text-rose-500 hover:text-rose-700 transition-colors flex items-center justify-center gap-1 py-1"
+            >
+              <X size={12} /> Limpar filtros aplicados
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
         <table className="w-full text-left">
@@ -506,7 +934,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                   </div>
                 </td>
                 <td className="px-3 py-3 text-slate-600 font-bold">
-                  {emp.matricula}
+                  {formatMatricula(emp.matricula)}
                 </td>
                 <td className="px-3 py-3 font-bold text-slate-900 flex items-center gap-3">
                    <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
@@ -527,7 +955,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                 <td className="px-6 py-3"><span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-100">Sincronizado</span></td>
                 <td className="px-6 py-3 text-right text-slate-300 hover:text-indigo-600 cursor-pointer transition-colors flex justify-end gap-2">
                    <button onClick={() => { setSelectedIds([emp.id]); setIsIDCardOpen(true); }} title="Imprimir Crachá"><QrCode size={16}/></button>
-                   <button onClick={() => { /* Lógica para imprimir cadastro */ window.print(); }} title="Imprimir Cadastro"><Printer size={16}/></button>
+                   <button onClick={() => { setSelectedIds([emp.id]); setShowPrintCadModal(true); }} title="Imprimir Cadastro"><Printer size={16}/></button>
                    <button onClick={() => handleEdit(emp)} title="Editar"><Edit2 size={16}/></button>
                 </td>
               </tr>
@@ -553,22 +981,10 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
               </div>
               <div className="flex items-center gap-3">
                 <button 
-                  onClick={handleSave} 
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                  onClick={() => setIsModalOpen(false)} 
+                  disabled={isSaving} 
+                  className="p-3 hover:bg-slate-100 rounded-2xl text-slate-400 transition-all disabled:opacity-50"
                 >
-                  {isSaving ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18}/> Salvar Registro
-                    </>
-                  )}
-                </button>
-                <button onClick={() => setIsModalOpen(false)} disabled={isSaving} className="p-3 hover:bg-slate-100 rounded-2xl text-slate-400 transition-all disabled:opacity-50">
                   <X size={24}/>
                 </button>
               </div>
@@ -576,7 +992,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
             <div className="px-8 py-4 bg-white border-b border-slate-100 shrink-0 z-10">
               <div className="flex flex-wrap gap-2 bg-slate-50 p-1.5 rounded-[2rem] border border-slate-100">
-                {(['pessoais', 'contrato', 'jornada', 'banco_horas', 'documentos', 'endereco', 'bancarios', 'beneficios', 'esocial', 'dependentes', 'folha'] as EmployeeTab[]).map((tab) => (
+                {(['pessoais', 'contrato', 'jornada', 'banco_horas', 'documentos', 'endereco', 'bancarios', 'beneficios', 'esocial', 'dependentes', 'folha', 'lgpd', 'avaliacao', 'historico_salarial'] as EmployeeTab[]).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -597,6 +1013,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                     {tab === 'esocial' && 'eSocial'}
                     {tab === 'dependentes' && 'Dependentes'}
                     {tab === 'folha' && 'Folha'}
+                    {tab === 'lgpd' && 'LGPD'}
+                    {tab === 'avaliacao' && 'Avaliação'}
+                    {tab === 'historico_salarial' && 'Histórico Salarial'}
                   </button>
                 ))}
               </div>
@@ -743,6 +1162,14 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                     {label: 'Transferência Bancária', value: 'TRANSFERENCIA'}, {label: 'PIX', value: 'PIX'}, {label: 'Cheque', value: 'CHEQUE'}, {label: 'Dinheiro', value: 'DINHEIRO'}
                   ]} icon={DollarSign} />
                   <InputField label="Dia do Pagamento" value={formData.dia_pagamento} onChange={(v:any) => setFormData({...formData, dia_pagamento: v})} placeholder="Ex: 5º dia útil" icon={Calendar} />
+                  <div className="flex items-center gap-3 pt-6">
+                    <input type="checkbox" checked={!!formData.primeiro_emprego} onChange={(e) => setFormData({...formData, primeiro_emprego: e.target.checked})} className="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500" />
+                    <label className="text-xs font-bold text-slate-600 uppercase">Primeiro Emprego</label>
+                  </div>
+                  <div className="flex items-center gap-3 pt-6">
+                    <input type="checkbox" checked={!!formData.optante_fgts} onChange={(e) => setFormData({...formData, optante_fgts: e.target.checked})} className="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500" />
+                    <label className="text-xs font-bold text-slate-600 uppercase">Optante FGTS</label>
+                  </div>
                 </div>
               )}
 
@@ -875,11 +1302,16 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                       <InputField label="Banco" value={formData.banco} onChange={(v:any) => setFormData({...formData, banco: v})} placeholder="Nome do Banco" icon={Building} />
                       <InputField label="Código do Banco" value={formData.codigo_banco} onChange={(v:any) => setFormData({...formData, codigo_banco: v})} placeholder="Ex: 001" />
                       <InputField label="Agência" value={formData.agencia} onChange={(v:any) => setFormData({...formData, agencia: v})} placeholder="0000" />
+                      <InputField label="Dígito Agência" value={formData.banco_digito_agencia} onChange={(v:any) => setFormData({...formData, banco_digito_agencia: v})} placeholder="0" />
                       <InputField label="Conta" value={formData.conta} onChange={(v:any) => setFormData({...formData, conta: v})} placeholder="00000-0" />
+                      <InputField label="Dígito Conta" value={formData.banco_digito_conta} onChange={(v:any) => setFormData({...formData, banco_digito_conta: v})} placeholder="0" />
                       <SelectField label="Tipo de Conta" value={formData.tipo_conta} onChange={(v:any) => setFormData({...formData, tipo_conta: v})} options={[
                         {label: 'Corrente', value: 'CORRENTE'}, {label: 'Poupança', value: 'POUPANCA'}
                       ]} />
                       <InputField label="Titular" value={formData.titular} onChange={(v:any) => setFormData({...formData, titular: v})} placeholder="Nome do titular" />
+                      <SelectField label="Tipo Chave PIX" value={formData.banco_tipo_chave_pix} onChange={(v:any) => setFormData({...formData, banco_tipo_chave_pix: v})} options={[
+                        {label: 'CPF', value: 'CPF'}, {label: 'CNPJ', value: 'CNPJ'}, {label: 'E-mail', value: 'EMAIL'}, {label: 'Telefone', value: 'TELEFONE'}, {label: 'Aleatória', value: 'ALEATORIA'}
+                      ]} icon={QrCode} />
                       <InputField label="Chave PIX" value={formData.chave_pix} onChange={(v:any) => setFormData({...formData, chave_pix: v})} placeholder="CPF, E-mail, Celular..." icon={QrCode} />
                     </div>
                   </div>
@@ -969,6 +1401,290 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                     </div>
                   </div>
                 </div>
+              )}
+
+              {activeTab === 'lgpd' && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                  {/* Resumo de Consentimentos Atuais */}
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <h4 className="text-[10px] font-black text-indigo-600 uppercase mb-6 flex items-center gap-2">
+                      <Shield size={14} />
+                      Consentimentos LGPD Atuais
+                    </h4>
+                    
+                    {employeeConsents.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {employeeConsents.map((consent, index) => (
+                          <div key={index} className="bg-white p-4 rounded-xl border border-slate-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="font-semibold text-slate-900">
+                                {consent.consentType === 'DATA_PROCESSING' && 'Tratamento de Dados'}
+                                {consent.consentType === 'COMMUNICATION' && 'Comunicação'}
+                                {consent.consentType === 'MARKETING' && 'Marketing'}
+                                {consent.consentType === 'FINANCIAL' && 'Financeiro'}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                consent.granted 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {consent.granted ? 'Concedido' : 'Revogado'}
+                              </span>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm text-slate-600">
+                              <div>Data: {new Date(consent.consentDate).toLocaleDateString('pt-BR')}</div>
+                              <div>Versão: {consent.policyVersion}</div>
+                              {consent.revokedDate && (
+                                <div>Revogado em: {new Date(consent.revokedDate).toLocaleDateString('pt-BR')}</div>
+                              )}
+                              {consent.revokedReason && (
+                                <div>Motivo: {consent.revokedReason}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : formData.lgpdConsent?.documentUrl ? (
+                      <div className="text-center py-6 bg-white rounded-xl border border-green-200">
+                        <Shield className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                        <p className="font-bold text-green-700 mb-1">Termo Assinado Anexado</p>
+                        <p className="text-xs text-slate-500 mb-4 px-4">O documento de consentimento físico foi digitalizado e arquivado com sucesso.</p>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (formData.lgpdConsent?.documentUrl) {
+                              openDocumentInNewTab(
+                                formData.lgpdConsent.documentUrl, 
+                                `Termo-LGPD-${formData.employeeName || 'Funcionario'}`
+                              );
+                            }
+                          }}
+                          className="px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold uppercase hover:bg-green-100 transition-all inline-flex items-center gap-2 transform active:scale-95"
+                        >
+                          <Search size={14} /> Visualizar Termo em Nova Aba
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <Shield className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                        <p>Nenhum consentimento LGPD registrado no sistema digital.</p>
+                        <p className="text-[11px] px-6 mt-2">Clique no botão "LGPD" abaixo para registrar digitalmente, ou anexe o documento impresso e assinado no botão lateral correspondente.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ações de Gestão */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <h4 className="text-[10px] font-black text-blue-600 uppercase mb-4 flex items-center gap-2">
+                        <Download size={14} />
+                        Relatórios
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setShowTermoLGPD(true)}
+                          className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <FileText size={16} />
+                          Imprimir Termo LGPD
+                        </button>
+                        
+                        <div className="relative mt-3">
+                          <input
+                            type="file"
+                            accept="application/pdf,image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    lgpdConsent: {
+                                      ...(prev.lgpdConsent || {
+                                        dataProcessing: true, communication: true, marketing: true, financial: true, policyVersion: currentPolicy?.version || '1.0'
+                                      }),
+                                      documentUrl: reader.result as string
+                                    }
+                                  }));
+                                  alert('O Termo foi lido pelo navegador! Não esqueça de Salvar o Registro de RH para enviar ao banco de dados.');
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            title="Anexar documento impresso/assinado"
+                          />
+                          <button
+                            type="button"
+                            className="w-full py-3 bg-slate-600 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 pointer-events-none"
+                          >
+                            <FileSignature size={16} />
+                            Anexar Termo Assinado
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                      <h4 className="text-[10px] font-black text-red-600 uppercase mb-4 flex items-center gap-2">
+                        <AlertCircle size={14} />
+                        Direitos LGPD
+                      </h4>
+                      
+                      <div className="space-y-3 text-sm text-slate-600">
+                        <p>• <strong>Acesso:</strong> Você pode solicitar todos os seus dados pessoais.</p>
+                        <p>• <strong>Correção:</strong> Solicitar correção de dados incorretos.</p>
+                        <p>• <strong>Portabilidade:</strong> Exportar seus dados em formato estruturado.</p>
+                        <p>• <strong>Esquecimento:</strong> Solicitar exclusão de seus dados.</p>
+                        <p>• <strong>Revogação:</strong> Retirar consentimentos a qualquer momento.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informações da Política Atual */}
+                  {currentPolicy && (
+                    <div className="bg-blue-50 p-6 rounded-2xl border border-blue-200">
+                      <h4 className="text-[10px] font-black text-blue-600 uppercase mb-4 flex items-center gap-2">
+                        <BookOpen size={14} />
+                        Política de Privacidade Atual
+                      </h4>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div><strong>Versão:</strong> {currentPolicy.version}</div>
+                        <div><strong>Vigência:</strong> {new Date(currentPolicy.effectiveDate).toLocaleDateString('pt-BR')}</div>
+                        <div><strong>Status:</strong> 
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                            currentPolicy.isActive 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {currentPolicy.isActive ? 'Ativa' : 'Inativa'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'avaliacao' && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                  {/* Histórico de Avaliações */}
+                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-[10px] font-black text-indigo-600 uppercase flex items-center gap-2">
+                        <Award size={14} />
+                        Histórico de Avaliações
+                      </h4>
+                      <button
+                        onClick={handleNewAvaliacao}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+                      >
+                        <Plus size={16} />
+                        Nova Avaliação
+                      </button>
+                    </div>
+                    
+                    {evaluations[editingEmployee?.id || ''] && evaluations[editingEmployee?.id || ''].length > 0 ? (
+                      <div className="space-y-4">
+                        {evaluations[editingEmployee?.id || ''].map((evaluation, index) => (
+                          <div key={index} className="bg-white p-4 rounded-xl border border-slate-200">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h5 className="font-semibold text-slate-900">{evaluation.evaluationPeriod || 'Período não definido'}</h5>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    evaluation.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                                    evaluation.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-slate-100 text-slate-700'
+                                  }`}>
+                                    {evaluation.status === 'APPROVED' && 'Aprovado'}
+                                    {evaluation.status === 'SUBMITTED' && 'Enviado'}
+                                    {evaluation.status === 'DRAFT' && 'Rascunho'}
+                                    {!evaluation.status && 'Sem status'}
+                                  </span>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    evaluation.overallRating === 'EXCELLENT' ? 'bg-emerald-100 text-emerald-700' :
+                                    evaluation.overallRating === 'GOOD' ? 'bg-blue-100 text-blue-700' :
+                                    evaluation.overallRating === 'SATISFACTORY' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-orange-100 text-orange-700'
+                                  }`}>
+                                    {evaluation.overallRating === 'EXCELLENT' && 'Excelente'}
+                                    {evaluation.overallRating === 'GOOD' && 'Bom'}
+                                    {evaluation.overallRating === 'SATISFACTORY' && 'Satisfatório'}
+                                    {evaluation.overallRating === 'NEEDS_IMPROVEMENT' && 'Precisa Melhorar'}
+                                    {!evaluation.overallRating && 'Sem classificação'}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar size={14} />
+                                    <span>{evaluation.evaluationDate ? new Date(evaluation.evaluationDate).toLocaleDateString('pt-BR') : 'Data não definida'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <User size={14} />
+                                    <span>{evaluation.evaluatorName || 'Avaliador não definido'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <TrendingUp size={14} />
+                                    <span>Score: {evaluation.overallScore || 0}</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Score Visual */}
+                                <div className="mb-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-slate-600">Desempenho:</span>
+                                    <div className="flex-1 max-w-xs">
+                                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div 
+                                          className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full"
+                                          style={{ width: `${evaluation.overallScore || 0}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                    <span className="text-sm font-bold text-indigo-600">{evaluation.overallScore || 0}%</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={() => handleEditAvaliacao(evaluation)}
+                                  className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                                  <Download size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <Award className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                        <p>Nenhuma avaliação encontrada</p>
+                        <p className="text-sm">Clique em "Nova Avaliação" para começar.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'historico_salarial' && (
+                <HistoricoSalarial 
+                  employees={employees}
+                  currentUnitId={currentUnitId}
+                  user={user}
+                  selectedEmployee={editingEmployee || undefined}
+                />
               )}
 
               {activeTab === 'esocial' && (
@@ -1194,34 +1910,60 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                   <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6">
                     <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2"><CreditCard size={14}/> Upload de Documentos</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 bg-white hover:bg-slate-50 transition-all cursor-pointer relative">
-                        <Camera size={24} className="mb-2"/>
-                        <span className="text-xs font-bold text-slate-600">Documento de Identidade (RG/CNH)</span>
-                        <span className="text-[10px] uppercase tracking-widest mt-1">PDF, JPG, PNG</span>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                      </div>
-                      <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 bg-white hover:bg-slate-50 transition-all cursor-pointer relative">
-                        <FileText size={24} className="mb-2"/>
-                        <span className="text-xs font-bold text-slate-600">Comprovante de Residência</span>
-                        <span className="text-[10px] uppercase tracking-widest mt-1">PDF, JPG, PNG</span>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                      </div>
-                      <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 bg-white hover:bg-slate-50 transition-all cursor-pointer relative">
-                        <Briefcase size={24} className="mb-2"/>
-                        <span className="text-xs font-bold text-slate-600">Carteira de Trabalho (CTPS)</span>
-                        <span className="text-[10px] uppercase tracking-widest mt-1">PDF, JPG, PNG</span>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                      </div>
-                      <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 bg-white hover:bg-slate-50 transition-all cursor-pointer relative">
-                        <Heart size={24} className="mb-2"/>
-                        <span className="text-xs font-bold text-slate-600">ASO (Atestado de Saúde Ocupacional)</span>
-                        <span className="text-[10px] uppercase tracking-widest mt-1">PDF, JPG, PNG</span>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                      </div>
+                      {[
+                        { key: 'rg_cnh', label: 'Documento de Identidade (RG/CNH)', icon: <Camera size={24} className="mb-2"/> },
+                        { key: 'comprovante_residencia', label: 'Comprovante de Residência', icon: <FileText size={24} className="mb-2"/> },
+                        { key: 'ctps', label: 'Carteira de Trabalho (CTPS)', icon: <Briefcase size={24} className="mb-2"/> },
+                        { key: 'aso', label: 'ASO (Atestado de Saúde Ocupacional)', icon: <Heart size={24} className="mb-2"/> },
+                      ].map(doc => (
+                        <label key={doc.key} className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 bg-white hover:bg-slate-50 transition-all cursor-pointer relative">
+                          {uploadingDoc === doc.key ? (
+                            <Loader2 size={24} className="mb-2 animate-spin text-indigo-500"/>
+                          ) : (formData as any)[`doc_${doc.key}`] ? (
+                            <CheckCircle2 size={24} className="mb-2 text-emerald-500"/>
+                          ) : doc.icon}
+                          <span className="text-xs font-bold text-slate-600 text-center">{doc.label}</span>
+                          <span className="text-[10px] uppercase tracking-widest mt-1">
+                            {(formData as any)[`doc_${doc.key}`] ? 'Enviado ✓' : 'PDF, JPG, PNG — máx 10MB'}
+                          </span>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            onChange={e => { const f = e.target.files?.[0]; if (f) handleDocumentUpload(f, doc.key); }}
+                          />
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="p-6 border-t bg-slate-50 flex justify-end gap-3 shrink-0 rounded-b-[3rem]">
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="px-8 py-3 font-bold uppercase text-[11px] bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              
+              <button 
+                onClick={handleSave} 
+                disabled={isSaving} 
+                className="px-10 py-3 font-black uppercase text-[11px] bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-700 disabled:bg-indigo-400 transition-all"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16}/> Salvar Registro
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -1261,6 +2003,74 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
            </div>
         </div>
       )}
+
+      {/* Impressão de cadastro — componente dedicado */}
+      {showPrintCadModal && (
+        <ImprimeCadFuncionario
+          employees={employees}
+          onClose={() => setShowPrintCadModal(false)}
+          preSelected={selectedIds.length > 0 ? employees.filter(e => selectedIds.includes(e.id)) : undefined}
+        />
+      )}
+
+      {/* Modal LGPD */}
+      {showLGPDModal && (
+        <LGPDConsentModal
+          isOpen={showLGPDModal}
+          onClose={() => setShowLGPDModal(false)}
+          onConsent={handleLGPDConsent}
+          userType="EMPLOYEE"
+          userId={formData.id || ''}
+          userName={formData.employeeName || ''}
+          currentConsent={employeeConsents.find(c => c.userId === formData.id)}
+          currentPolicy={currentPolicy || undefined}
+        />
+      )}
+
+      {/* Modal Avaliação */}
+      {showAvaliacaoModal && (
+        <AvaliacaoModal
+          isOpen={showAvaliacaoModal}
+          onClose={() => setShowAvaliacaoModal(false)}
+          onSave={handleSaveAvaliacao}
+          employeeId={editingEmployee?.id || undefined}
+          employeeName={editingEmployee?.employeeName || undefined}
+          editingAvaliacao={editingAvaliacao}
+        />
+      )}
+
+      {/* Termo LGPD imprimível */}
+      {showTermoLGPD && editingEmployee && (
+        <TermoAdesaoLGPD
+          nome={formData.employeeName || editingEmployee.employeeName || ''}
+          cpf={formData.cpf || editingEmployee.cpf}
+          rg={formData.rg || editingEmployee.rg}
+          endereco={
+            formData.address?.street
+              ? `${formData.address.street}, ${formData.numero || 's/n'} – ${formData.bairro || ''} – ${formData.cidade || ''}/${formData.estado || ''}`
+              : undefined
+          }
+          telefone={formData.phone || editingEmployee.phone}
+          igrejaNome={currentUnitData?.name}
+          igrejaCnpj={currentUnitData?.cnpj}
+          igrejaEndereco={
+            currentUnitData?.address 
+              ? `${currentUnitData.address} - ${currentUnitData.city}/${currentUnitData.state}`
+              : undefined
+          }
+          igrejaContato={user?.name || ''}
+          consentimentos={{
+            dataProcessing: formData.lgpdConsent?.dataProcessing,
+            communication: formData.lgpdConsent?.communication,
+            marketing: formData.lgpdConsent?.marketing,
+            financial: formData.lgpdConsent?.financial,
+            policyVersion: formData.lgpdConsent?.policyVersion || currentPolicy?.version,
+          }}
+          onClose={() => setShowTermoLGPD(false)}
+        />
+      )}
+
+      {/* VisualizadorLGPD removido em favor da abertura em nova aba */}
     </div>
   );
 };

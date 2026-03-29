@@ -188,6 +188,34 @@ export class CryptoService {
     };
   }
 
+  // Remove dados sensíveis de folha de pagamento
+  static sanitizePayroll(payroll: any): any {
+    return {
+      ...payroll,
+      cpf: this.maskCPF(payroll.cpf),
+      rg: this.maskRG(payroll.rg),
+      pis: this.maskPIS(payroll.pis),
+      ctps: this.maskCTPS(payroll.ctps),
+      email: this.maskEmail(payroll.email),
+      phone: this.maskPhone(payroll.phone),
+      // Salário e valores financeiros mascarados
+      salario_base: this.maskMonetaryValue(payroll.salario_base),
+      comissoes: this.maskMonetaryValue(payroll.comissoes),
+      gratificacoes: this.maskMonetaryValue(payroll.gratificacoes),
+      premios: this.maskMonetaryValue(payroll.premios),
+      auxilio_moradia: this.maskMonetaryValue(payroll.auxilio_moradia),
+      salario_familia: this.maskMonetaryValue(payroll.salario_familia),
+      // Mantém dados não sensíveis
+      id: payroll.id,
+      unitId: payroll.unitId,
+      employeeName: payroll.employeeName,
+      matricula: payroll.matricula,
+      cargo: payroll.cargo,
+      departamento: payroll.departamento,
+      data_admissao: payroll.data_admissao
+    };
+  }
+
   // Gera hash simples para verificação de integridade
   static generateHash(data: any): string {
     const str = JSON.stringify(data);

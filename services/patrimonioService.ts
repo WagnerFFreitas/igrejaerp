@@ -72,7 +72,7 @@ export const patrimonioService = {
       // Tentar salvar no Firebase se disponível
       if (db) {
         try {
-          const docRef = doc(db, 'patrimonio/assets', asset.id);
+          const docRef = doc(db, 'assets', asset.id);
           await setDoc(docRef, asset);
           console.log("✅ Bem sincronizado com Firebase");
         } catch (firebaseError) {
@@ -107,7 +107,7 @@ export const patrimonioService = {
       // Tentar Firebase
       if (db) {
         try {
-          const docRef = doc(db, 'patrimonio/assets', assetId);
+          const docRef = doc(db, 'assets', assetId);
           await updateDoc(docRef, {
             ...updates,
             updatedAt: new Date().toISOString(),
@@ -156,7 +156,7 @@ export const patrimonioService = {
           constraints.push(where('status', '==', status));
         }
 
-        const q = query(collection(db, 'patrimonio/assets'), ...constraints);
+        const q = query(collection(db, 'assets'), ...constraints);
         const snapshot = await getDocs(q);
         const firebaseAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
         
@@ -186,7 +186,7 @@ export const patrimonioService = {
 
       // Tentar Firebase
       if (db) {
-        const docRef = doc(db, 'patrimonio/assets', assetId);
+        const docRef = doc(db, 'assets', assetId);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -290,7 +290,7 @@ export const patrimonioService = {
     // Salvar registro
     if (db) {
       try {
-        const docRef = doc(db, 'patrimonio/depreciations', depreciation.id);
+        const docRef = doc(db, 'depreciations', depreciation.id);
         await setDoc(docRef, depreciation);
       } catch (firebaseError) {
         console.warn("⚠️ Falha ao sincronizar depreciação com Firebase:", firebaseError);
@@ -384,7 +384,7 @@ export const patrimonioService = {
     // Salvar transferência
     if (db) {
       try {
-        const docRef = doc(db, 'patrimonio/transfers', transfer.id);
+        const docRef = doc(db, 'transfers', transfer.id);
         await setDoc(docRef, transfer);
       } catch (firebaseError) {
         console.warn("⚠️ Falha ao sincronizar transferência com Firebase:", firebaseError);
@@ -470,7 +470,7 @@ export const patrimonioService = {
     // Salvar inventário
     if (db) {
       try {
-        const docRef = doc(db, 'patrimonio/inventory', inventory.id);
+        const docRef = doc(db, 'inventory', inventory.id);
         await setDoc(docRef, inventory);
       } catch (firebaseError) {
         console.warn("⚠️ Falha ao sincronizar inventário com Firebase:", firebaseError);
@@ -516,7 +516,7 @@ export const patrimonioService = {
     // Salvar ajuste
     if (db) {
       try {
-        const docRef = doc(db, 'patrimonio/inventory-adjustments', adjustment.id);
+        const docRef = doc(db, 'inventory-adjustments', adjustment.id);
         await setDoc(docRef, adjustment);
       } catch (firebaseError) {
         console.warn("⚠️ Falha ao sincronizar ajuste de inventário com Firebase:", firebaseError);
@@ -552,7 +552,7 @@ export const patrimonioService = {
     // Salvar manutenção
     if (db) {
       try {
-        const docRef = doc(db, 'patrimonio/maintenances', maintenance.id);
+        const docRef = doc(db, 'maintenances', maintenance.id);
         await setDoc(docRef, maintenance);
       } catch (firebaseError) {
         console.warn("⚠️ Falha ao sincronizar manutenção com Firebase:", firebaseError);
@@ -665,7 +665,7 @@ async function gerarNumeroPatrimonio(db: any, unitId: string): Promise<string> {
     // Se não houver localmente e tiver Firebase, tenta buscar do Firebase
     if (db) {
       const q = query(
-        collection(db, 'patrimonio/assets'),
+        collection(db, 'assets'),
         where('unitId', '==', unitId),
         orderBy('assetNumber', 'desc')
       );

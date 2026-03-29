@@ -1,0 +1,72 @@
+Sistema IgrejaERP
+
+1-Ajustar o tamanho da tela de login, pois a parte e baixo esta sendo cortada.
+
+Feito 2-Mudar o nome DashBoard Executivo para Tela Inicial;
+
+Feito 3-O botão imprimir cadastro dos membros ao abrir o painel de impressão a folha esta branca;
+
+Feito 4-O botão imprimir cadastro dos membros antes de imprimir deve pedir a faixa que ira imprimir ou seja inicio e fim (exemplo M01 a M05, ou seja deve imprimir o M01, M02, M03, M04 e M05);
+
+Feito 5-O que deve ser impresso da ficha cadastral: 
+Os dados pessoais;
+Família;
+endereço;
+Vida cristã;
+Informações de Saúde (Tipo Sanguíneo  
+e Contato Emergência (dd) 9999-9999);
+
+Feito 6-Os dados devem caber todos em uma única folha na posição paisagem e com layout e uma fonte agradável de forma que não force a visão;
+
+Feito 7-Imprimir e importar o formulário de consentimento lgpd e direito de imagem;
+
+Feito 8-Criar um arquivo imprimecadmembro.tsx para controlara impressão do cadastro dos membros;
+
+9-O portal do membro esta funcionando?
+
+
+Feito 10-O botão imprimir cadastro dos funcionário ao abrir o painel de impressão a folha esta branca;
+
+Feito 11-O botão imprimir cadastro dos funcionário antes de imprimir deve pedir a faixa que ira imprimir ou seja inicio e fim (exemplo F01 a F05, ou seja deve imprimir o F01, F02, F03, F04 e F05);
+
+Feito 12-O que deve ser impresso da ficha cadastral de funcionários: 
+dados pessoais;
+contrato;
+documentos;
+endereço;
+dependentes;
+
+Feito 13-Os dados devem caber todos em uma única folha na posição paisagem e com layout e uma fonte agradável de forma que não force a visão
+
+Feito 14-Imprimir e importar o formulário de consentimento lgpd e direito de imagem;
+
+Feito 15-Crie um arquivo ImprimeCadfuncionario.tsx para realizar o processo semelhante ao do arquivo ImprimeCadMembros.tsx só que  imprima o cadastro dos funcionário e também tenha o recurso da faixa de impressão (exemplo F01 a F05, ou seja deve imprimir o F01, F02, F03, F04 e F05); 
+
+Feito 16-Colocar o ranking das avaliações dos funcionários na opção Recursos Humanos;
+
+17-A opção de cadastro de funcionário não tem o recurso de filtragem semelhante a da opção de cadastro de membros (nome, email, cpf e telefone);
+
+Feito 18-O botão Relatório da opção financeiro ao abrir, a opção imprimir abre o painel de impressão, mas com a folha em branco;
+
+Feito 19-Conferir as opções do relatório financeiro que não estão funcionando:
+Financeiro (Balancete Mensal, Dízimos por Período e Quadro de Talentos);
+Recursos Humanos (Avaliação de Desempenho e Histórico Salarial);
+Membros (Balancete Mensal e Dízimos por Período);
+
+20-A opção Afastamentos & Licenças não tem a opção de imprimir o relatório;
+
+21-A opção Afastamentos & Licenças não tem a opção de filtragem avançada;
+
+22-O botão processar mês atual não esta abrindo o painel de impressão após se fornecido a faixa que será impressa;
+
+verificar se esta funcionando 23-Usar o código da opção agenda do sistema web que esta na pasta \meu;
+
+24-A opção relatório o botão imprimir ao ser acionado abre o painel da impressora porem coma folha em branco;
+
+Feito 25-Adicionar o recurso da ia do sistema web no local com os arquivos na pasta \meu;
+
+26-Verificar se existe a tela de configurar permissões pelo administrador do sistema e o desenvolvedor;
+
+27-Somente o desenvolvedor tem acesso a todos recursos, sem restrição, principalmente as configurações das alíquotas fiscais do governo na opção configuração para quando houve uma atualização de alíquota valores de desconto seja feita a atualização por ele;
+
+28-O usuário administrador tem acesso aos recurso e opções não sensíveis, como as alíquotas fiscal, como INSS, FGTS, percentual de desconto do vale transporte, percentual de desconto do vale refeição e alimentação e etc.

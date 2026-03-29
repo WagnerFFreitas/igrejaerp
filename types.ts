@@ -93,8 +93,13 @@ export interface FinancialAccount {
   id: string;
   unitId: string;
   name: string;
-  type: 'CASH' | 'BANK';
+  type: 'CASH' | 'BANK' | 'SAVINGS' | 'INVESTMENT';
   currentBalance: number;
+  minimumBalance?: number;
+  status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+  bankCode?: string;
+  agencyNumber?: string;
+  accountNumber?: string;
   createdAt?: string;        // Data de criação
   updatedAt?: string;        // Data de atualização
 }
@@ -231,20 +236,85 @@ export interface PayrollCalculation {
   // DETALHES DOS CÁLCULOS
   calculationDetails: {
     inssBase: number;          // Base de cálculo INSS
+    inssRate: number;          // Alíquota INSS
+    inssValue: number;         // Valor INSS
     irrfBase: number;          // Base de cálculo IRRF
-    fgtsBase: number;          // Base de cálculo FGTS
-    inssRate: number;          // Alíquota INSS aplicada
-    irrfRate: number;          // Alíquota IRRF aplicada
-    fgtsRate: number;          // Alíquota FGTS (8% ou 11%)
-    dependentDeduction: number;// Dedução por dependente
+    irrfRate: number;          // Alíquota IRRF
+    irrfDeduction: number;     // Dedução IRRF
+    irrfValue: number;         // Valor IRRF
+    fgtsBase: number;          // Base FGTS
+    fgtsRate: number;          // Alíquota FGTS
+    fgtsValue: number;         // Valor FGTS
+  };
+}
+
+// Interface para relatório consolidado de encargos sociais
+export interface SocialChargesReport {
+  competencyMonth: string;           // Mês de competência (YYYY-MM)
+  totalEmployees: number;           // Total de funcionários
+  grossSalaryTotal: number;         // Total salários brutos
+  
+  // ENCARGOS SOCIAIS - EMPREGADOR
+  employerCharges: {
+    fgts: {
+      base: number;               // Base de cálculo FGTS
+      rate: number;               // Alíquota FGTS
+      value: number;              // Valor total FGTS
+    };
+    inssEmployer: {
+      base: number;               // Base INSS empregador
+      rate: number;               // Alíquota INSS empregador
+      value: number;              // Valor total INSS empregador
+    };
+    rat: {
+      base: number;               // Base RAT
+      rate: number;               // Alíquota RAT
+      value: number;              // Valor total RAT
+    };
+    thirdParties: {
+      base: number;               // Base terceiros
+      rate: number;               // Alíquota terceiros
+      value: number;              // Valor total terceiros
+    };
+    totalEmployerCharges: number;  // Total encargos empregador
   };
   
-  // INFORMAÇÕES ADICIONAIS
-  workingDays: number;         // Dias trabalhados no mês
-  absenceDays: number;         // Dias faltados
-  overtimeHours: number;       // Horas extras
-  paidAt?: string;             // Data do pagamento
-  status: 'CALCULATED' | 'PAID' | 'CANCELLED';
+  // DESCONTOS - EMPREGADO
+  employeeDeductions: {
+    inss: {
+      base: number;               // Base de cálculo INSS
+      rate: number;               // Alíquota INSS
+      value: number;              // Valor total INSS descontado
+    };
+    irrf: {
+      base: number;               // Base de cálculo IRRF
+      rate: number;               // Alíquota IRRF
+      value: number;              // Valor total IRRF descontado
+    };
+    totalDeductions: number;     // Total descontos funcionários
+  };
+  
+  // RESUMO FINANCEIRO
+  financialSummary: {
+    totalGrossSalary: number;     // Total salários brutos
+    totalNetSalary: number;       // Total salários líquidos
+    totalEmployerCost: number;     // Custo total empregador
+    averageEmployerCost: number;  // Custo médio por funcionário
+    employerCostPercentage: number; // Percentual custo/bruto
+  };
+  
+  // DETALHES POR FUNCIONÁRIO
+  employeeDetails: Array<{
+    employeeId: string;
+    employeeName: string;
+    employeeCpf: string;
+    grossSalary: number;
+    netSalary: number;
+    employerCost: number;
+    inssValue: number;
+    irrfValue: number;
+    fgtsValue: number;
+  }>;
 }
 
 /**
@@ -339,6 +409,28 @@ export interface ChurchEvent {
   location: string;
   attendeesCount: number;
   type: 'SERVICE' | 'MEETING' | 'EVENT';
+  // Campos para escala de voluntários
+  volunteerSchedule?: VolunteerSchedule[];
+  // Campos para recorrência de eventos
+  isRecurring: boolean;
+  recurrencePattern?: 'NONE' | 'WEEKLY' | 'MONTHLY';
+  recurrenceEndDate?: string;
+  parentEventId?: string;
+  isGeneratedEvent?: boolean;
+}
+
+export interface VolunteerSchedule {
+  id: string;
+  ministry: string;              // Ministério (Louvor, Ensino, Ação Social, etc.)
+  role: string;                  // Função dentro do evento (Líder, Músico, Professor, etc.)
+  volunteerId?: string;          // ID do voluntário escalado
+  volunteerName?: string;         // Nome do voluntário
+  volunteerPhone?: string;        // Telefone do voluntário
+  volunteerEmail?: string;        // Email do voluntário
+  confirmed: boolean;             // Se o voluntário confirmou participação
+  notes?: string;                // Observações sobre a escala
+  requiredCount: number;          // Quantidade de voluntários necessários
+  assignedCount: number;         // Quantidade de voluntários já escalados
 }
 
 // Added missing AuditLog interface
@@ -852,6 +944,17 @@ export interface Member {
   tags?: string[];
   familyId?: string;
   avatar: string;
+  
+  // LGPD - Consentimento de Tratamento de Dados
+  lgpdConsent?: {
+    dataProcessing: boolean;
+    communication: boolean;
+    marketing: boolean;
+    financial: boolean;
+    consentDate?: string;
+    policyVersion?: string;
+    documentUrl?: string;
+  };
 }
 
 export interface Payroll {
@@ -1072,6 +1175,17 @@ export interface Payroll {
     city: string;
     state: string;
     country?: string;               // Campo adicionado
+  };
+  
+  // LGPD - Consentimento de Tratamento de Dados
+  lgpdConsent?: {
+    dataProcessing: boolean;
+    communication: boolean;
+    marketing: boolean;
+    financial: boolean;
+    consentDate?: string;
+    policyVersion?: string;
+    documentUrl?: string;
   };
 }
 
@@ -1401,6 +1515,1098 @@ export interface InventoryAdjustment {
   approvedBy?: string;               // Aprovado por
   accountingEntry?: boolean;         // Gerou lançamento contábil?
   createdAt: string;
+}
+
+/**
+ * CONSENTIMENTO LGPD
+ * =================
+ */
+export interface LGPDConsent {
+  id: string;
+  userId: string;
+  userType: 'MEMBER' | 'EMPLOYEE';
+  consentType: 'DATA_PROCESSING' | 'COMMUNICATION' | 'MARKETING' | 'FINANCIAL';
+  granted: boolean;
+  consentDate: string;
+  ipAddress?: string;
+  userAgent?: string;
+  policyVersion: string;
+  revokedDate?: string;
+  revokedReason?: string;
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LGPDConsentHistory {
+  id: string;
+  consentId: string;
+  action: 'GRANTED' | 'REVOKED' | 'UPDATED';
+  actionDate: string;
+  ipAddress?: string;
+  userAgent?: string;
+  details?: string;
+  unitId: string;
+  createdAt: string;
+}
+
+export interface LGPDPolicy {
+  id: string;
+  version: string;
+  title: string;
+  content: string;
+  effectiveDate: string;
+  isActive: boolean;
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * AVALIAÇÃO DE DESEMPENHO E PDI
+ * ==============================
+ */
+export interface PerformanceEvaluation {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  evaluatorId: string;
+  evaluatorName: string;
+  evaluationPeriod: string; // "2024-Q1", "2024-01", etc.
+  evaluationDate: string;
+  evaluationType: 'QUARTERLY' | 'SEMESTRAL' | 'ANNUAL' | 'PROBATION' | 'ADHOC';
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  
+  // Competências avaliadas
+  competencies: CompetencyEvaluation[];
+  
+  // Metas e objetivos
+  goals: GoalEvaluation[];
+  
+  // Feedback geral
+  overallScore: number; // 0-100
+  overallRating: 'EXCELLENT' | 'GOOD' | 'SATISFACTORY' | 'NEEDS_IMPROVEMENT' | 'UNSATISFACTORY';
+  strengths: string[];
+  improvementAreas: string[];
+  comments: string;
+  employeeComments?: string;
+  
+  // PDI - Plano de Desenvolvimento Individual
+  pdiPlan: PDIPlan[];
+  
+  // Metadados
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+  approvedBy?: string;
+  approvedDate?: string;
+}
+
+export interface CompetencyEvaluation {
+  id: string;
+  competencyId: string;
+  competencyName: string;
+  category: 'TECHNICAL' | 'BEHAVIORAL' | 'LEADERSHIP' | 'COMMUNICATION';
+  description: string;
+  weight: number; // Peso na avaliação final (0-1)
+  score: number; // Nota 0-100
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+  evidence: string[];
+  comments: string;
+}
+
+export interface GoalEvaluation {
+  id: string;
+  goalId: string;
+  title: string;
+  description: string;
+  category: 'PRODUCTIVITY' | 'QUALITY' | 'TEAMWORK' | 'LEADERSHIP' | 'DEVELOPMENT';
+  targetValue: string;
+  actualValue: string;
+  achievementPercentage: number; // 0-100
+  status: 'COMPLETED' | 'IN_PROGRESS' | 'NOT_STARTED' | 'OVERDUE';
+  dueDate: string;
+  comments: string;
+}
+
+export interface PDIPlan {
+  id: string;
+  area: string;
+  action: string;
+  responsible: 'EMPLOYEE' | 'MANAGER' | 'HR' | 'COMPANY';
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  deadline: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  resources?: string[];
+  progress: number; // 0-100
+  notes?: string;
+}
+
+export interface CompetencyTemplate {
+  id: string;
+  name: string;
+  category: 'TECHNICAL' | 'BEHAVIORAL' | 'LEADERSHIP' | 'COMMUNICATION';
+  description: string;
+  levels: CompetencyLevel[];
+  isActive: boolean;
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CompetencyLevel {
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+  description: string;
+  expectedBehaviors: string[];
+  scoreRange: {
+    min: number;
+    max: number;
+  };
+}
+
+export interface GoalTemplate {
+  id: string;
+  title: string;
+  description: string;
+  category: 'PRODUCTIVITY' | 'QUALITY' | 'TEAMWORK' | 'LEADERSHIP' | 'DEVELOPMENT';
+  suggestedWeight: number;
+  measurementCriteria: string;
+  isActive: boolean;
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Feedback360 {
+  id: string;
+  evaluationId: string;
+  reviewerId: string;
+  reviewerName: string;
+  reviewerType: 'SELF' | 'MANAGER' | 'PEER' | 'SUBORDINATE' | 'CLIENT';
+  relationship: string;
+  status: 'PENDING' | 'SUBMITTED' | 'DECLINED';
+  submittedDate?: string;
+  
+  // Avaliações
+  competencies: CompetencyEvaluation[];
+  strengths: string[];
+  improvementAreas: string[];
+  overallComments: string;
+  isAnonymous: boolean;
+  
+  // Metadados
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EvaluationCycle {
+  id: string;
+  name: string;
+  description: string;
+  cycleType: 'QUARTERLY' | 'SEMESTRAL' | 'ANNUAL';
+  startDate: string;
+  endDate: string;
+  evaluationDeadline: string;
+  reviewDeadline: string;
+  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  
+  // Configurações
+  selfEvaluation: boolean;
+  managerEvaluation: boolean;
+  peerEvaluation: boolean;
+  subordinateEvaluation: boolean;
+  clientEvaluation: boolean;
+  
+  // Competências e metas do ciclo
+  competencyTemplates: string[]; // IDs
+  goalTemplates: string[]; // IDs
+  
+  // Estatísticas
+  totalEmployees: number;
+  completedEvaluations: number;
+  pendingEvaluations: number;
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DevelopmentPlan {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  managerId: string;
+  managerName: string;
+  planType: 'PDI' | 'TRAINING' | 'CAREER' | 'SUCCESSION';
+  title: string;
+  description: string;
+  status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  
+  // Objetivos do plano
+  objectives: DevelopmentObjective[];
+  
+  // Cronograma
+  startDate: string;
+  endDate: string;
+  reviewFrequency: 'MONTHLY' | 'QUARTERLY' | 'SEMESTRAL';
+  
+  // Progresso
+  overallProgress: number; // 0-100
+  lastReviewDate?: string;
+  nextReviewDate?: string;
+  
+  // Orçamento e recursos
+  budget?: number;
+  allocatedBudget?: number;
+  resources: string[];
+  
+  // Metadados
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+  approvedBy?: string;
+  approvedDate?: string;
+}
+
+export interface DevelopmentObjective {
+  id: string;
+  title: string;
+  description: string;
+  category: 'KNOWLEDGE' | 'SKILLS' | 'BEHAVIORS' | 'RESULTS';
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  targetOutcome: string;
+  successCriteria: string[];
+  
+  // Progresso
+  progress: number; // 0-100
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+  completedDate?: string;
+  
+  // Recursos
+  requiredResources: string[];
+  allocatedResources: string[];
+  
+  // Prazos
+  targetDate: string;
+  actualCompletionDate?: string;
+  
+  // Feedback
+  managerFeedback?: string;
+  employeeFeedback?: string;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
+// HISTÓRICO SALARIAL
+// ============================================================================
+
+export interface SalaryHistory {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCargo: string;
+  employeeDepartamento: string;
+  
+  // Dados salariais
+  salarioAnterior: number;
+  salarioNovo: number;
+  percentualAumento: number;
+  diferencaValor: number;
+  moeda: string;
+  
+  // Informações da alteração
+  tipoAlteracao: 'AUMENTO' | 'PROMOCAO' | 'AJUSTE' | 'CORRECAO' | 'DEMISSAO' | 'REAJUSTE_ANUAL' | 'BONUS';
+  motivoAlteracao: string;
+  dataAlteracao: string;
+  dataVigencia: string;
+  
+  // Aprovação
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EFFECTIVE';
+  solicitanteId: string;
+  solicitanteName: string;
+  aprovadorId?: string;
+  aprovadorName?: string;
+  dataAprovacao?: string;
+  justificativaAprovacao?: string;
+  
+  // Compliance e auditoria
+  complianceChecklist: {
+    aprovacaoDiretoria: boolean;
+    verificacaoOrcamento: boolean;
+    analiseComparativo: boolean;
+    documentoAssinado: boolean;
+  };
+  
+  // Metas e desempenho (se aplicável)
+  vinculadoDesempenho: boolean;
+  avaliacaoId?: string;
+  metaId?: string;
+  
+  // Observações
+  observacoes: string;
+  anexos: string[];
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalaryAdjustmentRequest {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  
+  // Proposta de ajuste
+  salarioAtual: number;
+  salarioProposto: number;
+  percentualProposto: number;
+  justificativa: string;
+  
+  // Contexto
+  tipoAlteracao: SalaryHistory['tipoAlteracao'];
+  dataSolicitacao: string;
+  dataVigenciaDesejada: string;
+  
+  // Análise
+  analiseComparativo: {
+    mediaCargo: number;
+    mediaDepartamento: number;
+    faixaSalarial: { min: number; max: number };
+    posicaoFaixa: 'ABAIXO' | 'DENTRO' | 'ACIMA';
+  };
+  
+  // Status
+  status: 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED';
+  workflow: WorkflowStep[];
+  
+  // Documentos
+  documentos: {
+    avaliacaoDesempenho?: string;
+    comprovanteMetas?: string;
+    orcamentoAprovado?: string;
+    assinaturaSolicitante?: string;
+  };
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowStep {
+  id: string;
+  stepName: string;
+  stepType: 'APPROVAL' | 'REVIEW' | 'NOTIFICATION' | 'EXECUTION';
+  responsibleId: string;
+  responsibleName: string;
+  responsibleRole: string;
+  
+  // Status do step
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED' | 'REJECTED';
+  completedAt?: string;
+  completedBy?: string;
+  comments?: string;
+  
+  // Configuração
+  order: number;
+  required: boolean;
+  autoApprove: boolean;
+  timeLimit?: number; // em horas
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalaryReport {
+  id: string;
+  reportType: 'EVOLUCAO_SALARIAL' | 'DISTRIBUICAO_SALARIAL' | 'AUMENTOS_CONCEDIDOS' | 'PROJECAO_ORCAMENTO' | 'COMPARATIVO_MERCADO';
+  
+  // Período
+  dataInicio: string;
+  dataFim: string;
+  
+  // Filtros aplicados
+  filtros: {
+    departamentos: string[];
+    cargos: string[];
+    faixasSalariais: string[];
+    tiposAlteracao: string[];
+  };
+  
+  // Métricas
+  metricas: {
+    totalFuncionarios: number;
+    massaSalarialAtual: number;
+    mediaSalarial: number;
+    medianaSalarial: number;
+    totalAumentos: number;
+    percentualMedioAumento: number;
+    maiorAumento: number;
+    menorAumento: number;
+  };
+  
+  // Dados detalhados
+  dados: {
+    evolucaoMensal: Array<{
+      mes: string;
+      massaSalarial: number;
+      numeroFuncionarios: number;
+      mediaSalarial: number;
+    }>;
+    
+    distribuicaoPorDepartamento: Array<{
+      departamento: string;
+      massaSalarial: number;
+      numeroFuncionarios: number;
+      mediaSalarial: number;
+      percentualTotal: number;
+    }>;
+    
+    aumentosPorTipo: Array<{
+      tipo: string;
+      quantidade: number;
+      valorTotal: number;
+      percentualMedio: number;
+    }>;
+  };
+  
+  // Análises
+  analises: {
+    tendenciaAumentos: 'CRESCENTE' | 'ESTAVEL' | 'DECRESCENTE';
+    pontosCriticos: string[];
+    recomendacoes: string[];
+    projecaoOrcamento: {
+      proximoAno: number;
+      proximos6Meses: number;
+    };
+  };
+  
+  // Metadados
+  geradoPor: string;
+  dataGeracao: string;
+  formato: 'PDF' | 'EXCEL' | 'JSON';
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalaryPolicy {
+  id: string;
+  nome: string;
+  descricao: string;
+  
+  // Política salarial
+  faixasSalariais: Array<{
+    nivel: string;
+    cargo: string;
+    departamento: string;
+    salarioMinimo: number;
+    salarioMedio: number;
+    salarioMaximo: number;
+    moeda: string;
+  }>;
+  
+  // Regras de ajuste
+  regrasAjuste: {
+    percentualMaximoAnual: number;
+    percentualMinimoAnual: number;
+    periodicidadeRevisao: 'ANUAL' | 'SEMESTRAL' | 'TRIMESTRAL';
+    vinculoDesempenho: boolean;
+    metaMinimaDesempenho: number;
+  };
+  
+  // Aprovação
+  niveisAprovacao: Array<{
+    nivel: number;
+    valorMaximo: number;
+    cargoAprovador: string;
+    obrigatorio: boolean;
+  }>;
+  
+  // Vigência
+  dataVigencia: string;
+  dataExpiracao?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'DRAFT';
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================================
+// CONCILIAÇÃO BANCÁRIA
+// ============================================================================
+
+export interface BankReconciliation {
+  id: string;
+  bankAccountId: string;
+  bankAccountName: string;
+  bankName: string;
+  
+  // Período da conciliação
+  dataInicio: string;
+  dataFim: string;
+  
+  // Saldos
+  saldoInicial: number;
+  saldoFinal: number;
+  saldoConciliado: number;
+  diferenca: number;
+  
+  // Status
+  status: 'DRAFT' | 'IN_PROGRESS' | 'CONCILIATED' | 'DISCREPANCY' | 'APPROVED' | 'REJECTED';
+  percentualConciliacao: number;
+  
+  // Transações
+  totalTransacoesBanco: number;
+  totalTransacoesSistema: number;
+  transacoesConciliadas: number;
+  transacoesNaoConciliadas: number;
+  
+  // Divergências
+  divergencias: BankDiscrepancy[];
+  
+  // Responsáveis
+  conciliadoPor?: string;
+  conciliadoPorNome?: string;
+  dataConciliacao?: string;
+  aprovadoPor?: string;
+  aprovadoPorNome?: string;
+  dataAprovacao?: string;
+  
+  // Observações
+  observacoes: string;
+  anexos: string[];
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BankDiscrepancy {
+  id: string;
+  reconciliationId: string;
+  
+  // Tipo de divergência
+  tipo: 'MISSING_IN_SYSTEM' | 'MISSING_IN_BANK' | 'VALUE_DIFFERENCE' | 'DATE_DIFFERENCE' | 'DUPLICATE' | 'UNAUTHORIZED';
+  gravidade: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  
+  // Transação envolvida
+  transacaoBancoId?: string;
+  transacaoSistemaId?: string;
+  
+  // Detalhes
+  descricao: string;
+  valorDiferenca?: number;
+  dataEsperada?: string;
+  dataEncontrada?: string;
+  
+  // Status
+  status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'IGNORED';
+  resolucao?: string;
+  dataResolucao?: string;
+  
+  // Responsável
+  responsavelId?: string;
+  responsavelNome?: string;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BankTransaction {
+  id: string;
+  bankAccountId: string;
+  
+  // Dados da transação
+  dataTransacao: string;
+  dataLancamento?: string;
+  descricao: string;
+  categoria: string;
+  subcategoria?: string;
+  
+  // Valores
+  valor: number;
+  moeda: string;
+  taxaCambio?: number;
+  
+  // Informações bancárias
+  tipo: 'CREDIT' | 'DEBIT';
+  metodoPagamento: 'TRANSFER' | 'PIX' | 'DEPOSIT' | 'WITHDRAWAL' | 'CHECK' | 'BOLETO' | 'CARD';
+  
+  // Referências
+  numeroDocumento?: string;
+  codigoAutenticacao?: string;
+  numeroOperacao?: string;
+  
+  // Conciliação
+  statusConciliacao: 'NOT_CONCILIATED' | 'CONCILIATED' | 'PARTIALLY_CONCILIATED' | 'DISCREPANCY';
+  transacaoSistemaId?: string;
+  dataConciliacao?: string;
+  
+  // Metadados
+  origem: 'BANK_STATEMENT' | 'API_IMPORT' | 'MANUAL_ENTRY';
+  arquivoOrigem?: string;
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BankAccount {
+  id: string;
+  nomeConta: string;
+  bancoNome: string;
+  bancoCodigo: string;
+  agencia: string;
+  numeroConta: string;
+  tipoConta: 'CHECKING' | 'SAVINGS' | 'INVESTMENT';
+  
+  // Configurações
+  moeda: string;
+  limiteChequeEspecial?: number;
+  
+  // Status
+  status: 'ACTIVE' | 'INACTIVE' | 'CLOSED';
+  
+  // Conciliação
+  ultimaConciliacao?: string;
+  frequenciaConciliacao: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReconciliationRule {
+  id: string;
+  nome: string;
+  descricao: string;
+  
+  // Configuração da regra
+  tipoRegra: 'EXACT_MATCH' | 'FUZZY_MATCH' | 'DATE_RANGE' | 'VALUE_RANGE' | 'CATEGORY_MATCH';
+  prioridade: number;
+  
+  // Critérios
+  criterios: {
+    descricao: string;
+    valorMinimo?: number;
+    valorMaximo?: number;
+    toleranciaData?: number; // em dias
+    toleranciaValor?: number; // percentual
+    categorias: string[];
+    palavrasChave: string[];
+  };
+  
+  // Ações
+  acao: 'AUTO_CONCILIATE' | 'FLAG_FOR_REVIEW' | 'CREATE_TRANSACTION';
+  
+  // Status
+  ativo: boolean;
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReconciliationReport {
+  id: string;
+  reconciliationId: string;
+  
+  // Período
+  dataInicio: string;
+  dataFim: string;
+  
+  // Métricas
+  metricas: {
+    totalTransacoes: number;
+    transacoesConciliadas: number;
+    taxaConciliacao: number;
+    valorTotal: number;
+    valorConciliado: number;
+    valorNaoConciliado: number;
+    numeroDivergencias: number;
+  };
+  
+  // Análise
+  analise: {
+    principaisCategorias: Array<{
+      categoria: string;
+      quantidade: number;
+      valor: number;
+      percentual: number;
+    }>;
+    
+    tendencias: {
+      periodoComparativo: string;
+      variacaoPercentual: number;
+      variacaoValor: number;
+    };
+    
+    recomendacoes: string[];
+  };
+  
+  // Detalhes das divergências
+  divergenciasPorTipo: Record<string, number>;
+  
+  // Metadados
+  geradoPor: string;
+  dataGeracao: string;
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BankStatementImport {
+  id: string;
+  bankAccountId: string;
+  
+  // Arquivo
+  nomeArquivo: string;
+  tipoArquivo: 'OFX' | 'CSV' | 'XLSX' | 'PDF' | 'XML';
+  tamanhoArquivo: number;
+  
+  // Processamento
+  status: 'UPLOADING' | 'PROCESSING' | 'PROCESSED' | 'ERROR' | 'VALIDATED';
+  dataUpload: string;
+  dataProcessamento?: string;
+  
+  // Resultados
+  totalTransacoes: number;
+  transacoesImportadas: number;
+  transacoesDuplicadas: number;
+  transacoesInvalidas: number;
+  
+  // Erros
+  erros: Array<{
+    linha: number;
+    descricao: string;
+    campo?: string;
+  }>;
+  
+  // Validação
+  validado: boolean;
+  validadoPor?: string;
+  dataValidacao?: string;
+  
+  unitId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * ============================================================================
+ * INTERFACES DE GESTÃO DE TESOURARIA (Semana 5)
+ * ============================================================================
+ */
+
+/**
+ * Fluxo de Caixa
+ */
+export interface CashFlow {
+  id: string;
+  data: string;
+  descricao: string;
+  categoria: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA';
+  valor: number;
+  moeda: string;
+  contaOrigem?: string;
+  contaDestino?: string;
+  metodoPagamento: 'DINHEIRO' | 'CHEQUE' | 'TRANSFERENCIA' | 'PIX' | 'CARTAO' | 'BOLETO';
+  centroCusto: string;
+  projeto: string;
+  status: 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO';
+  dataPrevista?: string;
+  dataConfirmacao?: string;
+  observacoes?: string;
+  anexos: string[];
+  conciliado: boolean;
+  dataConciliacao?: string;
+  unitId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Projeção de Fluxo de Caixa
+ */
+export interface CashFlowForecast {
+  id: string;
+  dataInicio: string;
+  dataFim: string;
+  tipo: 'SEMANAL' | 'MENSAL' | 'TRIMESTRAL' | 'ANUAL';
+  saldoInicial: number;
+  entradasPrevistas: number;
+  saidasPrevistas: number;
+  saldoFinalPrevisto: number;
+  entradasRealizadas: number;
+  saidasRealizadas: number;
+  saldoFinalReal: number;
+  precisao: number; // percentual de acerto
+  status: 'EM_ANDAMENTO' | 'CONCLUIDO' | 'CANCELADO';
+  criadoPor: string;
+  dataCriacao: string;
+  atualizadoPor: string;
+  dataAtualizacao: string;
+  unitId: string;
+  detalhes: CashFlowForecastDetail[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Detalhes da Projeção
+ */
+export interface CashFlowForecastDetail {
+  id: string;
+  forecastId: string;
+  data: string;
+  descricao: string;
+  tipo: 'ENTRADA' | 'SAIDA';
+  valorPrevisto: number;
+  valorRealizado?: number;
+  categoria: string;
+  centroCusto: string;
+  probabilidade: 'BAIXA' | 'MEDIA' | 'ALTA' | 'CERTA';
+  status: 'PREVISTO' | 'REALIZADO' | 'NAO_REALIZADO';
+  observacoes?: string;
+}
+
+/**
+ * Conta de Tesouraria
+ */
+export interface TreasuryAccount {
+  id: string;
+  nome: string;
+  tipo: 'CONTA_CORRENTE' | 'CONTA_POUPANCA' | 'CONTA_INVESTIMENTO' | 'CARTEIRA_DIGITAL';
+  banco: string;
+  agencia: string;
+  numero: string;
+  digito?: string;
+  saldo: number;
+  saldoBloqueado: number;
+  saldoDisponivel: number;
+  moeda: string;
+  status: 'ATIVA' | 'INATIVA' | 'BLOQUEADA';
+  dataAbertura: string;
+  dataEncerramento?: string;
+  titular: string;
+  documentos: string[];
+  limites: {
+    saqueDiario: number;
+    transferenciaDiaria: number;
+    emprestimoMaximo: number;
+  };
+  taxas: {
+    manutencao: number;
+    saque: number;
+    transferencia: number;
+  };
+  alertas: {
+    saldoMinimo: number;
+    saldoMaximo: number;
+    movimentacaoSuspeita: boolean;
+  };
+  unitId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Investimento
+ */
+export interface Investment {
+  id: string;
+  nome: string;
+  tipo: 'CDB' | 'LCA' | 'LCA' | 'TESOURO_DIRETO' | 'FUNDO_IMOBILIARIO' | 'ACOES' | 'FUNDO_MULTIMERCADO';
+  instituicao: string;
+  valorAplicado: number;
+  valorAtual: number;
+  valorResgate: number;
+  rentabilidade: number;
+  taxaAdministracao: number;
+  dataAplicacao: string;
+  dataVencimento: string;
+  dataResgate?: string;
+  status: 'ATIVO' | 'VENCIDO' | 'RESGATADO' | 'CANCELADO';
+  risco: 'CONSERVADOR' | 'MODERADO' | 'ARROJADO';
+  liquidez: 'DIARIA' | 'DIAS_30' | 'DIAS_60' | 'DIAS_90' | 'DIAS_180' | 'DIAS_360' | 'VENCIMENTO';
+  indexador: 'PRE_FIXADO' | 'POS_FIXADO' | 'INFLACAO' | 'CDI' | 'SELIC';
+  taxaIndexador?: number;
+  rendimentos: InvestmentEarning[];
+  impostos: {
+    ir: number;
+    iof: number;
+  };
+  observacoes?: string;
+  anexos: string[];
+  unitId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Rendimentos do Investimento
+ */
+export interface InvestmentEarning {
+  id: string;
+  investmentId: string;
+  data: string;
+  valor: number;
+  tipo: 'RENDIMENTO' | 'JUROS' | 'DIVIDENDO' | 'AMORTIZACAO';
+  baseCalculo: number;
+  aliquota: number;
+  valorImposto: number;
+  valorLiquido: number;
+  status: 'PROJETADO' | 'CREDITADO';
+}
+
+/**
+ * Empréstimo
+ */
+export interface Loan {
+  id: string;
+  nome: string;
+  tipo: 'FINANCIAMENTO' | 'CONSIGNADO' | 'CHEQUE_ESPECIAL' | 'ANTECIPACAO' | 'OUTROS';
+  instituicao: string;
+  valorContratado: number;
+  valorLiberado: number;
+  valorSaldo: number;
+  taxaJuros: number;
+  taxaJurosMensal: number;
+  carencia: number; // meses
+  prazo: number; // meses
+  valorParcela: number;
+  dataContratacao: string;
+  dataPrimeiraParcela: string;
+  dataUltimaParcela: string;
+  dataLiquidacao?: string;
+  status: 'ATIVO' | 'QUITADO' | 'ATRASADO' | 'NEGOCIADO';
+  finalidade: string;
+  garantias: string[];
+  parcelas: LoanInstallment[];
+  pagamentos: LoanPayment[];
+  multas: {
+    atraso: number;
+    quitacaoAntecipada: number;
+  };
+  observacoes?: string;
+  anexos: string[];
+  unitId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Parcela do Empréstimo
+ */
+export interface LoanInstallment {
+  id: string;
+  loanId: string;
+  numero: number;
+  dataVencimento: string;
+  dataPagamento?: string;
+  valorParcela: number;
+  valorJuros: number;
+  valorAmortizacao: number;
+  valorSaldo: number;
+  status: 'PENDENTE' | 'PAGA' | 'ATRASADA' | 'RENEGOCIADA';
+  diasAtraso?: number;
+  multa?: number;
+  jurosAtraso?: number;
+}
+
+/**
+ * Pagamento do Empréstimo
+ */
+export interface LoanPayment {
+  id: string;
+  loanId: string;
+  installmentId?: string;
+  dataPagamento: string;
+  valorPago: number;
+  formaPagamento: 'DINHEIRO' | 'CHEQUE' | 'TRANSFERENCIA' | 'PIX' | 'DEBITO';
+  bancoOrigem: string;
+  comprovante?: string;
+  observacoes?: string;
+}
+
+/**
+ * Alerta de Tesouraria
+ */
+export interface TreasuryAlert {
+  id: string;
+  tipo: 'SALDO_MINIMO' | 'SALDO_MAXIMO' | 'VENCIMENTO' | 'OPORTUNIDADE' | 'RISCO';
+  titulo: string;
+  descricao: string;
+  gravidade: 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
+  contaId?: string;
+  investimentoId?: string;
+  emprestimoId?: string;
+  valor?: number;
+  dataLimite?: string;
+  status: 'ATIVO' | 'RESOLVIDO' | 'IGNORADO';
+  acoesSugeridas: string[];
+  dataCriacao: string;
+  dataResolucao?: string;
+  resolvidoPor?: string;
+  unitId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Posição Financeira Consolidada
+ */
+export interface FinancialPosition {
+  id: string;
+  data: string;
+  ativoTotal: number;
+  passivoTotal: number;
+  patrimonioLiquido: number;
+  disponibilidades: number;
+  aplicacoes: number;
+  contasReceber: number;
+  estoques: number;
+  ativoFixo: number;
+  fornecedores: number;
+  emprestimos: number;
+  outrasContas: number;
+  variacaoPatrimonial: number;
+  variacaoPercentual: number;
+  indicadores: {
+    liquidezCorrente: number;
+    liquidezSeca: number;
+    endividamento: number;
+    rentabilidade: number;
+  };
+  detalhamento: FinancialPositionDetail[];
+  unitId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Detalhes da Posição Financeira
+ */
+export interface FinancialPositionDetail {
+  categoria: string;
+  subcategoria: string;
+  valorAtual: number;
+  valorAnterior: number;
+  variacao: number;
+  variacaoPercentual: number;
+  participacao: number; // percentual do total
 }
 
 // Export types from submodules
