@@ -1,66 +1,65 @@
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject,
-  listAll,
-  getMetadata
-} from 'firebase/storage';
-import { storage } from './firebaseService';
-import { withTimeout } from '../utils/promiseUtils';
+import { createClient, isSupabaseConfigured } from '../../lib/supabase/client';
 
 export class StorageService {
-  // FORÇAR modo local para evitar Firebase Storage
-  private static readonly FORCE_LOCAL_MODE = true;
-
-  // Verificar se Storage está disponível
+  // Verificar se Storage esta disponivel
   private static isStorageAvailable(): boolean {
-    return !this.FORCE_LOCAL_MODE && !!storage;
+    return isSupabaseConfigured() && !!createClient();
   }
 
   // Upload de arquivo
   static async uploadFile(
-    path: string, 
-    file: File, 
-    metadata?: any
+    path: string,
+    file: File,
+    _metadata?: Record<string, string>
   ): Promise<string> {
-    console.log("🚀 StorageService.uploadFile iniciado");
-    console.log("📁 Path:", path);
-    console.log("📄 File:", file.name);
-    console.log("💾 Force local mode:", this.FORCE_LOCAL_MODE);
-    
-    // Se o storage estiver disponível e não estivermos em modo forçado, tentar upload real
+    console.log("StorageService.uploadFile iniciado");
+    console.log("Path:", path);
+    console.log("File:", file.name);
+
+    // Se o storage estiver disponivel, tentar upload real
     if (this.isStorageAvailable()) {
+      const supabase = createClient()!;
+      
       try {
-        const storageRef = ref(storage, path);
-        await withTimeout(uploadBytes(storageRef, file, { customMetadata: metadata }), 15000);
-        const downloadURL = await withTimeout(getDownloadURL(storageRef), 5000);
-        console.log("✅ Arquivo enviado para Firebase Storage:", downloadURL);
-        return downloadURL;
+        const { data, error } = await supabase.storage
+          .from('uploads')
+          .upload(path, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (error) throw error;
+
+        // Obter URL publica
+        const { data: { publicUrl } } = supabase.storage
+          .from('uploads')
+          .getPublicUrl(data.path);
+
+        console.log("Arquivo enviado para Supabase Storage:", publicUrl);
+        return publicUrl;
       } catch (error) {
-        console.warn("⚠️ Falha no upload para Firebase Storage, usando fallback base64:", error);
+        console.warn("Falha no upload para Supabase Storage, usando fallback base64:", error);
       }
     }
-    
-    // SEMPRE usar modo local (base64) como fallback ou se forçado
-    console.warn("💾 Usando upload local (base64)");
-    
-    // Retornar URL temporária em base64
+
+    // Fallback: retornar URL temporaria em base64
+    console.warn("Usando upload local (base64)");
+
     return new Promise((resolve, reject) => {
       try {
         const reader = new FileReader();
         reader.onloadend = () => {
           const result = reader.result as string;
-          console.log("✅ Arquivo convertido para base64:", file.name);
+          console.log("Arquivo convertido para base64:", file.name);
           resolve(result);
         };
         reader.onerror = () => {
-          console.error("❌ Erro no FileReader:", reader.error);
+          console.error("Erro no FileReader:", reader.error);
           reject(reader.error);
         };
         reader.readAsDataURL(file);
       } catch (error) {
-        console.error("❌ Erro ao converter arquivo:", error);
+        console.error("Erro ao converter arquivo:", error);
         reject(error);
       }
     });
@@ -68,81 +67,87 @@ export class StorageService {
 
   // Upload de foto de perfil
   static async uploadProfilePhoto(
-    unitId: string, 
-    memberId: string, 
+    unitId: string,
+    memberId: string,
     file: File
   ): Promise<string> {
     const path = `profiles/${unitId}/${memberId}/avatar.jpg`;
     return this.uploadFile(path, file, { type: 'profile' });
   }
 
-  // Upload de documento de funcionário
+  // Upload de documento de funcionario
   static async uploadEmployeeDocument(
-    unitId: string, 
-    employeeId: string, 
-    documentType: string, 
+    unitId: string,
+    employeeId: string,
+    documentType: string,
     file: File
   ): Promise<string> {
     const path = `employees/${unitId}/${employeeId}/${documentType}/${file.name}`;
-    return this.uploadFile(path, file, { 
-      type: 'document', 
+    return this.uploadFile(path, file, {
+      type: 'document',
       documentType,
-      employeeId 
+      employeeId
     });
   }
 
   // Upload de documento de membro
   static async uploadMemberDocument(
-    unitId: string, 
-    memberId: string, 
-    documentType: string, 
+    unitId: string,
+    memberId: string,
+    documentType: string,
     file: File
   ): Promise<string> {
     const path = `members/${unitId}/${memberId}/${documentType}/${file.name}`;
-    return this.uploadFile(path, file, { 
-      type: 'document', 
+    return this.uploadFile(path, file, {
+      type: 'document',
       documentType,
-      memberId 
+      memberId
     });
   }
 
   // Upload de documento financeiro
   static async uploadFinancialDocument(
-    unitId: string, 
-    transactionId: string, 
-    documentType: string, 
+    unitId: string,
+    transactionId: string,
+    documentType: string,
     file: File
   ): Promise<string> {
     const path = `financial/${unitId}/${transactionId}/${documentType}/${file.name}`;
-    return this.uploadFile(path, file, { 
-      type: 'financial', 
+    return this.uploadFile(path, file, {
+      type: 'financial',
       documentType,
-      transactionId 
+      transactionId
     });
   }
 
-  // Upload de relatório
+  // Upload de relatorio
   static async uploadReport(
-    unitId: string, 
-    reportType: string, 
-    fileName: string, 
+    unitId: string,
+    reportType: string,
+    fileName: string,
     file: File
   ): Promise<string> {
     const path = `reports/${unitId}/${reportType}/${fileName}`;
-    return this.uploadFile(path, file, { 
-      type: 'report', 
-      reportType 
+    return this.uploadFile(path, file, {
+      type: 'report',
+      reportType
     });
   }
 
-  // Download de arquivo
+  // Download de arquivo (obter URL)
   static async getDownloadURL(path: string): Promise<string> {
     if (!this.isStorageAvailable()) return path;
+
+    const supabase = createClient()!;
+
     try {
-      const storageRef = ref(storage, path);
-      return await withTimeout(getDownloadURL(storageRef), 8000);
-    } catch (error: any) {
-      console.warn(`Erro ao obter URL de download: ${error.message}`);
+      const { data: { publicUrl } } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(path);
+
+      return publicUrl;
+    } catch (error) {
+      console.warn(`Erro ao obter URL de download: ${error}`);
       return path;
     }
   }
@@ -150,60 +155,99 @@ export class StorageService {
   // Deletar arquivo
   static async deleteFile(path: string): Promise<void> {
     if (!this.isStorageAvailable()) return;
+
+    const supabase = createClient()!;
+
     try {
-      const storageRef = ref(storage, path);
-      await withTimeout(deleteObject(storageRef), 8000);
-    } catch (error: any) {
-      console.warn(`Erro ao deletar arquivo: ${error.message}`);
+      const { error } = await supabase.storage
+        .from('uploads')
+        .remove([path]);
+
+      if (error) throw error;
+      console.log("Arquivo deletado:", path);
+    } catch (error) {
+      console.warn(`Erro ao deletar arquivo: ${error}`);
     }
   }
 
-  // Listar arquivos de um diretório
-  static async listFiles(path: string): Promise<any[]> {
+  // Listar arquivos de um diretorio
+  static async listFiles(path: string): Promise<{
+    name: string;
+    path: string;
+    downloadURL: string;
+    metadata: {
+      size: number;
+      contentType: string | undefined;
+      timeCreated: string;
+      updated: string;
+    };
+  }[]> {
     if (!this.isStorageAvailable()) return [];
+
+    const supabase = createClient()!;
+
     try {
-      const storageRef = ref(storage, path);
-      const result = await withTimeout(listAll(storageRef), 10000);
-      
+      const { data, error } = await supabase.storage
+        .from('uploads')
+        .list(path);
+
+      if (error) throw error;
+
       const files = await Promise.all(
-        result.items.map(async (itemRef) => {
-          try {
-            const downloadURL = await withTimeout(getDownloadURL(itemRef), 5000);
-            const metadata = await withTimeout(getMetadata(itemRef), 5000);
-            
-            return {
-              name: itemRef.name,
-              path: itemRef.fullPath,
-              downloadURL,
-              metadata: {
-                size: metadata.size,
-                contentType: metadata.contentType,
-                timeCreated: metadata.timeCreated,
-                updated: metadata.updated,
-                customMetadata: metadata.customMetadata
-              }
-            };
-          } catch (itemError) {
-            console.warn(`Erro ao processar item ${itemRef.name}:`, itemError);
-            return null;
-          }
+        (data || []).map(async (file) => {
+          const fullPath = `${path}/${file.name}`;
+          const { data: { publicUrl } } = supabase.storage
+            .from('uploads')
+            .getPublicUrl(fullPath);
+
+          return {
+            name: file.name,
+            path: fullPath,
+            downloadURL: publicUrl,
+            metadata: {
+              size: file.metadata?.size || 0,
+              contentType: file.metadata?.mimetype,
+              timeCreated: file.created_at,
+              updated: file.updated_at || file.created_at
+            }
+          };
         })
       );
 
-      return files.filter(f => f !== null);
-    } catch (error: any) {
-      console.warn(`Erro ao listar arquivos: ${error.message}`);
+      return files;
+    } catch (error) {
+      console.warn(`Erro ao listar arquivos: ${error}`);
       return [];
     }
   }
 
-  // Listar documentos de um funcionário
-  static async getEmployeeDocuments(unitId: string, employeeId: string): Promise<any[]> {
+  // Listar documentos de um funcionario
+  static async getEmployeeDocuments(unitId: string, employeeId: string): Promise<{
+    name: string;
+    path: string;
+    downloadURL: string;
+    metadata: {
+      size: number;
+      contentType: string | undefined;
+      timeCreated: string;
+      updated: string;
+    };
+  }[]> {
     return this.listFiles(`employees/${unitId}/${employeeId}`);
   }
 
   // Listar documentos de um membro
-  static async getMemberDocuments(unitId: string, memberId: string): Promise<any[]> {
+  static async getMemberDocuments(unitId: string, memberId: string): Promise<{
+    name: string;
+    path: string;
+    downloadURL: string;
+    metadata: {
+      size: number;
+      contentType: string | undefined;
+      timeCreated: string;
+      updated: string;
+    };
+  }[]> {
     return this.listFiles(`members/${unitId}/${memberId}`);
   }
 
@@ -218,24 +262,54 @@ export class StorageService {
     return file.size <= maxSizeBytes;
   }
 
-  // Gerar nome de arquivo único
+  // Gerar nome de arquivo unico
   static generateUniqueFileName(originalName: string): string {
     const timestamp = new Date().getTime();
     const randomString = Math.random().toString(36).substring(2, 8);
     const extension = originalName.split('.').pop();
     const nameWithoutExtension = originalName.split('.').slice(0, -1).join('.');
-    
+
     return `${nameWithoutExtension}_${timestamp}_${randomString}.${extension}`;
   }
 
-  // Obter metadados do arquivo
-  static async getFileMetadata(path: string): Promise<any> {
+  // Obter metadados do arquivo (simplificado para Supabase)
+  static async getFileMetadata(path: string): Promise<{
+    size: number;
+    contentType: string | undefined;
+    timeCreated: string;
+    updated: string;
+  } | null> {
     if (!this.isStorageAvailable()) return null;
+
+    const supabase = createClient()!;
+
     try {
-      const storageRef = ref(storage, path);
-      return await withTimeout(getMetadata(storageRef), 8000);
-    } catch (error: any) {
-      console.warn(`Erro ao obter metadados: ${error.message}`);
+      // Supabase nao tem um metodo direto para metadados
+      // Usamos list para obter informacoes do arquivo
+      const pathParts = path.split('/');
+      const fileName = pathParts.pop();
+      const dirPath = pathParts.join('/');
+
+      const { data, error } = await supabase.storage
+        .from('uploads')
+        .list(dirPath);
+
+      if (error) throw error;
+
+      const file = data?.find(f => f.name === fileName);
+
+      if (file) {
+        return {
+          size: file.metadata?.size || 0,
+          contentType: file.metadata?.mimetype,
+          timeCreated: file.created_at,
+          updated: file.updated_at || file.created_at
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.warn(`Erro ao obter metadados: ${error}`);
       return null;
     }
   }

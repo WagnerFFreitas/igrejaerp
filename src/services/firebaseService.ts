@@ -1,46 +1,26 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getFunctions } from 'firebase/functions';
+// ESTE ARQUIVO FOI MANTIDO PARA COMPATIBILIDADE
+// O projeto agora usa Supabase em vez de Firebase
+// Para novos desenvolvimentos, importe diretamente de '@/lib/supabase/client'
 
-// Import the Firebase configuration
-import firebaseConfig from '../../firebase-applet-config.json';
+import { createClient, isSupabaseConfigured } from '../../lib/supabase/client';
 
-// Inicializar Firebase
-let app;
-let db: any, auth: any, functions: any;
-let storage = null;
+// Re-exportar o cliente Supabase como 'db' para compatibilidade
+const supabase = createClient();
 
-try {
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-  // storage = getStorage(app); // Desativado temporariamente pois requer plano pago
-  auth = getAuth(app);
-  functions = getFunctions(app);
-  
-  console.log("🔥 Firebase inicializado com sucesso");
+// Exportar como 'db' para manter compatibilidade com código existente
+export const db = supabase;
+export const auth = supabase?.auth;
+export const storage = supabase?.storage;
+export const functions = null; // Supabase usa Edge Functions
 
-  // Teste de conexão
-  const testConnection = async () => {
-    try {
-      await getDocFromServer(doc(db, 'test', 'connection'));
-      console.log("✅ Conexão com Firestore estabelecida com sucesso!");
-    } catch (error) {
-      if(error instanceof Error && error.message.includes('the client is offline')) {
-        console.error("❌ O cliente está offline. Verifique sua configuração do Firebase.");
-      } else {
-        console.warn("⚠️ Teste de conexão retornou um erro (pode ser permissão, o que significa que conectou):", error);
-      }
-    }
-  };
-  testConnection();
+// Verificar se está configurado
+export const isConfigured = isSupabaseConfigured;
 
-} catch (error) {
-  console.warn("❌ Erro ao inicializar Firebase:", error);
+// Log de inicialização
+if (supabase) {
+  console.log("Supabase inicializado com sucesso (compatibilidade Firebase)");
+} else {
+  console.warn("Supabase nao configurado. Verifique as variaveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY");
 }
 
-export default app;
-
-// Exportar serviços (podem ser null se não configurado)
-export { auth, db, storage, functions };
+export default supabase;
