@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calculator, Printer, Check, Edit3, DollarSign, ArrowDownRight, ArrowUpRight, Save, Loader2, RefreshCw } from 'lucide-react';
+import { Calculator, Printer, Check, Edit3, DollarSign, ArrowDownRight, ArrowUpRight, Save, Loader2, RefreshCw, FileText, TrendingUp, Shield, Calendar, Lock, Unlock, AlertCircle, Download, Filter, Eye, X, Search } from 'lucide-react';
 import { dbService } from '../services/databaseService';
 import { exportService } from '../services/exportService';
-import { Payroll, PayrollInput, TaxConfig } from '../types';
+import { Payroll, PayrollInput, TaxConfig, PayrollPeriod } from '../types';
 import { payrollService } from '../services/payrollService';
 import IndexedDBService from '../src/services/indexedDBService';
 import { DEFAULT_TAX_CONFIG } from '../constants';
+import { jsPDF } from 'jspdf';
 
 interface ProcessamentoFolhaProps {
   employees: Payroll[];
@@ -23,7 +24,21 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
-  const [pendingAction, setPendingAction] = useState<'PDF' | 'PROCESS' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'PDF' | 'PROCESS' | 'ANALYTICAL' | 'SUMMARY' | 'ENCARGOS' | null>(null);
+  
+  // Estados para controle de período
+  const [currentPeriod, setCurrentPeriod] = useState<PayrollPeriod | null>(null);
+  const [periodHistory, setPeriodHistory] = useState<PayrollPeriod[]>([]);
+  const [showPeriodModal, setShowPeriodModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  
+  // Estados para filtros e relatórios
+  const [reportType, setReportType] = useState<'analytical' | 'summary' | 'encargos'>('analytical');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterSalaryRange, setFilterSalaryRange] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const formatMatricula = (m: string) => {
     if (!m) return '-';
@@ -36,27 +51,65 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
     return m;
   };
 
-  // Carregar configurações fiscais
+  // Carregar configurações fiscais e períodos
   useEffect(() => {
-    const loadConfig = async () => {
+    const loadData = async () => {
       try {
+        // Carregar configurações fiscais
         const savedConfig = await IndexedDBService.get('system_config', 'tax_config');
         if (savedConfig) {
           setTaxConfig(savedConfig);
         }
+        
+        // Carregar dados dos funcionários
+        const latestEmployees = await dbService.getEmployees(currentUnitId);
+        setEmployees(latestEmployees);
+        
+        // Carregar períodos
+        const periods = await IndexedDBService.get('payroll_periods', 'all') || [];
+        setPeriodHistory(periods);
+        
+        // Verificar período atual
+        const currentDate = new Date();
+        const currentMonthYear = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+        const existingPeriod = periods.find((p: PayrollPeriod) => 
+          p.year === currentDate.getFullYear() && p.month === currentDate.getMonth() + 1 && p.unitId === currentUnitId
+        );
+        
+        if (existingPeriod) {
+          setCurrentPeriod(existingPeriod);
+        } else {
+          // Criar novo período aberto
+          const newPeriod: PayrollPeriod = {
+            id: `period-${currentMonthYear}-${currentUnitId}`,
+            month: currentDate.getMonth() + 1,
+            year: currentDate.getFullYear(),
+            status: 'OPEN',
+            startDate: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString(),
+            endDate: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString(),
+            totalEmployees: 0,
+            totalPayroll: 0,
+            totalINSS: 0,
+            totalFGTS: 0,
+            totalIRRF: 0,
+            unitId: currentUnitId,
+            createdBy: 'system'
+          };
+          setCurrentPeriod(newPeriod);
+        }
       } catch (error) {
-        console.error('Erro ao carregar configurações fiscais:', error);
+        console.error('Erro ao carregar dados:', error);
       }
     };
-    loadConfig();
-  }, []);
+    loadData();
+  }, [currentUnitId]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === employees.length) setSelectedIds([]);
     else setSelectedIds(employees.map(e => e.id));
   };
 
-  const handleSync = async () => {
+  const handleSyncData = async () => {
     setIsLoading(true);
     try {
       const latestEmployees = await dbService.getEmployees(currentUnitId);
@@ -131,7 +184,414 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
       await executeGeneratePDF(filteredEmployees);
     } else if (pendingAction === 'PROCESS') {
       await executeProcessPayroll(filteredEmployees);
+    } else if (pendingAction === 'ANALYTICAL') {
+      await generateAnalyticalReport(filteredEmployees);
+    } else if (pendingAction === 'SUMMARY') {
+      await generateSummaryReport(filteredEmployees);
+    } else if (pendingAction === 'ENCARGOS') {
+      await generateEncargosReport(filteredEmployees);
     }
+  };
+
+  // Novas funções para relatórios avançados
+  const generateAnalyticalReport = async (selectedEmployees: Payroll[]) => {
+    setIsLoading(true);
+    try {
+      const pdf = new jsPDF('l', 'mm', 'a4', true); // Landscape para aproveitar melhor o espaço
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      // Título
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Folha Analítica Completa', 148, 15, { align: 'center' });
+      
+      // Período
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Período: ${String(currentMonth).padStart(2, '0')}/${currentYear}`, 148, 25, { align: 'center' });
+      
+      let yPos = 40;
+      
+      // Configuração da tabela - reduzida para caber na folha
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      const colWidths = {
+        matricula: 25,
+        nome: 50,
+        salario: 35,
+        proventos: 35,
+        descontos: 35,
+        liquido: 35,
+        inss: 30,
+        irrf: 30
+      };
+      
+      // Cabeçalho da tabela
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      let xPos = margin;
+      
+      pdf.text('Matrícula', xPos, yPos);
+      xPos += colWidths.matricula;
+      pdf.text('Nome', xPos, yPos);
+      xPos += colWidths.nome;
+      pdf.text('Salário Base', xPos, yPos);
+      xPos += colWidths.salario;
+      pdf.text('Proventos', xPos, yPos);
+      xPos += colWidths.proventos;
+      pdf.text('Descontos', xPos, yPos);
+      xPos += colWidths.descontos;
+      pdf.text('Líquido', xPos, yPos);
+      xPos += colWidths.liquido;
+      pdf.text('INSS', xPos, yPos);
+      xPos += colWidths.inss;
+      pdf.text('IRRF', xPos, yPos);
+      
+      yPos += 7;
+      pdf.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 5;
+      
+      // Dados
+      pdf.setFont('helvetica', 'normal');
+      selectedEmployees.forEach((emp, index) => {
+        if (yPos > 180) { // Limite mais seguro para landscape
+          pdf.addPage();
+          yPos = 25;
+          // Repetir cabeçalho na nova página
+          pdf.setFontSize(9);
+          pdf.setFont('helvetica', 'bold');
+          xPos = margin;
+          pdf.text('Matrícula', xPos, yPos);
+          xPos += colWidths.matricula;
+          pdf.text('Nome', xPos, yPos);
+          xPos += colWidths.nome;
+          pdf.text('Salário Base', xPos, yPos);
+          xPos += colWidths.salario;
+          pdf.text('Proventos', xPos, yPos);
+          xPos += colWidths.proventos;
+          pdf.text('Descontos', xPos, yPos);
+          xPos += colWidths.descontos;
+          pdf.text('Líquido', xPos, yPos);
+          xPos += colWidths.liquido;
+          pdf.text('INSS', xPos, yPos);
+          xPos += colWidths.inss;
+          pdf.text('IRRF', xPos, yPos);
+          yPos += 7;
+          pdf.line(margin, yPos, pageWidth - margin, yPos);
+          yPos += 5;
+          pdf.setFont('helvetica', 'normal');
+        }
+        
+        pdf.setFontSize(8);
+        xPos = margin;
+        
+        pdf.text(emp.matricula || 'N/A', xPos, yPos);
+        xPos += colWidths.matricula;
+        pdf.text(emp.employeeName.substring(0, 30), xPos, yPos); // Reduzido para caber melhor
+        xPos += colWidths.nome;
+        pdf.text(`R$ ${(emp.salario_base || 0).toFixed(2)}`, xPos, yPos);
+        xPos += colWidths.salario;
+        pdf.text(`R$ ${(emp.total_proventos || 0).toFixed(2)}`, xPos, yPos);
+        xPos += colWidths.proventos;
+        pdf.text(`R$ ${(emp.total_descontos || 0).toFixed(2)}`, xPos, yPos);
+        xPos += colWidths.descontos;
+        pdf.text(`R$ ${(emp.salario_liquido || 0).toFixed(2)}`, xPos, yPos);
+        xPos += colWidths.liquido;
+        pdf.text(`R$ ${(emp.inss || 0).toFixed(2)}`, xPos, yPos);
+        xPos += colWidths.inss;
+        pdf.text(`R$ ${(emp.irrf || 0).toFixed(2)}`, xPos, yPos);
+        
+        yPos += 8; // Espaçamento reduzido
+      });
+      
+      // Totais
+      yPos += 6;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      const totalPayroll = selectedEmployees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0);
+      const totalDeductions = selectedEmployees.reduce((sum, emp) => sum + (emp.total_descontos || 0), 0);
+      const totalNet = selectedEmployees.reduce((sum, emp) => sum + (emp.salario_liquido || 0), 0);
+      const totalINSS = selectedEmployees.reduce((sum, emp) => sum + (emp.inss || 0), 0);
+      const totalIRRF = selectedEmployees.reduce((sum, emp) => sum + (emp.irrf || 0), 0);
+      
+      xPos = margin;
+      pdf.text(`Totais (${selectedEmployees.length} funcionários):`, xPos, yPos);
+      xPos += colWidths.matricula + colWidths.nome + colWidths.salario;
+      pdf.text(`R$ ${totalPayroll.toFixed(2)}`, xPos, yPos);
+      xPos += colWidths.proventos;
+      pdf.text(`R$ ${totalDeductions.toFixed(2)}`, xPos, yPos);
+      xPos += colWidths.descontos;
+      pdf.text(`R$ ${totalNet.toFixed(2)}`, xPos, yPos);
+      xPos += colWidths.liquido;
+      pdf.text(`R$ ${totalINSS.toFixed(2)}`, xPos, yPos);
+      xPos += colWidths.inss;
+      pdf.text(`R$ ${totalIRRF.toFixed(2)}`, xPos, yPos);
+      
+      pdf.save(`folha-analitica-${currentYear}-${String(currentMonth).padStart(2, '0')}.pdf`);
+      alert('Relatório analítico gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar relatório analítico:', error);
+      alert('Erro ao gerar relatório analítico.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateSummaryReport = async (selectedEmployees: Payroll[]) => {
+    setIsLoading(true);
+    try {
+      const pdf = new jsPDF('l', 'mm', 'a4', true); // Landscape para aproveitar melhor o espaço
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      // Título
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Resumo Financeiro da Folha', 148, 15, { align: 'center' });
+      
+      // Período
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Período: ${String(currentMonth).padStart(2, '0')}/${currentYear}`, 148, 25, { align: 'center' });
+      
+      // Cálculos
+      const totalPayroll = selectedEmployees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0);
+      const totalDeductions = selectedEmployees.reduce((sum, emp) => sum + (emp.total_descontos || 0), 0);
+      const totalNet = selectedEmployees.reduce((sum, emp) => sum + (emp.salario_liquido || 0), 0);
+      const totalINSS = selectedEmployees.reduce((sum, emp) => sum + (emp.inss || 0), 0);
+      const totalIRRF = selectedEmployees.reduce((sum, emp) => sum + (emp.irrf || 0), 0);
+      const fgtsTotal = totalPayroll * 0.08; // 8% FGTS
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 15;
+      let yPos = 45;
+      
+      // Layout em 3 colunas para landscape - ocupando toda largura
+      const leftColumn = margin;
+      const middleColumn = pageWidth / 2 - 30;
+      const rightColumn = pageWidth - 70;
+      
+      // Cabeçalho das 3 colunas
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Resumo Financeiro', leftColumn, yPos);
+      pdf.text('Encargos Sociais', middleColumn, yPos);
+      pdf.text('Médias', rightColumn, yPos);
+      
+      yPos += 18;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      
+      // Resumo Financeiro - Esquerda
+      pdf.text(`Total de Funcionários: ${selectedEmployees.length}`, leftColumn, yPos);
+      yPos += 12;
+      pdf.text(`Total da Folha Bruta: R$ ${totalPayroll.toFixed(2)}`, leftColumn, yPos);
+      yPos += 12;
+      pdf.text(`Total de Descontos: R$ ${totalDeductions.toFixed(2)}`, leftColumn, yPos);
+      yPos += 12;
+      pdf.text(`Total Líquido: R$ ${totalNet.toFixed(2)}`, leftColumn, yPos);
+      
+      // Reiniciar yPos para Encargos Sociais
+      yPos = 63;
+      pdf.text(`INSS (Retido): R$ ${totalINSS.toFixed(2)}`, middleColumn, yPos);
+      yPos += 12;
+      pdf.text(`IRRF (Retido): R$ ${totalIRRF.toFixed(2)}`, middleColumn, yPos);
+      yPos += 12;
+      pdf.text(`FGTS (Empresa): R$ ${fgtsTotal.toFixed(2)}`, middleColumn, yPos);
+      yPos += 12;
+      pdf.text(`Custo Total (Encargos): R$ ${(totalPayroll + fgtsTotal).toFixed(2)}`, middleColumn, yPos);
+      
+      // Reiniciar yPos para Médias
+      yPos = 63;
+      pdf.text(`Salário Médio: R$ ${(totalPayroll / selectedEmployees.length).toFixed(2)}`, rightColumn, yPos);
+      yPos += 12;
+      pdf.text(`Líquido Médio: R$ ${(totalNet / selectedEmployees.length).toFixed(2)}`, rightColumn, yPos);
+      
+      pdf.save(`resumo-financeiro-${currentYear}-${String(currentMonth).padStart(2, '0')}.pdf`);
+      alert('Resumo financeiro gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar resumo financeiro:', error);
+      alert('Erro ao gerar resumo financeiro.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateEncargosReport = async (selectedEmployees: Payroll[]) => {
+    setIsLoading(true);
+    try {
+      const pdf = new jsPDF('l', 'mm', 'a4', true); // Landscape para aproveitar melhor o espaço
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      // Título
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Relatório de Encargos Sociais', 148, 15, { align: 'center' });
+      
+      // Período
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Período: ${String(currentMonth).padStart(2, '0')}/${currentYear}`, 148, 25, { align: 'center' });
+      
+      // Cálculos
+      const totalPayroll = selectedEmployees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0);
+      const totalINSS = selectedEmployees.reduce((sum, emp) => sum + (emp.inss || 0), 0);
+      const totalIRRF = selectedEmployees.reduce((sum, emp) => sum + (emp.irrf || 0), 0);
+      
+      // Cálculo de encargos
+      const inssCompany = totalPayroll * 0.20; // 20% INSS Empresa
+      const fgtsCompany = totalPayroll * 0.08; // 8% FGTS
+      const rat = totalPayroll * 0.01; // 1% RAT (variável)
+      const otherCharges = totalPayroll * 0.028; // 2.8% outros encargos
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 15;
+      let yPos = 45;
+      
+      // Layout em 2 colunas para landscape - mais compacto
+      const leftColumn = margin;
+      const rightColumn = pageWidth / 2 + 15;
+      
+      // Encargos Retidos - Esquerda
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Encargos Retidos dos Funcionários', leftColumn, yPos);
+      
+      yPos += 15;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`INSS Retido: R$ ${totalINSS.toFixed(2)}`, leftColumn, yPos);
+      yPos += 10;
+      pdf.text(`IRRF Retido: R$ ${totalIRRF.toFixed(2)}`, leftColumn, yPos);
+      
+      // Encargos da Empresa - Direita
+      yPos = 45;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Encargos da Empresa', rightColumn, yPos);
+      
+      yPos += 15;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`INSS Empresa (20%): R$ ${inssCompany.toFixed(2)}`, rightColumn, yPos);
+      yPos += 10;
+      pdf.text(`FGTS (8%): R$ ${fgtsCompany.toFixed(2)}`, rightColumn, yPos);
+      yPos += 10;
+      pdf.text(`RAT (1%): R$ ${rat.toFixed(2)}`, rightColumn, yPos);
+      yPos += 10;
+      pdf.text(`Outros Encargos (2.8%): R$ ${otherCharges.toFixed(2)}`, rightColumn, yPos);
+      
+      yPos += 15;
+      const totalCompanyCharges = inssCompany + fgtsCompany + rat + otherCharges;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Total Encargos Empresa: R$ ${totalCompanyCharges.toFixed(2)}`, rightColumn, yPos);
+      
+      // Custo Total - Centro
+      yPos += 25;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Custo Total', pageWidth / 2 - 20, yPos);
+      
+      yPos += 15;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Folha Bruta: R$ ${totalPayroll.toFixed(2)}`, pageWidth / 2 - 20, yPos);
+      yPos += 10;
+      pdf.text(`Encargos Empresa: R$ ${totalCompanyCharges.toFixed(2)}`, pageWidth / 2 - 20, yPos);
+      yPos += 10;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Custo Total: R$ ${(totalPayroll + totalCompanyCharges).toFixed(2)}`, pageWidth / 2 - 20, yPos);
+      
+      pdf.save(`encargos-sociais-${currentYear}-${String(currentMonth).padStart(2, '0')}.pdf`);
+      alert('Relatório de encargos gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar relatório de encargos:', error);
+      alert('Erro ao gerar relatório de encargos.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Funções de controle de período
+  const handleOpenPeriod = async () => {
+    if (!currentPeriod || currentPeriod.status !== 'OPEN') {
+      const currentDate = new Date();
+      const newPeriod: PayrollPeriod = {
+        id: `period-${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${currentUnitId}`,
+        month: currentDate.getMonth() + 1,
+        year: currentDate.getFullYear(),
+        status: 'OPEN',
+        startDate: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString(),
+        endDate: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString(),
+        totalEmployees: 0,
+        totalPayroll: 0,
+        totalINSS: 0,
+        totalFGTS: 0,
+        totalIRRF: 0,
+        unitId: currentUnitId,
+        createdBy: 'system'
+      };
+      
+      await IndexedDBService.save('payroll_periods', newPeriod);
+      setCurrentPeriod(newPeriod);
+      setPeriodHistory([...periodHistory, newPeriod]);
+      alert('Período aberto com sucesso!');
+    }
+  };
+
+  const handleClosePeriod = async () => {
+    if (!currentPeriod || currentPeriod.status !== 'OPEN') {
+      alert('Não há período aberto para fechar.');
+      return;
+    }
+    
+    if (!confirm('Deseja fechar o período atual? Esta ação não poderá ser desfeita.')) {
+      return;
+    }
+    
+    try {
+      const updatedPeriod = {
+        ...currentPeriod,
+        status: 'CLOSED' as const,
+        closedAt: new Date().toISOString(),
+        totalEmployees: employees.length,
+        totalPayroll: employees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0),
+        totalINSS: employees.reduce((sum, emp) => sum + (emp.inss || 0), 0),
+        totalFGTS: employees.reduce((sum, emp) => sum + (emp.total_proventos || 0) * 0.08, 0),
+        totalIRRF: employees.reduce((sum, emp) => sum + (emp.irrf || 0), 0)
+      };
+      
+      await IndexedDBService.save('payroll_periods', updatedPeriod);
+      setCurrentPeriod(updatedPeriod);
+      
+      // Atualizar histórico
+      const updatedHistory = periodHistory.map(p => p.id === updatedPeriod.id ? updatedPeriod : p);
+      setPeriodHistory(updatedHistory);
+      
+      alert('Período fechado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao fechar período:', error);
+      alert('Erro ao fechar período.');
+    }
+  };
+
+  const getFilteredEmployees = () => {
+    return employees.filter(emp => {
+      const matchesSearch = !searchTerm || 
+        emp.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.matricula?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = !filterStatus || emp.status === filterStatus;
+      const matchesDepartment = !filterDepartment || emp.departamento === filterDepartment;
+      const matchesSalary = !filterSalaryRange || {
+        '0-2000': (emp.salario_base || 0) <= 2000,
+        '2000-5000': (emp.salario_base || 0) > 2000 && (emp.salario_base || 0) <= 5000,
+        '5000+': (emp.salario_base || 0) > 5000
+      }[filterSalaryRange] || true;
+      
+      return matchesSearch && matchesStatus && matchesDepartment && matchesSalary;
+    });
   };
 
   const executeGeneratePDF = async (selectedEmployees: Payroll[]) => {
@@ -248,6 +708,21 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGenerateAnalytical = () => {
+    setPendingAction('ANALYTICAL');
+    setIsRangeModalOpen(true);
+  };
+
+  const handleGenerateSummary = () => {
+    setPendingAction('SUMMARY');
+    setIsRangeModalOpen(true);
+  };
+
+  const handleGenerateEncargos = () => {
+    setPendingAction('ENCARGOS');
+    setIsRangeModalOpen(true);
   };
 
   const handleProcessPayroll = () => {
@@ -390,42 +865,71 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={handleSync}
+            onClick={handleSyncData}
             disabled={isLoading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-slate-200 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-slate-200 disabled:opacity-50 h-12"
             title="Sincronizar com banco de dados"
           >
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''}/> Sincronizar
           </button>
+          
+          {/* Controle de Período */}
+          <button 
+            onClick={() => setShowPeriodModal(true)}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-6 py-3 bg-purple-100 text-purple-600 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-purple-200 disabled:opacity-50 h-12"
+            title="Controle de Período"
+          >
+            {currentPeriod?.status === 'OPEN' ? <Unlock size={16}/> : <Lock size={16}/>}
+            Período: {currentPeriod?.status === 'OPEN' ? 'Aberto' : 'Fechado'}
+          </button>
+          
+          {/* Relatórios Avançados */}
+          <button 
+            onClick={() => setShowReportsModal(true)}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-100 text-emerald-600 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-emerald-200 disabled:opacity-50 h-12"
+            title="Relatórios Avançados"
+          >
+            <FileText size={16}/> Relatórios
+          </button>
+          
           <button 
             onClick={handleGeneratePDF}
             disabled={isLoading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-slate-300 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 bg-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase transition-all hover:bg-slate-300 disabled:opacity-50 h-12"
           >
             <Printer size={16}/> Holerites
           </button>
           <button 
             onClick={handleProcessPayroll}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase shadow-lg transition-all hover:bg-indigo-700 disabled:opacity-50"
+            disabled={isLoading || currentPeriod?.status !== 'OPEN'}
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase shadow-lg transition-all hover:bg-indigo-700 disabled:opacity-50 h-12"
           >
             <Calculator size={16}/> {isLoading ? 'Processando...' : 'Processar Mês Atual'}
           </button>
         </div>
       </div>
 
+      {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100">
            <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">Total Proventos</p>
-           <p className="text-2xl font-black text-emerald-900">R$ 15.420,00</p>
+           <p className="text-2xl font-black text-emerald-900">
+             R$ {employees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+           </p>
         </div>
         <div className="bg-rose-50 p-6 rounded-[2rem] border border-rose-100">
            <p className="text-[10px] font-black text-rose-600 uppercase mb-1">Total Descontos</p>
-           <p className="text-2xl font-black text-rose-900">R$ 3.840,00</p>
+           <p className="text-2xl font-black text-rose-900">
+             R$ {employees.reduce((sum, emp) => sum + (emp.total_descontos || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+           </p>
         </div>
         <div className="bg-slate-900 p-6 rounded-[2rem] shadow-xl">
            <p className="text-[10px] font-black text-indigo-300 uppercase mb-1">Custo Patronal Estimado</p>
-           <p className="text-2xl font-black text-white">R$ 18.250,00</p>
+           <p className="text-2xl font-black text-white">
+             R$ {(employees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0) * 1.28).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+           </p>
         </div>
       </div>
 
@@ -483,6 +987,118 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
           </tbody>
         </table>
       </div>
+      
+      {/* Modal de Controle de Período */}
+      {showPeriodModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-2xl shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black uppercase">Controle de Período</h2>
+              <button onClick={() => setShowPeriodModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={24}/>
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {currentPeriod && (
+                <div className="bg-slate-50 p-6 rounded-2xl">
+                  <h3 className="text-sm font-black text-slate-600 uppercase mb-4">Período Atual</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] text-slate-500 uppercase">Mês/Ano</p>
+                      <p className="font-bold">{String(currentPeriod.month).padStart(2, '0')}/{currentPeriod.year}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500 uppercase">Status</p>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                        currentPeriod.status === 'OPEN' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {currentPeriod.status === 'OPEN' ? 'Aberto' : 'Fechado'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500 uppercase">Funcionários</p>
+                      <p className="font-bold">{currentPeriod.totalEmployees}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500 uppercase">Total Folha</p>
+                      <p className="font-bold">R$ {currentPeriod.totalPayroll.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-4">
+                {currentPeriod?.status === 'OPEN' ? (
+                  <button 
+                    onClick={handleClosePeriod}
+                    disabled={isLoading}
+                    className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm uppercase shadow-lg hover:bg-red-700 transition-all disabled:opacity-50"
+                  >
+                    <Lock size={16} className="inline mr-2"/> Fechar Período
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleOpenPeriod}
+                    disabled={isLoading}
+                    className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-sm uppercase shadow-lg hover:bg-green-700 transition-all disabled:opacity-50"
+                  >
+                    <Unlock size={16} className="inline mr-2"/> Abrir Novo Período
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de Relatórios Avançados */}
+      {showReportsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-3xl shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black uppercase">Relatórios Avançados</h2>
+              <button onClick={() => setShowReportsModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={24}/>
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <button 
+                onClick={() => { setShowReportsModal(false); handleGenerateAnalytical(); }}
+                disabled={isLoading}
+                className="p-6 bg-emerald-50 rounded-2xl border border-emerald-100 hover:bg-emerald-100 transition-all disabled:opacity-50"
+              >
+                <FileText className="text-emerald-600 mb-4" size={32}/>
+                <h3 className="font-black text-emerald-900 mb-2">Folha Analítica</h3>
+                <p className="text-xs text-emerald-600">Relatório completo com todos os funcionários e valores detalhados</p>
+              </button>
+              
+              <button 
+                onClick={() => { setShowReportsModal(false); handleGenerateSummary(); }}
+                disabled={isLoading}
+                className="p-6 bg-blue-50 rounded-2xl border border-blue-100 hover:bg-blue-100 transition-all disabled:opacity-50"
+              >
+                <TrendingUp className="text-blue-600 mb-4" size={32}/>
+                <h3 className="font-black text-blue-900 mb-2">Resumo Financeiro</h3>
+                <p className="text-xs text-blue-600">Totais, médias e encargos sociais consolidados</p>
+              </button>
+              
+              <button 
+                onClick={() => { setShowReportsModal(false); handleGenerateEncargos(); }}
+                disabled={isLoading}
+                className="p-6 bg-purple-50 rounded-2xl border border-purple-100 hover:bg-purple-100 transition-all disabled:opacity-50"
+              >
+                <Shield className="text-purple-600 mb-4" size={32}/>
+                <h3 className="font-black text-purple-900 mb-2">Encargos Sociais</h3>
+                <p className="text-xs text-purple-600">INSS, FGTS, RAT e custos trabalhistas detalhados</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {editingEmployee && (
         <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto backdrop-blur-sm">
@@ -665,7 +1281,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
               <h3 className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-4">Encargos Patronais (Estimados)</h3>
               <div className="grid grid-cols-3 gap-6">
                 <div>
-                  <p className="text-[9px] font-bold uppercase opacity-40">INSS Patronal ({(taxConfig.patronalRate * 100).toFixed(1)}%)</p>
+                  <p className="text-[9px] font-bold uppercase opacity-40">INSS Patronal ({((taxConfig.patronalRate || 0.2) * 100).toFixed(1)}%)</p>
                   <p className="text-sm font-black">R$ {(editingEmployee.salario_base * (taxConfig.patronalRate || 0.2)).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                 </div>
                 <div>
@@ -673,8 +1289,8 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
                   <p className="text-sm font-black">R$ {(editingEmployee.salario_base * (taxConfig.fgtsRate || 0.08)).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold uppercase opacity-40">RAT/Terceiros ({((taxConfig.ratRate + taxConfig.terceirosRate) * 100).toFixed(1)}%)</p>
-                  <p className="text-sm font-black">R$ {(editingEmployee.salario_base * ((taxConfig.ratRate || 0.02) + (taxConfig.terceirosRate || 0.058))).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                  <p className="text-[9px] font-bold uppercase opacity-40">RAT/Terceiros ({(((taxConfig.ratRate || 0.02) + (taxConfig.terceirosRate || 0.058)) * 100).toFixed(1)}%)</p>
+                  <p className="text-sm font-black">R$ ${(editingEmployee.salario_base * ((taxConfig.ratRate || 0.02) + (taxConfig.terceirosRate || 0.058))).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
                 </div>
               </div>
             </div>

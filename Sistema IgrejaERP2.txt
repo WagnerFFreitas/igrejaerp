@@ -1,6 +1,6 @@
 Sistema IgrejaERP
 
-1-Ajustar o tamanho da tela de login, pois a parte e baixo esta sendo cortada.
+Feito 1-Ajustar o tamanho da tela de login, pois a parte e baixo esta sendo cortada.
 
 Feito 2-Mudar o nome DashBoard Executivo para Tela Inicial;
 
@@ -22,8 +22,7 @@ Feito 7-Imprimir e importar o formulário de consentimento lgpd e direito de ima
 
 Feito 8-Criar um arquivo imprimecadmembro.tsx para controlara impressão do cadastro dos membros;
 
-9-O portal do membro esta funcionando?
-
+Feito 9-O portal do membro esta funcionando?
 
 Feito 10-O botão imprimir cadastro dos funcionário ao abrir o painel de impressão a folha esta branca;
 
@@ -44,7 +43,7 @@ Feito 15-Crie um arquivo ImprimeCadfuncionario.tsx para realizar o processo seme
 
 Feito 16-Colocar o ranking das avaliações dos funcionários na opção Recursos Humanos;
 
-17-A opção de cadastro de funcionário não tem o recurso de filtragem semelhante a da opção de cadastro de membros (nome, email, cpf e telefone);
+Feito 17-A opção de cadastro de funcionário não tem o recurso de filtragem semelhante a da opção de cadastro de membros (nome, email, cpf e telefone);
 
 Feito 18-O botão Relatório da opção financeiro ao abrir, a opção imprimir abre o painel de impressão, mas com a folha em branco;
 
@@ -53,11 +52,11 @@ Financeiro (Balancete Mensal, Dízimos por Período e Quadro de Talentos);
 Recursos Humanos (Avaliação de Desempenho e Histórico Salarial);
 Membros (Balancete Mensal e Dízimos por Período);
 
-20-A opção Afastamentos & Licenças não tem a opção de imprimir o relatório;
+Feito 20-A opção Afastamentos & Licenças não tem a opção de imprimir o relatório;
 
-21-A opção Afastamentos & Licenças não tem a opção de filtragem avançada;
+Feito 21-A opção Afastamentos & Licenças não tem a opção de filtragem avançada;
 
-22-O botão processar mês atual não esta abrindo o painel de impressão após se fornecido a faixa que será impressa;
+Feito 22-O botão processar mês atual não esta abrindo o painel de impressão após se fornecido a faixa que será impressa;
 
 verificar se esta funcionando 23-Usar o código da opção agenda do sistema web que esta na pasta \meu;
 

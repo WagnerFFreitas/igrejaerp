@@ -111,7 +111,7 @@ const Login: React.FC<{ onLogin: (user: UserAuth) => void }> = ({ onLogin }) => 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 text-center">
-        <div className="p-10 pt-12">
+        <div className="p-10 pt-12 pb-4">
           {/* Container da Logo Atualizado */}
           <div className="inline-flex p-1 bg-white border-4 border-indigo-600 rounded-[1.8rem] shadow-lg mb-6 overflow-hidden w-24 h-24 items-center justify-center">
             <img 
@@ -188,7 +188,7 @@ const Login: React.FC<{ onLogin: (user: UserAuth) => void }> = ({ onLogin }) => 
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-2 text-[10px] font-black text-slate-400 uppercase">
+          <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-center gap-2 text-[10px] font-black text-slate-400 uppercase">
              <Cloud size={12}/> PostgreSQL Supabase Engine v5.0
           </div>
         </div>

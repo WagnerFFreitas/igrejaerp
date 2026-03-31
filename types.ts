@@ -20,6 +20,25 @@ export interface Unit {
   isHeadquarter: boolean;
 }
 
+export interface PayrollPeriod {
+  id: string;
+  month: number;
+  year: number;
+  status: 'OPEN' | 'CLOSED' | 'PROCESSING';
+  startDate: string;
+  endDate: string;
+  processedAt?: string;
+  closedAt?: string;
+  totalEmployees: number;
+  totalPayroll: number;
+  totalINSS: number;
+  totalFGTS: number;
+  totalIRRF: number;
+  unitId: string;
+  createdBy: string;
+  notes?: string;
+}
+
 export interface Asset {
   id: string;
   unitId: string;                    // Unidade responsável
