@@ -1,0 +1,21 @@
+export interface DadosIgrejaPadrao {
+  nome: string;
+  cnpj: string;
+  endereco: string;
+  enderecoLinha1?: string;
+  enderecoLinha2?: string;
+  email: string;
+  telefone?: string;
+}
+
+export const DADOS_IGREJA_PADRAO: DadosIgrejaPadrao = {
+  nome: 'Assembleia de Deus Jesus Que Alimenta',
+  cnpj: '09.432.897/0001-05',
+  endereco: 'Rua Gericinó, QD04 LT22 - Sta Cruz da Serra - Duque de Caxias/RJ - CEP 25240-170',
+  enderecoLinha1: 'Rua Gericinó, QD04 LT22 - Sta Cruz da Serra',
+  enderecoLinha2: 'Duque de Caxias - RJ - CEP 25240-170',
+  email: 'adjpamatriz@gmail.com',
+  telefone: '(21) 2675-7036',
+};
+
+export default DADOS_IGREJA_PADRAO;

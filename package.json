@@ -1,0 +1,46 @@
+{
+  "name": "adjpa-erp---sistema-de-gestão-para-igreja",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "api:dev": "cd api && npm run dev",
+    "dev:full": "concurrently \"npm run api:dev\" \"npm run dev\"",
+    "db:test": "node database/test-connection.js",
+    "db:setup": "psql -h localhost -U desenvolvedor -d igrejaerp -f database/migration/postgres_schema.sql",
+    "api:build": "cd api && npm run build",
+    "api:start": "cd api && npm start"
+  },
+  "dependencies": {
+    "@google/genai": "^1.38.0",
+    "axios": "^1.14.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-is": "^19.2.4",
+    "recharts": "^3.7.0",
+    "rollup": "^4.59.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
+    "copyfiles": "^2.4.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.8.2",
+    "vite": "^7.1.3"
+  }
+}
