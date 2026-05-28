@@ -18,15 +18,15 @@
 
 import React, { useState } from 'react';
 import { Move, X, Save, DollarSign, Calendar, FileText, ArrowUpRight, ArrowDownRight, CheckCircle } from 'lucide-react';
-import { FinancialAccountEnhanced } from '../services/accountService';
-import { Transaction } from '../types';
+import { FinancialAccountEnhanced } from '../services/contasService';
+import { Transaction } from '../tipos';
 
 // ============================================================================
 // MODAL DE TRANSFERÊNCIA ENTRE CONTAS
 // ============================================================================
 
 interface TransferenciaModalProps {
-  accounts: FinancialAccountEnhanced[];     // Lista de todas as contas disponíveis
+  contas_bancarias: FinancialAccountEnhanced[];     // Lista de todas as contas disponíveis
   fromAccountId: string;                    // Conta de origem selecionada
   toAccountId: string;                      // Conta de destino (ainda não selecionada)
   amount: number;                           // Valor da transferência
@@ -40,7 +40,7 @@ interface TransferenciaModalProps {
  * ===========================
  */
 export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
-  accounts,
+  contas_bancarias,
   fromAccountId,
   toAccountId,
   amount,
@@ -95,7 +95,7 @@ export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
    * Função auxiliar para mostrar nome da conta
    */
   const getAccountName = (accountId: string) => {
-    const account = accounts.find(a => a.id === accountId);
+    const account = contas_bancarias.find(a => a.id === accountId);
     return account ? account.name : 'Selecione...';
   };
   
@@ -137,7 +137,7 @@ export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
               onChange={(e) => setLocalFromAccount(e.target.value)}
             >
               <option value="">Selecione...</option>
-              {accounts.map(account => (
+              {contas_bancarias.map(account => (
                 <option key={account.id} value={account.id}>
                   {account.name} - Saldo: R$ {account.currentBalance.toFixed(2)}
                 </option>
@@ -161,7 +161,7 @@ export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
               onChange={(e) => setLocalToAccount(e.target.value)}
             >
               <option value="">Selecione...</option>
-              {accounts.map(account => (
+              {contas_bancarias.map(account => (
                 <option key={account.id} value={account.id}>
                   {account.name} - Saldo: R$ {account.currentBalance.toFixed(2)}
                 </option>
@@ -235,7 +235,7 @@ export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
 
 interface ExtratoModalProps {
   accountId: string;              // ID da conta selecionada
-  transactions: Transaction[];    // Lista de transações da conta
+  transacoes: Transaction[];    // Lista de transações da conta
   onClose: () => void;            // Fechar modal
 }
 
@@ -245,7 +245,7 @@ interface ExtratoModalProps {
  */
 export const ExtratoModal: React.FC<ExtratoModalProps> = ({
   accountId,
-  transactions,
+  transacoes,
   onClose,
 }) => {
   // Estado para filtro de período
@@ -255,7 +255,7 @@ export const ExtratoModal: React.FC<ExtratoModalProps> = ({
    * FILTRAR TRANSAÇÕES POR PERÍODO
    * ------------------------------
    */
-  const filteredTransactions = transactions.filter(t => {
+  const filteredTransactions = transacoes.filter(t => {
     if (filterPeriod === 'MONTH') {
       const now = new Date();
       const transactionDate = new Date(t.date);
@@ -298,8 +298,8 @@ export const ExtratoModal: React.FC<ExtratoModalProps> = ({
    */
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     });
   };
   

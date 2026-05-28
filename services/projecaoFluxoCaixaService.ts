@@ -29,7 +29,7 @@
  * - Te avisa se vai dar ruim
  */
 
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 import { 
   projetarReceitas,
   projetarDespesasFixas,
@@ -67,7 +67,7 @@ export class CashFlowProjectionService {
    * 
    * PARÂMETROS:
    * - currentBalance: number → Saldo atual nas contas
-   * - transactions: Transaction[] → Histórico completo
+   * - transacoes: Transaction[] → Histórico completo
    * - receivables: Transaction[] → Contas a receber
    * - payables: Transaction[] → Contas a pagar
    * - config: ProjectionConfig → Configurações
@@ -85,7 +85,7 @@ export class CashFlowProjectionService {
    */
   async generateProjection(
     currentBalance: number,
-    transactions: Transaction[],
+    transacoes: Transaction[],
     receivables: Transaction[],
     payables: Transaction[],
     config: ProjectionConfig
@@ -105,26 +105,26 @@ export class CashFlowProjectionService {
     let projectedIncome = 0;
     
     // Dízimos
-    const tithesProjection = projetarReceitas(transactions, days, 'Dizimo');
+    const tithesProjection = projetarReceitas(transacoes, days, 'Dizimo');
     projectedIncome += tithesProjection * scenarioFactors.income;
     
     // Ofertas
-    const offeringsProjection = projetarReceitas(transactions, days, 'OFFERING');
+    const offeringsProjection = projetarReceitas(transacoes, days, 'OFFERING');
     projectedIncome += offeringsProjection * scenarioFactors.income;
     
     // Outras receitas
-    const otherIncome = projetarReceitas(transactions, days);
+    const otherIncome = projetarReceitas(transacoes, days);
     projectedIncome += otherIncome * scenarioFactors.income * 0.5;
     
     // 4. Projetar despesas
     let projectedExpense = 0;
     
     // Fixas
-    const fixedExpenses = projetarDespesasFixas(transactions, days);
+    const fixedExpenses = projetarDespesasFixas(transacoes, days);
     projectedExpense += fixedExpenses * scenarioFactors.expense;
     
     // Variáveis
-    const variableExpenses = projetarDespesasVariaveis(transactions, days);
+    const variableExpenses = projetarDespesasVariaveis(transacoes, days);
     projectedExpense += variableExpenses * scenarioFactors.expense;
     
     // 5. Projeção diária detalhada
@@ -312,13 +312,13 @@ export class CashFlowProjectionService {
    * O QUE FAZ?
    * Analisa direção das receitas e despesas
    */
-  identifyTrends(transactions: Transaction[]): {
+  identifyTrends(transacoes: Transaction[]): {
     incomeTrend: 'UP' | 'DOWN' | 'STABLE';
     expenseTrend: 'UP' | 'DOWN' | 'STABLE';
     overallHealth: 'GOOD' | 'WARNING' | 'CRITICAL';
   } {
-    const incomeTrend = calcularMediaMovelReceitas(transactions.filter(t => t.type === 'INCOME'), 30);
-    const expenseTrend = calcularMediaMovelReceitas(transactions.filter(t => t.type === 'EXPENSE'), 30);
+    const incomeTrend = calcularMediaMovelReceitas(transacoes.filter(t => t.type === 'INCOME'), 30);
+    const expenseTrend = calcularMediaMovelReceitas(transacoes.filter(t => t.type === 'EXPENSE'), 30);
     
     // Saúde geral
     let overallHealth: 'GOOD' | 'WARNING' | 'CRITICAL';

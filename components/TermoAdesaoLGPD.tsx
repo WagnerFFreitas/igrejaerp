@@ -99,7 +99,7 @@ export const TermoAdesaoLGPD: React.FC<TermoAdesaoLGPDProps> = ({
       background-position: center center;
       background-repeat: no-repeat;
       opacity: 0.15;
-      pointer-events: none;
+      pointer-eventos_igreja: none;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }

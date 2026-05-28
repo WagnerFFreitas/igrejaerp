@@ -32,9 +32,9 @@ import {
   TrendingUp, DollarSign, Calendar, Search, Filter, MoreVertical,
   Landmark, PiggyBank, CreditCard, Move, FileText, X, Save
 } from 'lucide-react';
-import { FinancialAccountEnhanced, accountService } from '../services/accountService';
-import { Transacao } from '../types';
-import { POPULAR_BANKS, ACCOUNT_TYPES } from '../constants/banks';
+import { FinancialAccountEnhanced, accountService } from '../services/contasService';
+import { Transacao } from '../tipos';
+import { POPULAR_BANKS, ACCOUNT_TYPES } from '../constants/bancos';
 
 /**
  * PROPRIEDADES DO COMPONENTE
@@ -81,7 +81,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
    */
   
   // Lista de todas as contas (caixa + bancos)
-  const [accounts, setAccounts] = useState<FinancialAccountEnhanced[]>([]);
+  const [contas_bancarias, setAccounts] = useState<FinancialAccountEnhanced[]>([]);
   
   // Conta selecionada para ver extrato
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
@@ -170,7 +170,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
    * ==============
    * Aplica filtros de busca e tipo
    */
-  const filteredAccounts = accounts.filter(account => {
+  const filteredAccounts = contas_bancarias.filter(account => {
     // Filtro por tipo
     if (filterType !== 'ALL' && account.tipo !== filterType) {
       return false;
@@ -320,8 +320,8 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
    */
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     });
   };
   
@@ -549,7 +549,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
       {/* MODAL DE TRANSFERÊNCIA - Comentado até implementação */}
       {/* {transferModal.isOpen && (
         <TransferenciaModal
-          accounts={accounts}
+          contas_bancarias={contas_bancarias}
           fromAccountId={transferModal.fromAccountId}
           toAccountId={transferModal.toAccountId}
           amount={transferModal.valor}
@@ -563,7 +563,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
       {/* {selectedAccount && (
         <ExtratoModal
           accountId={selectedAccount}
-          transactions={accountStatement}
+          transacoes={accountStatement}
           onClose={() => {
             setSelectedAccount(null);
             setAccountStatement([]);

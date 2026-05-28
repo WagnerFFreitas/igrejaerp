@@ -41,7 +41,7 @@
  * - DRE = Exame de sangue (evolução no tempo)
  */
 
-import { BalanceSheet, IncomeStatement, TrialBalance, ChartOfAccount, AccountBalance } from '../types';
+import { BalanceSheet, IncomeStatement, TrialBalance, ChartOfAccount, AccountBalance } from '../tipos';
 
 /**
  * CLASSE DO GERADOR DE BALANÇO
@@ -58,7 +58,7 @@ export class BalanceSheetGenerator {
    * 
    * PARÂMETROS:
    * - trialBalance: TrialBalance → Balancete de verificação
-   * - accounts: ChartOfAccount[] → Plano de contas
+   * - contas_bancarias: ChartOfAccount[] → Plano de contas
    * - period: string → Período (YYYY-MM)
    * 
    * RETORNO:
@@ -66,17 +66,17 @@ export class BalanceSheetGenerator {
    */
   generateBalanceSheet(
     trialBalance: TrialBalance,
-    accounts: ChartOfAccount[],
+    contas_bancarias: ChartOfAccount[],
     period: string
   ): BalanceSheet {
     // 1. Separa contas por grupo
-    const currentAssets = this.getAssetAccounts(trialBalance.accounts, 'CURRENT', accounts);
-    const nonCurrentAssets = this.getAssetAccounts(trialBalance.accounts, 'NON_CURRENT', accounts);
+    const currentAssets = this.getAssetAccounts(trialBalance.contas_bancarias, 'CURRENT', contas_bancarias);
+    const nonCurrentAssets = this.getAssetAccounts(trialBalance.contas_bancarias, 'NON_CURRENT', contas_bancarias);
     
-    const currentLiabilities = this.getLiabilityAccounts(trialBalance.accounts, 'CURRENT', accounts);
-    const nonCurrentLiabilities = this.getLiabilityAccounts(trialBalance.accounts, 'NON_CURRENT', accounts);
+    const currentLiabilities = this.getLiabilityAccounts(trialBalance.contas_bancarias, 'CURRENT', contas_bancarias);
+    const nonCurrentLiabilities = this.getLiabilityAccounts(trialBalance.contas_bancarias, 'NON_CURRENT', contas_bancarias);
     
-    const equityAccounts = trialBalance.accounts.filter(a => a.nature === 'EQUITY');
+    const equityAccounts = trialBalance.contas_bancarias.filter(a => a.nature === 'EQUITY');
     
     // 2. Calcula totais
     const totalAssets = 
@@ -101,7 +101,7 @@ export class BalanceSheetGenerator {
     return {
       period,
       generatedAt: new Date().toISOString(),
-      assets: {
+      patrimonios: {
         current: currentAssets,
         nonCurrent: nonCurrentAssets,
       },
@@ -125,7 +125,7 @@ export class BalanceSheetGenerator {
    * 
    * PARÂMETROS:
    * - trialBalance: TrialBalance
-   * - accounts: ChartOfAccount[]
+   * - contas_bancarias: ChartOfAccount[]
    * - period: string
    * 
    * RETORNO:
@@ -133,12 +133,12 @@ export class BalanceSheetGenerator {
    */
   generateIncomeStatement(
     trialBalance: TrialBalance,
-    accounts: ChartOfAccount[],
+    contas_bancarias: ChartOfAccount[],
     period: string
   ): IncomeStatement {
     // 1. Identifica receitas e despesas
-    const incomeAccounts = trialBalance.accounts.filter(a => a.nature === 'INCOME');
-    const expenseAccounts = trialBalance.accounts.filter(a => a.nature === 'EXPENSE');
+    const incomeAccounts = trialBalance.contas_bancarias.filter(a => a.nature === 'INCOME');
+    const expenseAccounts = trialBalance.contas_bancarias.filter(a => a.nature === 'EXPENSE');
     
     // 2. Classifica receitas
     const grossRevenue = this.sumAccountsByCode(incomeAccounts, ['4.1', '4.2', '4.3']);
@@ -201,11 +201,11 @@ export class BalanceSheetGenerator {
    * ---------------------
    */
   private getAssetAccounts(
-    accounts: AccountBalance[],
+    contas_bancarias: AccountBalance[],
     category: 'CURRENT' | 'NON_CURRENT',
     chartOfAccounts: ChartOfAccount[]
   ): AccountBalance[] {
-    return accounts.filter(acc => {
+    return contas_bancarias.filter(acc => {
       if (acc.nature !== 'ASSET') return false;
       
       // Determina se é circulante ou não pelo código
@@ -228,11 +228,11 @@ export class BalanceSheetGenerator {
    * -----------------------
    */
   private getLiabilityAccounts(
-    accounts: AccountBalance[],
+    contas_bancarias: AccountBalance[],
     category: 'CURRENT' | 'NON_CURRENT',
     chartOfAccounts: ChartOfAccount[]
   ): AccountBalance[] {
-    return accounts.filter(acc => {
+    return contas_bancarias.filter(acc => {
       if (acc.nature !== 'LIABILITY') return false;
       
       // Simplificação: tudo como circulante por enquanto
@@ -244,8 +244,8 @@ export class BalanceSheetGenerator {
    * SOMAR SALDOS DE CONTAS
    * ----------------------
    */
-  private sumAccounts(accounts: AccountBalance[]): number {
-    return accounts.reduce((sum, acc) => sum + acc.closingBalance, 0);
+  private sumAccounts(contas_bancarias: AccountBalance[]): number {
+    return contas_bancarias.reduce((sum, acc) => sum + acc.closingBalance, 0);
   }
 
   /**
@@ -253,14 +253,14 @@ export class BalanceSheetGenerator {
    * -----------------------
    */
   private sumAccountsByCode(
-    accounts: AccountBalance[],
+    contas_bancarias: AccountBalance[],
     prefixes: string[],
     excludePrefixes?: boolean
   ): number {
-    let filtered = accounts;
+    let filtered = contas_bancarias;
     
     if (prefixes.length > 0) {
-      filtered = accounts.filter(acc => 
+      filtered = contas_bancarias.filter(acc => 
         prefixes.some(prefix => acc.accountCode.startsWith(prefix))
       );
     }
@@ -285,18 +285,18 @@ export class BalanceSheetGenerator {
     
     // Ativo Circulante
     lines.push('  ATIVO CIRCULANTE');
-    balanceSheet.assets.current.forEach(acc => {
+    balanceSheet.patrimonios.current.forEach(acc => {
       lines.push(`    ${acc.accountCode} - ${acc.accountName.padEnd(40)} R$ ${acc.closingBalance.toFixed(2)}`);
     });
-    lines.push(`    Total do Ativo Circulante: R$ ${this.sumAccounts(balanceSheet.assets.current).toFixed(2)}`);
+    lines.push(`    Total do Ativo Circulante: R$ ${this.sumAccounts(balanceSheet.patrimonios.current).toFixed(2)}`);
     lines.push('');
     
     // Ativo Não Circulante
     lines.push('  ATIVO NÃO CIRCULANTE');
-    balanceSheet.assets.nonCurrent.forEach(acc => {
+    balanceSheet.patrimonios.nonCurrent.forEach(acc => {
       lines.push(`    ${acc.accountCode} - ${acc.accountName.padEnd(40)} R$ ${acc.closingBalance.toFixed(2)}`);
     });
-    lines.push(`    Total do Ativo Não Circulante: R$ ${this.sumAccounts(balanceSheet.assets.nonCurrent).toFixed(2)}`);
+    lines.push(`    Total do Ativo Não Circulante: R$ ${this.sumAccounts(balanceSheet.patrimonios.nonCurrent).toFixed(2)}`);
     lines.push('');
     
     lines.push(`  ═══ TOTAL DO ATIVO: R$ ${balanceSheet.totalAssets.toFixed(2)} ═══`);

@@ -7,7 +7,7 @@
  * ============================================================================
  */
 
-import { Asset, AssetDepreciation } from '../types';
+import { Asset, AssetDepreciation } from '../tipos';
 
 /**
  * Dados retornados pelos cálculos de depreciação
@@ -318,12 +318,12 @@ export function gerarLancamentoContabil(
 /**
  * Calcular depreciação total de múltiplos bens
  * 
- * @param assets - Lista de bens patrimoniais
+ * @param patrimonios - Lista de bens patrimoniais
  * @param dataReferencia - Data de referência
  * @returns Total de depreciação e quantidade de bens
  */
 export function calcularDepreciacaoTotal(
-  assets: Asset[],
+  patrimonios: Asset[],
   dataReferencia: string = new Date().toISOString()
 ): {
   totalDepreciationMonth: number;
@@ -337,7 +337,7 @@ export function calcularDepreciacaoTotal(
   let totalBookValue = 0;
   let assetsFullyDepreciated = 0;
   
-  assets.forEach(asset => {
+  patrimonios.forEach(asset => {
     const valorResidual = calcularValorResidual(asset);
     const vidaUtilRestante = calcularVidaUtilRestante(asset, dataReferencia);
     
@@ -380,7 +380,7 @@ export function calcularDepreciacaoTotal(
     totalDepreciationMonth: parseFloat(totalDepreciationMonth.toFixed(2)),
     totalAccumulatedDepreciation: parseFloat(totalAccumulatedDepreciation.toFixed(2)),
     totalBookValue: parseFloat(totalBookValue.toFixed(2)),
-    totalAssets: assets.length,
+    totalAssets: patrimonios.length,
     assetsFullyDepreciated,
   };
 }

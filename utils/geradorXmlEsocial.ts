@@ -33,7 +33,7 @@
  * - Saída: XML no padrão governo (texto estruturado)
  */
 
-import { ESocialEvent, ESocialConfig, ESocialWorker } from '../types';
+import { ESocialEvent, ESocialConfig, ESocialWorker } from '../tipos';
 
 /**
  * VERSÃO DO LAYOUT ESOCIAL

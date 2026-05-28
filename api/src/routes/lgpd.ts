@@ -17,7 +17,7 @@
  */
 
 import { Router } from 'express';
-import { LGPDController } from '../controllers/lgpdController';
+import { LGPDController } from '../controllers/lgpd-controlador';
 
 /**
  * BLOCO PRINCIPAL

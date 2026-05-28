@@ -230,7 +230,7 @@ CREATE TABLE public.calculos_folha (
     id_funcionario uuid NOT NULL REFERENCES public.funcionarios(id_funcionario),
     mes_competencia character varying(7) NOT NULL,
     salario_bruto numeric(15,2) NOT NULL,
-    sindicato_taxa numeric(15,2) DEFAULT 0, -- ✅ Substitui "union " (palavra reservada + espaço)
+    sindicato_taxa numeric(15,2) DEFAULT 0, -- ✅ Substitui "sindicato_taxa " (palavra reservada + espaço)
     farmacia numeric(15,2) DEFAULT 0,
     seguro_vida numeric(15,2) DEFAULT 0,
     inss numeric(15,2) NOT NULL,

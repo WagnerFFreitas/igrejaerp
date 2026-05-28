@@ -31,7 +31,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { cashFlowProjectionService, ProjectionConfig } from '../services/projecaoFluxoCaixaService';
 import { CashFlowProjection, CashFlowAlert } from '../utils/calculosFluxoCaixa';
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 /**
  * PROPRIEDADES DO COMPONENTE
@@ -39,7 +39,7 @@ import { Transaction } from '../types';
  */
 interface FluxoCaixaProjetadoProps {
   currentBalance: number;              // Saldo atual
-  transactions: Transaction[];          // Histórico
+  transacoes: Transaction[];          // Histórico
   receivables: Transaction[];           // Contas a receber
   payables: Transaction[];              // Contas a pagar
 }
@@ -50,7 +50,7 @@ interface FluxoCaixaProjetadoProps {
  */
 export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
   currentBalance,
-  transactions,
+  transacoes,
   receivables,
   payables,
 }) => {
@@ -92,7 +92,7 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
       
       const result = await cashFlowProjectionService.generateProjection(
         currentBalance,
-        transactions,
+        transacoes,
         receivables,
         payables,
         config
@@ -113,8 +113,8 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
    */
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     });
   };
   

@@ -24,9 +24,9 @@ import {
   BarChart3, UserCircle, UserCheck, Calculator, Box, 
   PlaneTakeoff, Building2, ChevronDown
 } from 'lucide-react';
-import { UserAuth, Unit } from '../types';
-import { dbService } from '../services/databaseService';
-import { useTheme } from '../contexts/ThemeContext';
+import { UserAuth, Unit } from '../tipos';
+import { dbService } from '../services/bancoDadosService';
+import { useTheme } from '../contexts/temaContext';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -76,7 +76,7 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [units, setUnits] = useState<Unit[]>([]);
+  const [unidades, setUnits] = useState<Unit[]>([]);
   const [isUnitSelectorOpen, setIsUnitSelectorOpen] = useState(false);
   const { theme } = useTheme();
 
@@ -84,18 +84,18 @@ export const Layout: React.FC<LayoutProps> = ({
     dbService.getUnits().then(setUnits).catch(console.error);
   }, []);
 
-  const currentUnit = units.find(u => u.id === currentIdUnidade);
+  const currentUnit = unidades.find(u => u.id === currentIdUnidade);
 
   const menuItems = [
     { id: 'dashboard', label: 'Painel Geral', icon: <LayoutDashboard /> },
     { id: 'members', label: 'Membros', icon: <Users /> },
     { id: 'finance', label: 'Financeiro (ERP)', icon: <DollarSign /> },
-    { id: 'assets', label: 'Patrimônio', icon: <Box /> },
+    { id: 'patrimonios', label: 'Patrimônio', icon: <Box /> },
     { id: 'rh', label: 'Recursos Humanos', icon: <UserCheck /> },
     { id: 'dp', label: 'Funcionários', icon: <Briefcase /> },
     { id: 'leaves', label: 'Afastamentos', icon: <PlaneTakeoff /> },
-    { id: 'payroll', label: 'Folha de Pagamento', icon: <Calculator /> },
-    { id: 'events', label: 'Agenda & Eventos', icon: <Calendar /> },
+    { id: 'folha_pagamento', label: 'Folha de Pagamento', icon: <Calculator /> },
+    { id: 'eventos_igreja', label: 'Agenda & Eventos', icon: <Calendar /> },
     { id: 'reports', label: 'Relatórios', icon: <BarChart3 /> },
     { id: 'messages', label: 'Comunicação', icon: <MessageSquare /> },
     { id: 'audit', label: 'Auditoria Logs', icon: <ClipboardList /> },

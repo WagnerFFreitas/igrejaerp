@@ -36,7 +36,7 @@
  * → É par! (concilia)
  */
 
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 import { ImportedTransaction } from '../utils/ofxParser';
 
 /**

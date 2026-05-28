@@ -18,8 +18,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Filter, BarChart3, Clock, User, Terminal, AlertCircle, Plus, Edit2, Trash2, Eye, LogIn, LogOut, Menu, XCircle, CheckCircle, Activity, Users, Settings, CreditCard, FileText, UserCheck } from 'lucide-react';
-import { AuditLog } from '../types';
-import { AuditService } from '../src/services/auditService';
+import { AuditLog } from '../tipos';
+import { AuditoriaService } from '../src/services/auditoria-servico';
 
 /**
  * BLOCO PRINCIPAL
@@ -67,7 +67,7 @@ export const Auditoria: React.FC = () => {
     
     try {
       setIsLoading(true);
-      const logs = await AuditService.getLogs();
+      const logs = await AuditoriaService.getLogs();
       setAuditLogs(logs);
       
       // Calcular estatísticas

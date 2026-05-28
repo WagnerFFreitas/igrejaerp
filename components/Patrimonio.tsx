@@ -13,8 +13,8 @@ import {
   CheckCircle, XCircle, Clock, ArrowRight, Download, Upload, Printer, Loader2
 } from 'lucide-react';
 import { patrimonioService } from '../services/patrimonioService';
-import { Asset, AssetType, AssetStatus, InventoryCount } from '../types';
-import AuthService from '../src/services/authService';
+import { Asset, AssetType, AssetStatus, InventoryCount } from '../tipos';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 /**
  * Props do componente
@@ -28,10 +28,10 @@ interface PatrimonioProps {
  * Componente Principal de Patrimônio
  */
 export const Patrimonio: React.FC<PatrimonioProps> = ({ currentIdUnidade, user }) => {
-  const canWriteAssets = AuthService.hasPermission(user, 'assets', 'write');
+  const canWriteAssets = AutenticacaoService.hasPermission(user, 'patrimonios', 'write');
   // Estado principal
-  const [activeTab, setActiveTab] = useState<'assets' | 'depreciation' | 'inventory' | 'reports'>('assets');
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [activeTab, setActiveTab] = useState<'patrimonios' | 'depreciation' | 'inventory' | 'reports'>('patrimonios');
+  const [patrimonios, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -123,7 +123,7 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentIdUnidade, user }
   /**
    * Filtrar bens conforme critérios
    */
-  const filteredAssets = assets.filter(asset => {
+  const filteredAssets = patrimonios.filter(asset => {
     const matchCategory = selectedCategory === 'ALL' || asset.category === selectedCategory;
     const matchStatus = selectedStatus === 'ALL' || asset.status === selectedStatus;
     const matchSearch = searchTerm === '' || 
@@ -138,10 +138,10 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentIdUnidade, user }
    * Resumo patrimonial
    */
   const summary = {
-    totalAssets: assets.length,
-    totalValue: assets.reduce((sum, a) => sum + a.currentValue, 0),
-    activeAssets: assets.filter(a => a.status === 'ATIVO').length,
-    maintenanceAssets: assets.filter(a => a.status === 'MANUTENCAO').length,
+    totalAssets: patrimonios.length,
+    totalValue: patrimonios.reduce((sum, a) => sum + a.currentValue, 0),
+    activeAssets: patrimonios.filter(a => a.status === 'ATIVO').length,
+    maintenanceAssets: patrimonios.filter(a => a.status === 'MANUTENCAO').length,
   };
 
   return (
@@ -188,8 +188,8 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentIdUnidade, user }
       {/* Abas de Navegação */}
       <div className="flex gap-2 mb-6 border-b border-gray-200">
         <TabButton
-          active={activeTab === 'assets'}
-          onClick={() => setActiveTab('assets')}
+          active={activeTab === 'patrimonios'}
+          onClick={() => setActiveTab('patrimonios')}
           icon={Package}
           label="Bens"
         />
@@ -215,9 +215,9 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentIdUnidade, user }
 
       {/* Conteúdo das Abas */}
       <div className="bg-white rounded-lg shadow p-6">
-        {activeTab === 'assets' && (
+        {activeTab === 'patrimonios' && (
           <AssetsTab
-            assets={filteredAssets}
+            patrimonios={filteredAssets}
             loading={loading}
             onNewAsset={onNewAsset}
             onEditAsset={onEditAsset}
@@ -232,15 +232,15 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentIdUnidade, user }
         )}
         
         {activeTab === 'depreciation' && (
-          <DepreciationTab assets={assets} currentIdUnidade={currentIdUnidade} onRefresh={loadAssets} />
+          <DepreciationTab patrimonios={patrimonios} currentIdUnidade={currentIdUnidade} onRefresh={loadAssets} />
         )}
         
         {activeTab === 'inventory' && (
-          <InventoryTab currentIdUnidade={currentIdUnidade} assets={assets} />
+          <InventoryTab currentIdUnidade={currentIdUnidade} patrimonios={patrimonios} />
         )}
         
         {activeTab === 'reports' && (
-          <ReportsTab assets={assets} />
+          <ReportsTab patrimonios={patrimonios} />
         )}
       </div>
 
@@ -323,7 +323,7 @@ const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon: Icon, labe
  * Aba de Bens
  */
 interface AssetsTabProps {
-  assets: Asset[];
+  patrimonios: Asset[];
   loading: boolean;
   onNewAsset: () => void;
   onEditAsset: (asset: Asset) => void;
@@ -337,7 +337,7 @@ interface AssetsTabProps {
 }
 
 const AssetsTab: React.FC<AssetsTabProps> = ({
-  assets,
+  patrimonios,
   loading,
   onNewAsset,
   onEditAsset,
@@ -420,14 +420,14 @@ const AssetsTab: React.FC<AssetsTabProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {assets.length === 0 ? (
+            {patrimonios.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                   Nenhum bem cadastrado
                 </td>
               </tr>
             ) : (
-              assets.map(asset => (
+              patrimonios.map(asset => (
                 <tr key={asset.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-mono text-gray-900">{asset.assetNumber}</td>
                   <td className="px-4 py-3 text-sm text-gray-900">{asset.name}</td>
@@ -469,11 +469,11 @@ const AssetsTab: React.FC<AssetsTabProps> = ({
 /**
  * ABA DEPRECIAÇÃO — calcula e salva depreciação mensal de cada bem
  */
-const DepreciationTab: React.FC<{ assets: Asset[]; currentIdUnidade: string; onRefresh: () => void }> = ({ assets, currentIdUnidade, onRefresh }) => {
+const DepreciationTab: React.FC<{ patrimonios: Asset[]; currentIdUnidade: string; onRefresh: () => void }> = ({ patrimonios, currentIdUnidade, onRefresh }) => {
   const [processing, setProcessing] = React.useState<string | null>(null);
   const [results, setResults] = React.useState<Record<string, any>>({});
 
-  const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'moeda', moeda: 'BRL' });
 
   const depreciate = async (assetId: string) => {
     setProcessing(assetId);
@@ -492,7 +492,7 @@ const DepreciationTab: React.FC<{ assets: Asset[]; currentIdUnidade: string; onR
   };
 
   const depreciateAll = async () => {
-    for (const a of assets.filter(a => a.status === 'ATIVO' && a.depreciationRate > 0)) {
+    for (const a of patrimonios.filter(a => a.status === 'ATIVO' && a.depreciationRate > 0)) {
       await depreciate(a.id);
     }
   };
@@ -523,9 +523,9 @@ const DepreciationTab: React.FC<{ assets: Asset[]; currentIdUnidade: string; onR
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {assets.length === 0 ? (
+            {patrimonios.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-8 text-gray-400">Nenhum bem cadastrado.</td></tr>
-            ) : assets.map(a => {
+            ) : patrimonios.map(a => {
               const monthly = (a.acquisitionValue * (a.depreciationRate / 100)) / 12;
               const bookValue = a.currentBookValue ?? (a.acquisitionValue - (a.accumulatedDepreciation || 0));
               const r = results[a.id];
@@ -561,7 +561,7 @@ const DepreciationTab: React.FC<{ assets: Asset[]; currentIdUnidade: string; onR
 /**
  * ABA INVENTÁRIO — contagem física dos bens
  */
-const InventoryTab: React.FC<{ currentIdUnidade: string; assets: Asset[] }> = ({ currentIdUnidade, assets }) => {
+const InventoryTab: React.FC<{ currentIdUnidade: string; patrimonios: Asset[] }> = ({ currentIdUnidade, patrimonios }) => {
   const [counts, setCounts] = React.useState<any[]>([]);
   const [activeCount, setActiveCount] = React.useState<any | null>(null);
   const [items, setItems] = React.useState<any[]>([]);
@@ -569,7 +569,7 @@ const InventoryTab: React.FC<{ currentIdUnidade: string; assets: Asset[] }> = ({
 
   const loadCounts = async () => {
     try {
-      const res = await fetch(`/api/assets/inventory/counts?idUnidade=${currentIdUnidade}`);
+      const res = await fetch(`/api/patrimonios/inventory/counts?idUnidade=${currentIdUnidade}`);
       if (res.ok) setCounts(await res.json());
     } catch {}
   };
@@ -579,7 +579,7 @@ const InventoryTab: React.FC<{ currentIdUnidade: string; assets: Asset[] }> = ({
   const startCount = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/assets/inventory/counts', {
+      const res = await fetch('/api/patrimonios/inventory/counts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idUnidade: currentIdUnidade, countedBy: 'Usuário' })
@@ -593,22 +593,22 @@ const InventoryTab: React.FC<{ currentIdUnidade: string; assets: Asset[] }> = ({
 
   const openCount = async (count: any) => {
     setActiveCount(count);
-    const res = await fetch(`/api/assets/inventory/${count.id}/items`);
+    const res = await fetch(`/api/patrimonios/inventory/${count.id}/items`);
     if (res.ok) setItems(await res.json());
   };
 
   const confirmItem = async (itemId: string, found: boolean) => {
-    await fetch(`/api/assets/inventory/items/${itemId}`, {
+    await fetch(`/api/patrimonios/inventory/items/${itemId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ countedQuantity: found ? 1 : 0, condition: 'BOM' })
     });
-    const res = await fetch(`/api/assets/inventory/${activeCount.id}/items`);
+    const res = await fetch(`/api/patrimonios/inventory/${activeCount.id}/items`);
     if (res.ok) setItems(await res.json());
   };
 
   const closeCount = async () => {
-    await fetch(`/api/assets/inventory/counts/${activeCount.id}/close`, { method: 'PATCH' });
+    await fetch(`/api/patrimonios/inventory/counts/${activeCount.id}/close`, { method: 'PATCH' });
     setActiveCount(null);
     loadCounts();
     alert('Inventário finalizado!');
@@ -658,7 +658,7 @@ const InventoryTab: React.FC<{ currentIdUnidade: string; assets: Asset[] }> = ({
           <h3 className="text-lg font-bold text-gray-900">Inventário Físico</h3>
           <p className="text-sm text-gray-500">Inicie uma contagem para conferir os bens fisicamente.</p>
         </div>
-        <button onClick={startCount} disabled={loading || assets.length === 0} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+        <button onClick={startCount} disabled={loading || patrimonios.length === 0} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
           <ClipboardList size={16}/> {loading ? 'Iniciando...' : 'Novo Inventário'}
         </button>
       </div>
@@ -696,17 +696,17 @@ const InventoryTab: React.FC<{ currentIdUnidade: string; assets: Asset[] }> = ({
 /**
  * ABA RELATÓRIOS — resumo patrimonial com dados reais
  */
-const ReportsTab: React.FC<{ assets: Asset[] }> = ({ assets }) => {
-  const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const ReportsTab: React.FC<{ patrimonios: Asset[] }> = ({ patrimonios }) => {
+  const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'moeda', moeda: 'BRL' });
 
-  const totalAquisicao = assets.reduce((s, a) => s + (a.acquisitionValue || 0), 0);
-  const totalContabil  = assets.reduce((s, a) => s + (a.currentBookValue ?? a.currentValue ?? 0), 0);
-  const totalDeprAcum  = assets.reduce((s, a) => s + (a.accumulatedDepreciation || 0), 0);
-  const ativos    = assets.filter(a => a.status === 'ATIVO').length;
-  const manutencao= assets.filter(a => a.status === 'MANUTENCAO').length;
-  const baixados  = assets.filter(a => a.status === 'BAIXADO').length;
+  const totalAquisicao = patrimonios.reduce((s, a) => s + (a.acquisitionValue || 0), 0);
+  const totalContabil  = patrimonios.reduce((s, a) => s + (a.currentBookValue ?? a.currentValue ?? 0), 0);
+  const totalDeprAcum  = patrimonios.reduce((s, a) => s + (a.accumulatedDepreciation || 0), 0);
+  const ativos    = patrimonios.filter(a => a.status === 'ATIVO').length;
+  const manutencao= patrimonios.filter(a => a.status === 'MANUTENCAO').length;
+  const baixados  = patrimonios.filter(a => a.status === 'BAIXADO').length;
 
-  const byCategory = assets.reduce((acc, a) => {
+  const byCategory = patrimonios.reduce((acc, a) => {
     acc[a.category] = (acc[a.category] || 0) + (a.acquisitionValue || 0);
     return acc;
   }, {} as Record<string, number>);
@@ -721,7 +721,7 @@ const ReportsTab: React.FC<{ assets: Asset[] }> = ({ assets }) => {
           { label: 'Valor de Aquisição', value: formatCurrency(totalAquisicao), color: 'blue' },
           { label: 'Valor Contábil Atual', value: formatCurrency(totalContabil), color: 'emerald' },
           { label: 'Depreciação Acumulada', value: formatCurrency(totalDeprAcum), color: 'rose' },
-          { label: 'Total de Bens', value: `${assets.length} bens`, color: 'indigo' },
+          { label: 'Total de Bens', value: `${patrimonios.length} bens`, color: 'indigo' },
         ].map((k, i) => (
           <div key={i} className={`p-4 rounded-xl bg-${k.color}-50 border border-${k.color}-100`}>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{k.label}</p>
@@ -779,7 +779,7 @@ const ReportsTab: React.FC<{ assets: Asset[] }> = ({ assets }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {assets.map(a => (
+            {patrimonios.map(a => (
               <tr key={a.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono text-xs text-gray-500">{a.assetNumber || '—'}</td>
                 <td className="px-4 py-2 font-medium text-gray-900">{a.name}</td>
@@ -822,7 +822,7 @@ const AssetModal: React.FC<AssetModalProps> = ({ asset, onClose, onSave, isSavin
     location: '',
     responsible: '',
     assetNumber: '',
-    address: { zipCode: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' } as any,
+    address: { zipCode: '', street: '', number: '', complemento: '', neighborhood: '', city: '', state: '' } as any,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1046,8 +1046,8 @@ const AssetModal: React.FC<AssetModalProps> = ({ asset, onClose, onSave, isSavin
                   <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 tracking-wider">Complemento</label>
                   <input
                     type="text"
-                    value={formData.address?.complement || ''}
-                    onChange={e => setFormData({ ...formData, address: { ...(formData.address || {}), complement: e.target.value } as any })}
+                    value={formData.address?.complemento || ''}
+                    onChange={e => setFormData({ ...formData, address: { ...(formData.address || {}), complemento: e.target.value } as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                     disabled={isSaving}
                   />
@@ -1160,8 +1160,8 @@ const StatusBadge: React.FC<{ status: AssetStatus }> = ({ status }) => {
  */
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
+    style: 'moeda',
+    moeda: 'BRL',
   }).format(value);
 };
 

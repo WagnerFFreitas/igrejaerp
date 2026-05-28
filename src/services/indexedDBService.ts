@@ -32,17 +32,17 @@ export default class IndexedDBService {
   private static readonly DB_VERSION = 2;
   private static readonly DEFAULT_STORES = [
     'members',
-    'employees',
-    'transactions',
-    'accounts',
-    'assets',
+    'funcionarios',
+    'transacoes',
+    'contas_bancarias',
+    'patrimonios',
     'leaves',
-    'payroll',
-    'payroll_periods',
-    'units',
+    'folha_pagamento',
+    'periodos_folha',
+    'unidades',
     'system_config',
     'system_users',
-    'audit_logs'
+    'logs_auditoria'
   ];
 
   static async init(): Promise<IDBDatabase> {

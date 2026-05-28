@@ -22,7 +22,7 @@ import {
   Clock, TrendingUp, Eye, Edit2, Trash2, MoreVertical, BarChart3, PieChart, Activity,
   Bell, Smartphone, Globe, Settings, RefreshCw, Download, Upload, Copy, Target, FileText
 } from 'lucide-react';
-import CommunicationService from '../services/communicationService';
+import ComunicacaoService from '../services/comunicacaoService';
 import { 
   EmailCampaign, 
   SMSMessage, 
@@ -32,7 +32,7 @@ import {
   Notification,
   NotificationType,
   NotificationStatus
-} from '../types/communication';
+} from '../types/comunicacao';
 
 interface NotificacoesProps {
   currentIdUnidade: string;
@@ -107,10 +107,10 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentIdUnidade, us
         templatesData,
         groupsData
       ] = await Promise.all([
-        CommunicationService.getEmailCampaigns(currentIdUnidade),
-        CommunicationService.getSMSMessages(currentIdUnidade),
-        CommunicationService.getTemplates(currentIdUnidade),
-        CommunicationService.getGroups(currentIdUnidade)
+        ComunicacaoService.getEmailCampaigns(currentIdUnidade),
+        ComunicacaoService.getSMSMessages(currentIdUnidade),
+        ComunicacaoService.getTemplates(currentIdUnidade),
+        ComunicacaoService.getGroups(currentIdUnidade)
       ]);
 
       setCampaigns(campaignsData);
@@ -127,7 +127,7 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentIdUnidade, us
 
   const loadStats = async () => {
     try {
-      const statsData = await CommunicationService.generateStats(currentIdUnidade, statsPeriod);
+      const statsData = await ComunicacaoService.generateStats(currentIdUnidade, statsPeriod);
       setStats(statsData);
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
@@ -137,7 +137,7 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentIdUnidade, us
   // Enviar campanha
   const handleSendCampaign = async (campaignId: string) => {
     try {
-      await CommunicationService.sendEmailCampaign(campaignId, currentIdUnidade);
+      await ComunicacaoService.sendEmailCampaign(campaignId, currentIdUnidade);
       await loadAllData();
       alert('Campanha enviada com sucesso!');
     } catch (error) {
@@ -149,8 +149,8 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentIdUnidade, us
   // Formatar moeda
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     }).format(value);
   };
 

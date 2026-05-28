@@ -44,10 +44,10 @@
  */
 
 // Importa o serviço de banco de dados principal
-import { dbService } from './databaseService';
+import { dbService } from './bancoDadosService';
 
 // Importa os tipos TypeScript que definem a estrutura dos dados
-import { Transaction, FinancialAccount } from '../types';
+import { Transaction, FinancialAccount } from '../tipos';
 import { TransactionEnhanced } from '../types/financeiro';
 
 /**
@@ -56,7 +56,7 @@ import { TransactionEnhanced } from '../types/financeiro';
  * Uma "classe" é como uma receita de bolo. Ela define como criar
  * um objeto que sabe fazer operações com transações.
  */
-export class TransactionService {
+export class TransacaoService {
   
   /**
    * BUSCAR TODAS AS TRANSAÇÕES
@@ -85,10 +85,10 @@ export class TransactionService {
   async getTransactions(unitId?: string): Promise<Transaction[]> {
     // Chama o serviço de banco de dados para buscar transações
     // O "await" faz esperar a resposta chegar
-    const transactions = await dbService.getTransactions(unitId);
+    const transacoes = await dbService.getTransactions(unitId);
     
     // Retorna a lista de transações para quem pediu
-    return transactions;
+    return transacoes;
   }
 
   /**
@@ -361,8 +361,8 @@ export class TransactionService {
    */
   async baixarParcialmente(id: string, valorPago: number): Promise<void> {
     // Busca transação atual
-    const transactions = await dbService.getTransactions();
-    const transaction = transactions.find(t => t.id === id);
+    const transacoes = await dbService.getTransactions();
+    const transaction = transacoes.find(t => t.id === id);
     
     if (!transaction) {
       throw new Error(`Transação ${id} não encontrada!`);
@@ -426,12 +426,12 @@ export class TransactionService {
    * - Gerar relatórios
    */
   filtrarPorStatus(
-    transactions: Transaction[],
+    transacoes: Transaction[],
     status: 'VENCIDAS' | 'A_VENCER' | 'PAGAS'
   ): Transaction[] {
     // .filter() é um método que filtra uma lista
     // Só mantém os itens que passam no "teste"
-    return transactions.filter(transaction => {
+    return transacoes.filter(transaction => {
       if (status === 'PAGAS') {
         // Só transações com status 'PAID'
         return transaction.status === 'PAID';
@@ -457,10 +457,10 @@ export class TransactionService {
  * EXPORTAR UMA INSTÂNCIA PRONTA
  * =============================
  * 
- * Em vez de cada arquivo ter que criar "new TransactionService()",
+ * Em vez de cada arquivo ter que criar "new TransacaoService()",
  * criamos um aqui e exportamos para todo mundo usar.
  * 
  * Isso se chama "Singleton Pattern" (Padrão Singleton).
  * Garante que só exista UM serviço em todo o sistema.
  */
-export const transactionService = new TransactionService();
+export const transactionService = new TransacaoService();

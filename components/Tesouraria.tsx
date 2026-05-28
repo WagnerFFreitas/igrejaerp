@@ -24,7 +24,7 @@ import {
   PiggyBank, AlertCircle, Target, Activity, ArrowUpRight, ArrowDownRight,
   MoreVertical, Settings, Bell, ChevronRight
 } from 'lucide-react';
-import TreasuryService from '../services/treasuryService';
+import TesourariaService from '../services/tesourariaService';
 import { 
   CashFlow, 
   CashFlowForecast, 
@@ -33,7 +33,7 @@ import {
   Loan, 
   TreasuryAlert,
   FinancialPosition 
-} from '../types';
+} from '../tipos';
 
 interface TesourariaProps {
   currentIdUnidade: string;
@@ -60,7 +60,7 @@ interface TesourariaProps {
  */
 
 export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }) => {
-  const [activeTab, setActiveTab] = useState<'cashflow' | 'forecast' | 'accounts' | 'investments' | 'loans' | 'alerts' | 'position'>('cashflow');
+  const [activeTab, setActiveTab] = useState<'cashflow' | 'forecast' | 'contas_bancarias' | 'investments' | 'loans' | 'alerts' | 'position'>('cashflow');
   const [isLoading, setIsLoading] = useState(false);
   
   // Estados para Fluxo de Caixa
@@ -118,13 +118,13 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
         alertsData,
         summaryData
       ] = await Promise.all([
-        TreasuryService.getCashFlows(currentIdUnidade),
-        TreasuryService.getCashFlowForecasts(currentIdUnidade),
-        TreasuryService.getTreasuryAccounts(currentIdUnidade),
-        TreasuryService.getInvestments(currentIdUnidade),
-        TreasuryService.getLoans(currentIdUnidade),
-        TreasuryService.getTreasuryAlerts(currentIdUnidade),
-        TreasuryService.getTreasurySummary(currentIdUnidade)
+        TesourariaService.getCashFlows(currentIdUnidade),
+        TesourariaService.getCashFlowForecasts(currentIdUnidade),
+        TesourariaService.getTreasuryAccounts(currentIdUnidade),
+        TesourariaService.getInvestments(currentIdUnidade),
+        TesourariaService.getLoans(currentIdUnidade),
+        TesourariaService.getTreasuryAlerts(currentIdUnidade),
+        TesourariaService.getTreasurySummary(currentIdUnidade)
       ]);
 
       setCashFlows(cashFlowsData);
@@ -143,7 +143,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
       setNextPayments(summaryData.proximosVencimentos);
       
       // Gerar posição financeira
-      const position = await TreasuryService.generateFinancialPosition(currentIdUnidade);
+      const position = await TesourariaService.generateFinancialPosition(currentIdUnidade);
       setFinancialPosition(position);
       
     } catch (error) {
@@ -160,7 +160,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
       const endDate = new Date(today);
       endDate.setMonth(today.getMonth() + 1); // Projeção para 1 mês
       
-      const forecast = await TreasuryService.generateCashFlowForecast(
+      const forecast = await TesourariaService.generateCashFlowForecast(
         today.toISOString().split('T')[0],
         endDate.toISOString().split('T')[0],
         'MENSAL',
@@ -178,7 +178,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
   // Gerar alertas automaticamente
   const handleGenerateAlerts = async () => {
     try {
-      const newAlerts = await TreasuryService.generateTreasuryAlerts(currentIdUnidade);
+      const newAlerts = await TesourariaService.generateTreasuryAlerts(currentIdUnidade);
       setAlerts([...alerts, ...newAlerts]);
       setActiveAlerts(activeAlerts + newAlerts.length);
     } catch (error) {
@@ -189,8 +189,8 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
   // Formatar moeda
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     }).format(value);
   };
 
@@ -507,9 +507,9 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
                   <td className="px-4 py-3 text-sm text-right">{formatCurrency(investment.valorAtual)}</td>
                   <td className="px-4 py-3 text-sm text-right">
                     <span className={`font-medium ${
-                      TreasuryService.calculateInvestmentReturn(investment) >= 0 ? 'text-green-600' : 'text-red-600'
+                      TesourariaService.calculateInvestmentReturn(investment) >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {TreasuryService.calculateInvestmentReturn(investment).toFixed(2)}%
+                      {TesourariaService.calculateInvestmentReturn(investment).toFixed(2)}%
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -680,7 +680,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
       <div className="flex border-b border-slate-200 mb-6">
         {[
           { id: 'cashflow', label: 'Fluxo de Caixa', icon: Activity },
-          { id: 'accounts', label: 'Contas', icon: CreditCard },
+          { id: 'contas_bancarias', label: 'Contas', icon: CreditCard },
           { id: 'investments', label: 'Investimentos', icon: TrendingUp },
           { id: 'alerts', label: 'Alertas', icon: Bell }
         ].map(tab => (
@@ -708,7 +708,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }
       ) : (
         <>
           {activeTab === 'cashflow' && renderCashFlowTab()}
-          {activeTab === 'accounts' && renderAccountsTab()}
+          {activeTab === 'contas_bancarias' && renderAccountsTab()}
           {activeTab === 'investments' && renderInvestmentsTab()}
           {activeTab === 'alerts' && renderAlertsTab()}
         </>

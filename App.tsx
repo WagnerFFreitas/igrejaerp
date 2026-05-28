@@ -22,16 +22,16 @@ import { Relatorios } from './components/Relatorios';
 import { Auditoria } from './components/Auditoria';
 import { PortalMembro } from './components/PortalMembro';
 import { Configuracoes } from './components/Configuracoes';
-import { Usuario, Funcionario, Membro, Transacao, FinancialAccount, Asset, EmployeeLeave, UserRole, Unidade } from './types';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { MemberService } from './src/services/memberService';
-import { EmployeeService, TransactionService } from './src/services/employeeService';
-import { accountService } from './services/accountService';
-import AuthService from './src/services/authService';
-import AuditService from './src/services/auditService';
+import { Usuario, Funcionario, Membro, Transacao, FinancialAccount, Asset, EmployeeLeave, UserRole, Unidade } from './tipos';
+import { ThemeProvider } from './contexts/temaContext';
+import { MembroService } from './src/services/membroService';
+import { FuncionarioService, TransacaoService } from './src/services/funcionarioService';
+import { accountService } from './services/contasService';
+import AutenticacaoService from './src/services/autenticacaoService';
+import AuditoriaService from './src/services/auditoria-servico';
 import apiClient from './src/services/apiService';
-import { useAudit } from './src/hooks/useAudit';
-import { dbService } from './services/databaseService';
+import { useAudit } from './src/hooks/useAuditoria';
+import { dbService } from './services/bancoDadosService';
 import { 
   User as UserIcon, Key, LogIn, Church, AlertCircle, Loader2, Cloud, ShieldCheck, Lock
 } from 'lucide-react';
@@ -196,7 +196,7 @@ const Login: React.FC<{ onLogin: (user: Usuario) => void }> = ({ onLogin }) => {
     console.log('📋 Password digitado: ' + '*'.repeat(password.length));
 
     try {
-      const response = await AuthService.login(username, password);
+      const response = await AutenticacaoService.login(username, password);
       const authUser = response.user;
       const user: UserAuth = {
         id: authUser.id,
@@ -315,23 +315,23 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('currentUnitId');
     return saved && saved !== 'undefined' ? saved : 'u-sede';
   });
-  const [user, setUser] = useState<Usuario | null>(AuthService.getCurrentUser());
+  const [user, setUser] = useState<Usuario | null>(AutenticacaoService.getCurrentUser());
   // Alias para compatibilidade com JSX que usa currentUser
   const currentUser = user;
   const setCurrentUser = setUser;
   const [activeTab, setActiveTab] = useState('dashboard');
   const [members, setMembers] = useState<Membro[]>([]);
-  const [employees, setEmployees] = useState<Funcionario[]>([]);
-  const [transactions, setTransactions] = useState<Transacao[]>([]);
+  const [funcionarios, setEmployees] = useState<Funcionario[]>([]);
+  const [transacoes, setTransactions] = useState<Transacao[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<string>('u-sede');
-  const [units, setUnits] = useState<Unidade[]>([]);
-  const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [unidades, setUnits] = useState<Unidade[]>([]);
+  const [contas_bancarias, setAccounts] = useState<FinancialAccount[]>([]);
+  const [patrimonios, setAssets] = useState<Asset[]>([]);
   const [leaves, setLeaves] = useState<EmployeeLeave[]>([]);
   const [evaluations, setEvaluations] = useState<Record<string, any[]>>({});
   const [isLoading, setIsLoading] = useState(false); 
   
-  const ALL_TABS = ['dashboard', 'members', 'finance', 'assets', 'rh', 'dp', 'leaves', 'payroll', 'events', 'reports', 'messages', 'audit', 'portal', 'settings'];
+  const ALL_TABS = ['dashboard', 'members', 'finance', 'patrimonios', 'rh', 'dp', 'leaves', 'folha_pagamento', 'eventos_igreja', 'reports', 'messages', 'audit', 'portal', 'settings'];
   const accessibleTabs = (!user || user.role === 'DEVELOPER' || (user as any).unrestrictedAccess)
     ? ALL_TABS
     : (user as any).permissions
@@ -354,7 +354,7 @@ const App: React.FC = () => {
         if (storedUser) {
           try {
             const parsedUser = JSON.parse(storedUser) as Usuario;
-            const tokenCheck = await AuthService.verifyToken();
+            const tokenCheck = await AutenticacaoService.verifyToken();
             if (tokenCheck.valid && tokenCheck.user) {
               setUser(tokenCheck.user);
               if (tokenCheck.user.id_unidade && tokenCheck.user.id_unidade !== 'undefined') {
@@ -417,7 +417,7 @@ const App: React.FC = () => {
         
         // Carregar dados da API REST
         if (!isPolling) console.log("Fazendo requisição para API com unitId:", apiUnitId);
-        const membersResponse = await MemberService.getMembers({ idUnidade: apiUnitId });
+        const membersResponse = await MembroService.getMembers({ idUnidade: apiUnitId });
         if (!isPolling) console.log("Resposta da API:", membersResponse);
         
         const members = (membersResponse.members || []) as any[];
@@ -428,23 +428,23 @@ const App: React.FC = () => {
         
         // Carregar dados de funcionários, transações, contas bancárias e avaliações
         const [employeesResponse, transactionsResponse, accountsData, evaluationsData, leavesData] = await Promise.all([
-          EmployeeService.getEmployees({ idUnidade: apiUnitId }),
-          TransactionService.getTransactions({ idUnidade: apiUnitId }),
+          FuncionarioService.getEmployees({ idUnidade: apiUnitId }),
+          TransacaoService.getTransactions({ idUnidade: apiUnitId }),
           accountService.getAccounts(apiUnitId),
           // Carregar avaliações do banco para o Top 10 e RecursosHumanos
           fetch(`/api/rh/evaluations?unitId=${apiUnitId}`).then(r => r.ok ? r.json() : []).catch(() => []),
           dbService.getLeaves(apiUnitId),
         ]);
         
-        const employees = (employeesResponse.employees || []) as any[];
-        const transactions = (transactionsResponse.transactions || []) as any[];
-        const accounts = (accountsData || []) as FinancialAccount[];
+        const funcionarios = (employeesResponse.funcionarios || []) as any[];
+        const transacoes = (transactionsResponse.transacoes || []) as any[];
+        const contas_bancarias = (accountsData || []) as FinancialAccount[];
         const leaves = (leavesData || []) as EmployeeLeave[];
 
         // Agrupar avaliações por employeeId para o estado compartilhado
         const evalsByEmployee: Record<string, any[]> = {};
         (evaluationsData as any[]).forEach((ev: any) => {
-          const empId = ev.employee_id || ev.employeeId;
+          const empId = ev.id_funcionario || ev.employeeId;
           if (empId) {
             if (!evalsByEmployee[empId]) evalsByEmployee[empId] = [];
             evalsByEmployee[empId].push({
@@ -458,17 +458,17 @@ const App: React.FC = () => {
         }
         
         setMembers(members as any);
-        setTransactions(transactions as any);
-        setAccounts(accounts);
-        setEmployees(employees as any);
+        setTransactions(transacoes as any);
+        setAccounts(contas_bancarias);
+        setEmployees(funcionarios as any);
         setLeaves(leaves);
         if (!isPolling) {
           console.log("Dados carregados:", { 
             members: members.length, 
             memberNames: members.map(m => m.nome),
-            transactions: transactions.length, 
-            accounts: accounts.length, 
-            employees: employees.length, 
+            transacoes: transacoes.length, 
+            contas_bancarias: contas_bancarias.length, 
+            funcionarios: funcionarios.length, 
             leaves: leaves.length 
           });
         } else {
@@ -505,12 +505,12 @@ const App: React.FC = () => {
         'dashboard': 'Dashboard Executivo',
         'members': 'Membros',
         'finance': 'Financeiro',
-        'assets': 'Patrimônio',
+        'patrimonios': 'Patrimônio',
         'rh': 'Recursos Humanos',
         'dp': 'Departamento Pessoal',
         'leaves': 'Afastamentos',
-        'payroll': 'Folha de Pagamento',
-        'events': 'Eventos',
+        'folha_pagamento': 'Folha de Pagamento',
+        'eventos_igreja': 'Eventos',
         'communication': 'Comunicação',
         'reports': 'Relatórios',
         'audit': 'Auditoria & Segurança',
@@ -576,21 +576,21 @@ const App: React.FC = () => {
   
   const mappedUnitId = unitIdMap[currentUnitId] || currentUnitId;
   
-  const unitMembers = members.filter((m: any) => (m.id_unidade || m.unidadeId || m.unitId || m.unit_id) === mappedUnitId);
-  const unitEmployees = employees.filter((e: any) => (e.id_unidade || e.unitId || e.unit_id) === mappedUnitId);
-  const unitTransactions = transactions.filter((t: any) => (t.id_unidade || t.unitId || t.unit_id) === mappedUnitId);
-  const unitAccounts = accounts.filter((a: any) => (a.id_unidade || a.unitId || a.unit_id) === mappedUnitId);
-  const unitAssets = assets.filter((a: any) => (a.id_unidade || a.unitId || a.unit_id) === mappedUnitId);
-  const unitLeaves = leaves.filter((l: any) => (l.id_unidade || l.unitId || l.unit_id) === mappedUnitId);
+  const unitMembers = members.filter((m: any) => (m.id_unidade || m.unidadeId || m.unitId || m.id_unidade) === mappedUnitId);
+  const unitEmployees = funcionarios.filter((e: any) => (e.id_unidade || e.unitId || e.id_unidade) === mappedUnitId);
+  const unitTransactions = transacoes.filter((t: any) => (t.id_unidade || t.unitId || t.id_unidade) === mappedUnitId);
+  const unitAccounts = contas_bancarias.filter((a: any) => (a.id_unidade || a.unitId || a.id_unidade) === mappedUnitId);
+  const unitAssets = patrimonios.filter((a: any) => (a.id_unidade || a.unitId || a.id_unidade) === mappedUnitId);
+  const unitLeaves = leaves.filter((l: any) => (l.id_unidade || l.unitId || l.id_unidade) === mappedUnitId);
 
   console.log('Filtros de dados:', {
     frontendUnitId: currentUnitId,
     mappedUnitId: mappedUnitId,
     totalMembers: members.length,
     unitMembers: unitMembers.length,
-    totalEmployees: employees.length,
+    totalEmployees: funcionarios.length,
     unitEmployees: unitEmployees.length,
-    totalTransactions: transactions.length,
+    totalTransactions: transacoes.length,
     unitTransactions: unitTransactions.length
   });
 
@@ -610,7 +610,7 @@ const App: React.FC = () => {
     }
 
     switch (activeTab) {
-      case 'dashboard': return <PainelGeral user={currentUser} members={unitMembers} employees={unitEmployees} transactions={unitTransactions} accounts={unitAccounts} />;
+      case 'dashboard': return <PainelGeral user={currentUser} members={unitMembers} funcionarios={unitEmployees} transacoes={unitTransactions} contas_bancarias={unitAccounts} />;
       case 'members': 
         console.log('🔍 Renderizando Membros com currentUnitId:', currentUnitId);
         return (
@@ -619,34 +619,34 @@ const App: React.FC = () => {
           currentUnitId={currentUnitId || 'u-sede'}
           setMembers={setMembers} 
           setTransactions={setTransactions}
-          accounts={unitAccounts}
+          contas_bancarias={unitAccounts}
           setAccounts={setAccounts}
           user={currentUser}
         />
       );
       case 'finance': return (
         <Financeiro 
-          transactions={unitTransactions} 
+          transacoes={unitTransactions} 
           currentUnitId={currentUnitId}
           setTransactions={setTransactions}
-          accounts={unitAccounts}
+          contas_bancarias={unitAccounts}
           setAccounts={setAccounts}
           user={currentUser}
           members={unitMembers}
         />
       );
-      case 'assets': return <Patrimonio currentUnitId={currentUnitId} user={currentUser} />;
-      case 'rh': return <RecursosHumanos employees={unitEmployees} currentUnitId={currentUnitId} evaluations={evaluations} user={currentUser} />;
-      case 'dp': return <Funcionarios employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} evaluations={evaluations} setEvaluations={setEvaluations} />;
-      case 'leaves': return <Afastamentos leaves={unitLeaves} setLeaves={setLeaves} currentUnitId={currentUnitId} employees={unitEmployees} user={currentUser} />;
-      case 'payroll': return <ProcessamentoFolha employees={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} />;
-      case 'events': return <Eventos currentUnitId={currentUnitId} members={unitMembers} user={currentUser} />;
-      case 'reports': return <Relatorios transactions={unitTransactions} members={unitMembers} employees={unitEmployees} />;
-      case 'messages': return <Comunicacao members={unitMembers} employees={unitEmployees} currentUnitId={currentUnitId} user={currentUser} />;
+      case 'patrimonios': return <Patrimonio currentUnitId={currentUnitId} user={currentUser} />;
+      case 'rh': return <RecursosHumanos funcionarios={unitEmployees} currentUnitId={currentUnitId} evaluations={evaluations} user={currentUser} />;
+      case 'dp': return <Funcionarios funcionarios={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} evaluations={evaluations} setEvaluations={setEvaluations} />;
+      case 'leaves': return <Afastamentos leaves={unitLeaves} setLeaves={setLeaves} currentUnitId={currentUnitId} funcionarios={unitEmployees} user={currentUser} />;
+      case 'folha_pagamento': return <ProcessamentoFolha funcionarios={unitEmployees} setEmployees={setEmployees} currentUnitId={currentUnitId} user={currentUser} />;
+      case 'eventos_igreja': return <Eventos currentUnitId={currentUnitId} members={unitMembers} user={currentUser} />;
+      case 'reports': return <Relatorios transacoes={unitTransactions} members={unitMembers} funcionarios={unitEmployees} />;
+      case 'messages': return <Comunicacao members={unitMembers} funcionarios={unitEmployees} currentUnitId={currentUnitId} user={currentUser} />;
       case 'audit': return <Auditoria />;
       case 'portal': return <PortalMembro />;
       case 'settings': return <Configuracoes user={currentUser} />;
-      default: return <PainelGeral user={currentUser} members={unitMembers} employees={unitEmployees} transactions={unitTransactions} accounts={unitAccounts} />;
+      default: return <PainelGeral user={currentUser} members={unitMembers} funcionarios={unitEmployees} transacoes={unitTransactions} contas_bancarias={unitAccounts} />;
     }
   };
 
@@ -658,8 +658,8 @@ const App: React.FC = () => {
           user={currentUser}
           allowedTabs={accessibleTabs}
           onLogout={() => {
-            AuditService.logLogout(currentUser.id, currentUser.name, currentUser.unitId).catch(console.error);
-            AuthService.logout().catch(console.error);
+            AuditoriaService.logLogout(currentUser.id, currentUser.name, currentUser.unitId).catch(console.error);
+            AutenticacaoService.logout().catch(console.error);
             localStorage.removeItem('currentUser');
             setCurrentUser(null);
           }}

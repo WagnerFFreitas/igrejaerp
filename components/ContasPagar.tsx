@@ -49,7 +49,7 @@ import {
 } from 'lucide-react';
 
 // Importa tipos TypeScript
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 // Importa serviço que mexe com banco de dados
 import { transactionService } from '../services/transacoesService';
@@ -99,7 +99,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
    */
   
   // Lista de todas as transações carregadas do banco
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transacoes, setTransactions] = useState<Transaction[]>([]);
   
   // Termo de busca (o que usuário digitou no filtro)
   const [searchTerm, setSearchTerm] = useState('');
@@ -179,7 +179,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
    * 1. Por texto (busca)
    * 2. Por situacao (vencidas/a vencer/pagas)
    */
-  const filteredTransactions = transactions.filter(transaction => {
+  const filteredTransactions = transacoes.filter(transaction => {
     // Filtro por texto
     const matchesSearch = transaction.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.providerName?.toLowerCase().includes(searchTerm.toLowerCase());

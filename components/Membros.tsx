@@ -26,18 +26,18 @@ import {
 } from 'lucide-react';
 import TermoVoluntariado from './TermoVoluntariado';
 import { TermoAdesaoLGPD } from './TermoAdesaoLGPD';
-import { Membro, Transacao, FinancialAccount, MemberContribution, Dependent, Usuario, LGPDConsent, LGPDPolicy, Unidade } from '../types';
+import { Membro, Transacao, FinancialAccount, MemberContribution, Dependent, Usuario, LGPDConsent, LGPDPolicy, Unidade } from '../tipos';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { dbService } from '../services/databaseService';
-import { StorageService } from '../src/services/storageService';
+import { dbService } from '../services/bancoDadosService';
+import { ArmazenamentoService } from '../src/services/armazenamentoService';
 import { TemplateCarteiraMembro } from './TemplateCarteiraMembro';
-import { useAudit } from '../src/hooks/useAudit';
+import { useAudit } from '../src/hooks/useAuditoria';
 import LGPDService from '../services/lgpdService';
-import LGPDConsentModal from './LGPDConsentModal';
+import LGPDConsentModal from './modalConsentimentoLgpd';
 import { ImprimeCadMembro } from './ImprimeCadMembro';
-import AuthService from '../src/services/authService';
-import { UnitService } from '../src/services/unitService';
+import AutenticacaoService from '../src/services/autenticacaoService';
+import { UnidadeService } from '../src/services/unidadeService';
 
 type MemberTab = 'pessoais' | 'familia' | 'endereco' | 'vida_crista' | 'ministerios' | 'financeiro' | 'rh' | 'outros' | 'lgpd';
 
@@ -47,7 +47,7 @@ interface MembrosProps {
   currentIdUnidade?: string; // Para compatibilidade
   setMembers: React.Dispatch<React.SetStateAction<Membro[]>>;
   setTransactions: React.Dispatch<React.SetStateAction<Transacao[]>>;
-  accounts: FinancialAccount[];
+  contas_bancarias: FinancialAccount[];
   setAccounts: React.Dispatch<React.SetStateAction<FinancialAccount[]>>;
   user?: Usuario;
 }
@@ -88,13 +88,13 @@ const SelectField = ({ label, value, onChange, options, className = "" }: any) =
   </div>
 );
 
-export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, currentIdUnidade, setMembers, setTransactions, accounts, setAccounts, user }) => {
+export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, currentIdUnidade, setMembers, setTransactions, contas_bancarias, setAccounts, user }) => {
   // Debug: verificar props recebidas
   console.log('🔍 Membros props:', { currentUnitId, currentIdUnidade, membersCount: members.length });
   
   // Usa currentUnitId se disponível, senão usa currentIdUnidade para compatibilidade
   const effectiveUnitId = currentUnitId || currentIdUnidade || 'u-sede';
-  const canWriteMembers = AuthService.hasPermission(user as any, 'members', 'write');
+  const canWriteMembers = AutenticacaoService.hasPermission(user as any, 'members', 'write');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isIDCardOpen, setIsIDCardOpen] = useState(false);
@@ -232,7 +232,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
         console.log('🔍 Buscando unidade com ID:', apiIdUnidade);
         
         const [unitData, policyData] = await Promise.all([
-          UnitService.getUnitById(apiIdUnidade),
+          UnidadeService.getUnitById(apiIdUnidade),
           LGPDService.getCurrentPolicy(apiIdUnidade).catch(err => {
             console.warn('⚠️ Erro ao carregar política LGPD, usando padrão:', err);
             return { version: '1.0', title: 'Política Padrão', isActive: true };
@@ -374,10 +374,10 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
               ...prev, 
               lgpd_consent: {
                 ...existingLgpdConsent, // Preserva o documentUrl e outros campos
-                dataProcessing: consents.find(c => c.consentType === 'DATA_PROCESSING')?.granted || false,
-                communication: consents.find(c => c.consentType === 'COMMUNICATION')?.granted || false,
-                marketing: consents.find(c => c.consentType === 'MARKETING')?.granted || false,
-                financial: consents.find(c => c.consentType === 'FINANCIAL')?.granted || false,
+                dataProcessing: consents.find(c => c.consentType === 'DATA_PROCESSING')?.concedido || false,
+                communication: consents.find(c => c.consentType === 'COMMUNICATION')?.concedido || false,
+                marketing: consents.find(c => c.consentType === 'MARKETING')?.concedido || false,
+                financial: consents.find(c => c.consentType === 'FINANCIAL')?.concedido || false,
                 consentDate: consents[0]?.consentDate || existingLgpdConsent.consentDate,
                 policyVersion: consents[0]?.policyVersion || existingLgpdConsent.policyVersion,
               }
@@ -500,10 +500,10 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
         ...prev,
         lgpd_consent: {
           ...(prev.lgpd_consent || {}),
-          dataProcessing: consent.consentType === 'DATA_PROCESSING' ? consent.granted : (prev.lgpd_consent?.dataProcessing || false),
-          communication: consent.consentType === 'COMMUNICATION' ? consent.granted : (prev.lgpd_consent?.communication || false),
-          marketing: consent.consentType === 'MARKETING' ? consent.granted : (prev.lgpd_consent?.marketing || false),
-          financial: consent.consentType === 'FINANCIAL' ? consent.granted : (prev.lgpd_consent?.financial || false),
+          dataProcessing: consent.consentType === 'DATA_PROCESSING' ? consent.concedido : (prev.lgpd_consent?.dataProcessing || false),
+          communication: consent.consentType === 'COMMUNICATION' ? consent.concedido : (prev.lgpd_consent?.communication || false),
+          marketing: consent.consentType === 'MARKETING' ? consent.concedido : (prev.lgpd_consent?.marketing || false),
+          financial: consent.consentType === 'FINANCIAL' ? consent.concedido : (prev.lgpd_consent?.financial || false),
           consentDate: consent.consentDate,
           policyVersion: consent.policyVersion
           // documentUrl é preservado pelo spread
@@ -513,7 +513,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
       // Registrar auditoria
       await logAction('CREATE', 'LGPDConsent', consent.id, `Consentimento LGPD registrado para ${formData.nome}`, {
         consentType: consent.consentType,
-        granted: consent.granted,
+        concedido: consent.concedido,
         policyVersion: consent.policyVersion
       });
 
@@ -592,7 +592,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
       if (avatarFile) {
         console.log("📷 Fazendo upload da foto...");
         try {
-          const downloadURL = await StorageService.uploadProfilePhoto(currentIdUnidade, memberId, avatarFile);
+          const downloadURL = await ArmazenamentoService.uploadProfilePhoto(currentIdUnidade, memberId, avatarFile);
           memberData.avatar = downloadURL;
           console.log("✅ Foto uploaded com sucesso");
         } catch (error) {
@@ -1353,7 +1353,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
                                 data_transacao: dateInput.value,
                                 tipo: 'ENTRADA',
                                 categoria: typeInput.value,
-                                id_conta: accounts[0]?.id || '',
+                                id_conta: contas_bancarias[0]?.id || '',
                                 situacao: 'REALIZADO',
                                 id_unidade: currentIdUnidade,
                                 forma_pagamento: 'PIX',
@@ -1521,11 +1521,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
                                 {consent.consentType === 'FINANCIAL' && 'Financeiro'}
                               </span>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                consent.granted 
+                                consent.concedido 
                                   ? 'bg-green-100 text-green-700' 
                                   : 'bg-red-100 text-red-700'
                               }`}>
-                                {consent.granted ? 'Concedido' : 'Revogado'}
+                                {consent.concedido ? 'Concedido' : 'Revogado'}
                               </span>
                             </div>
                             
@@ -1622,7 +1622,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
                           />
                           <button
                             type="button"
-                            className="w-full py-3 bg-slate-600 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 pointer-events-none"
+                            className="w-full py-3 bg-slate-600 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 pointer-eventos_igreja-none"
                           >
                             <FileSignature size={16} />
                             Anexar Termo Assinado
@@ -1657,16 +1657,16 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
                       
                       <div className="space-y-2 text-sm">
                         <div><strong>Versão:</strong> {currentPolicy.version}</div>
-                        {(currentPolicy.effectiveDate || (currentPolicy as any).created_at) && (
-                          <div><strong>Vigência:</strong> {new Date(currentPolicy.effectiveDate || (currentPolicy as any).created_at).toLocaleDateString('pt-BR')}</div>
+                        {(currentPolicy.effectiveDate || (currentPolicy as any).criado_em) && (
+                          <div><strong>Vigência:</strong> {new Date(currentPolicy.effectiveDate || (currentPolicy as any).criado_em).toLocaleDateString('pt-BR')}</div>
                         )}
                         <div><strong>Status:</strong>
                           <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                            (currentPolicy.isActive ?? (currentPolicy as any).is_active)
+                            (currentPolicy.isActive ?? (currentPolicy as any).esta_ativo)
                               ? 'bg-green-100 text-green-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
-                            {(currentPolicy.isActive ?? (currentPolicy as any).is_active) ? 'Ativa' : 'Inativa'}
+                            {(currentPolicy.isActive ?? (currentPolicy as any).esta_ativo) ? 'Ativa' : 'Inativa'}
                           </span>
                         </div>
                       </div>

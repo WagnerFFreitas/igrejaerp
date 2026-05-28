@@ -26,7 +26,7 @@
  * });
  */
 
-import { CNABFile, CNABRecord } from '../types';
+import { CNABFile, CNABRecord } from '../tipos';
 
 /**
  * RESULTADO DO PROCESSAMENTO CNAB
@@ -155,13 +155,13 @@ export function validateCNAB(content: string): { valid: boolean; errors: string[
 
 /**
  * Gera arquivo CNAB de remessa (envio para o banco)
- * @param transactions - Transações a enviar
+ * @param transacoes - Transações a enviar
  * @param bankCode - Código do banco
  * @param companyId - CNPJ da empresa
  * @returns Conteúdo do arquivo CNAB
  */
 export function generateCNABRemessa(
-  transactions: Array<{
+  transacoes: Array<{
     documentNumber: string;
     ourNumber: string;
     amount: number;
@@ -178,12 +178,12 @@ export function generateCNABRemessa(
   lines.push(generateHeader(bankCode, companyId));
 
   // Registros detalhe
-  transactions.forEach((trans, index) => {
+  transacoes.forEach((trans, index) => {
     lines.push(generateDetailRecord(trans, bankCode, index + 1));
   });
 
   // Trailer do arquivo
-  lines.push(generateTrailer(transactions.length, transactions.reduce((sum, t) => sum + t.amount, 0)));
+  lines.push(generateTrailer(transacoes.length, transacoes.reduce((sum, t) => sum + t.amount, 0)));
 
   return lines.join('\n');
 }
@@ -238,7 +238,7 @@ function parseDetailLine(line: string, bankCode: string): CNABRecord | null {
       name: line.substring(133, 172)?.trim() || '',
       document: line.substring(123, 133)?.trim() || '',
       account: line.substring(38, 50)?.trim() || '',
-      agency: line.substring(23, 27)?.trim() || '',
+      agencia: line.substring(23, 27)?.trim() || '',
     },
     payer: {
       name: line.substring(238, 240)?.trim() || '', // Posição aproximada

@@ -19,8 +19,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Award, History, CreditCard, Calendar, MapPin, Phone, Mail, Edit, Save, X, Download, Church, Users, BookOpen } from 'lucide-react';
-import { Member, MemberContribution } from '../types';
-import { dbService } from '../services/databaseService';
+import { Member, MemberContribution } from '../tipos';
+import { dbService } from '../services/bancoDadosService';
 
 interface PortalMembroProps {
   // Props futuras para autenticação de membro
@@ -49,7 +49,7 @@ export const PortalMembro: React.FC<PortalMembroProps> = ({ memberId }) => {
           cep: rawMember?.cep || rawMember?.address?.cep || '',
           logradouro: rawMember?.endereco || rawMember?.address?.street || '',
           numero: rawMember?.numero || rawMember?.address?.number || '',
-          complemento: rawMember?.complemento || rawMember?.address?.complement || '',
+          complemento: rawMember?.complemento || rawMember?.address?.complemento || '',
           bairro: rawMember?.bairro || rawMember?.address?.neighborhood || '',
           cidade: rawMember?.cidade || rawMember?.address?.city || '',
           estado: rawMember?.estado || rawMember?.address?.state || ''
@@ -67,7 +67,7 @@ export const PortalMembro: React.FC<PortalMembroProps> = ({ memberId }) => {
       situacao: rawMember?.situacao || (rawMember?.status === 'INACTIVE' ? 'INATIVO' : 'ATIVO'),
       contribuicoes: Array.isArray(rawMember?.contribuicoes) ? rawMember.contribuicoes : (Array.isArray(rawMember?.contributions) ? rawMember.contributions : []),
       outrosMinisterios: Array.isArray(rawMember?.outrosMinisterios) ? rawMember.outrosMinisterios : (Array.isArray(rawMember?.otherMinistries) ? rawMember.otherMinistries : []),
-      dependentes: Array.isArray(rawMember?.dependentes) ? rawMember.dependentes : (Array.isArray(rawMember?.dependents) ? rawMember.dependents : []),
+      dependentes: Array.isArray(rawMember?.dependentes) ? rawMember.dependentes : (Array.isArray(rawMember?.dependentes) ? rawMember.dependentes : []),
       dataMembro: rawMember?.dataMembro || rawMember?.membershipDate || rawMember?.data_membro || undefined,
       ministerioPrincipal: rawMember?.ministerioPrincipal || rawMember?.mainMinistry || rawMember?.ministerio || undefined,
       avatar: rawMember?.avatar,

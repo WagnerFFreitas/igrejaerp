@@ -22,11 +22,11 @@ import {
   Plus, Edit2, Trash2, Download, Search, Filter, CheckCircle, 
   XCircle, Clock, AlertCircle, BarChart3, PieChart, Eye
 } from 'lucide-react';
-import { SalaryHistory, SalaryAdjustmentRequest, Payroll, UserAuth } from '../types';
-import SalaryHistoryService from '../services/salaryHistoryService';
+import { SalaryHistory, SalaryAdjustmentRequest, Payroll, UserAuth } from '../tipos';
+import HistoricoSalarialService from '../services/historicoSalarialService';
 
 interface HistoricoSalarialProps {
-  employees: Payroll[];
+  funcionarios: Payroll[];
   currentIdUnidade: string;
   user?: UserAuth;
   selectedEmployee?: Payroll;
@@ -40,7 +40,7 @@ interface HistoricoSalarialProps {
  */
 
 export default function HistoricoSalarial({
-  employees,
+  funcionarios,
   currentIdUnidade,
   user,
   selectedEmployee
@@ -60,8 +60,8 @@ export default function HistoricoSalarial({
       setIsLoading(true);
       try {
         const [history, requests] = await Promise.all([
-          SalaryHistoryService.getSalaryHistory(currentIdUnidade),
-          SalaryHistoryService.getAdjustmentRequests(currentIdUnidade)
+          HistoricoSalarialService.getSalaryHistory(currentIdUnidade),
+          HistoricoSalarialService.getAdjustmentRequests(currentIdUnidade)
         ]);
 
         setSalaryHistory(history);
@@ -118,8 +118,8 @@ export default function HistoricoSalarial({
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     }).format(value);
   };
 

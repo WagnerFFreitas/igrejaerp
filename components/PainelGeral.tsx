@@ -24,16 +24,16 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { geminiService } from '../services/geminiService';
-import { UserAuth, Member, Payroll, Transaction, FinancialAccount } from '../types';
-import UserPermissionsPanel from './UserPermissionsPanel';
-import AuthService from '../src/services/authService';
+import { UserAuth, Member, Payroll, Transaction, FinancialAccount } from '../tipos';
+import UserPermissionsPanel from './painelPermissoesUsuario';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 interface PainelGeralProps {
   user: UserAuth;
   members: Member[];
-  employees: Payroll[];
-  transactions?: Transaction[];
-  accounts?: FinancialAccount[];
+  funcionarios: Payroll[];
+  transacoes?: Transaction[];
+  contas_bancarias?: FinancialAccount[];
 }
 
 /**
@@ -43,8 +43,8 @@ interface PainelGeralProps {
  * Define o bloco principal deste arquivo (painel geral).
  */
 
-export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employees, transactions = [], accounts = [] }) => {
-  console.log('PainelGeral recebido:', { members, membersLength: members.length, employees, employeesLength: employees.length });
+export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, funcionarios, transacoes = [], contas_bancarias = [] }) => {
+  console.log('PainelGeral recebido:', { members, membersLength: members.length, funcionarios, employeesLength: funcionarios.length });
 
   // ── KPIs calculados a partir dos dados reais ──────────────────────────────
   const kpis = useMemo(() => {
@@ -54,8 +54,8 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
     const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
     const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
-    const paidIncome = transactions.filter(t => (t.tipoTransacao === 'INCOME' || t.tipoTransacao === 'RECEITA') && t.situacao === 'PAGO');
-    const paidExpense = transactions.filter(t => (t.tipoTransacao === 'EXPENSE' || t.tipoTransacao === 'DESPESA') && t.situacao === 'PAGO');
+    const paidIncome = transacoes.filter(t => (t.tipoTransacao === 'INCOME' || t.tipoTransacao === 'RECEITA') && t.situacao === 'PAGO');
+    const paidExpense = transacoes.filter(t => (t.tipoTransacao === 'EXPENSE' || t.tipoTransacao === 'DESPESA') && t.situacao === 'PAGO');
 
     const incomeThisMonth = paidIncome
       .filter(t => { const d = new Date(t.dataTransacao || t.data); return d.getMonth() === thisMonth && d.getFullYear() === thisYear; })
@@ -70,12 +70,12 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
       : null;
 
     const membersThisMonth = members.filter(m => {
-      const d = new Date((m as any).criado || (m as any).created_at || '');
+      const d = new Date((m as any).criado || (m as any).criado_em || '');
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     }).length;
 
     const membersLastMonth = members.filter(m => {
-      const d = new Date((m as any).criado || (m as any).created_at || '');
+      const d = new Date((m as any).criado || (m as any).criado_em || '');
       return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
     }).length;
 
@@ -83,16 +83,16 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
       ? ((membersThisMonth - membersLastMonth) / membersLastMonth * 100).toFixed(0)
       : null;
 
-    const saldoContas = accounts.reduce((s, a) => s + (a.saldoAtual || a.currentBalance || 0), 0);
+    const saldoContas = contas_bancarias.reduce((s, a) => s + (a.saldoAtual || a.currentBalance || 0), 0);
 
     return { incomeThisMonth, incomeGrowth, membersThisMonth, memberGrowth, saldoContas };
-  }, [transactions, members, accounts]);
+  }, [transacoes, members, contas_bancarias]);
 
   // ── Gráfico: receita dos últimos 6 meses ─────────────────────────────────
   const chartData = useMemo(() => {
     console.log('📊 PainelGeral chartData calculando:', { 
-      transactionsCount: transactions.length,
-      sampleTransaction: transactions[0] 
+      transactionsCount: transacoes.length,
+      sampleTransaction: transacoes[0] 
     });
     
     const now = new Date();
@@ -100,10 +100,10 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
       const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
       const month = d.getMonth();
       const year = d.getFullYear();
-      const revenue = transactions
+      const revenue = transacoes
         .filter(t => (t.tipoTransacao === 'INCOME' || t.tipoTransacao === 'RECEITA') && t.situacao === 'PAGO' && (() => { const td = new Date(t.dataTransacao || t.data); return td.getMonth() === month && td.getFullYear() === year; })())
         .reduce((s, t) => s + (t.valor || t.amount || 0), 0);
-      const expense = transactions
+      const expense = transacoes
         .filter(t => (t.tipoTransacao === 'EXPENSE' || t.tipoTransacao === 'DESPESA') && t.situacao === 'PAGO' && (() => { const td = new Date(t.dataTransacao || t.data); return td.getMonth() === month && td.getFullYear() === year; })())
         .reduce((s, t) => s + (t.valor || t.amount || 0), 0);
       return {
@@ -115,7 +115,7 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
     
     console.log('📊 chartData resultado:', result);
     return result;
-  }, [transactions]);
+  }, [transacoes]);
   
   const [insights, setInsights] = useState<string>('Consultando inteligência ministerial...');
   const [isError, setIsError] = useState(false);
@@ -208,7 +208,7 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
       - Total de membros: ${members.length}
       - Membros ativos: ${activeMembersCount} (${Math.round((activeMembersCount/members.length)*100)}%)
       - Novos membros (últimos 30 dias): ${newMembersCount}
-      - Funcionários: ${employees.length}
+      - Funcionários: ${funcionarios.length}
       - Receita mensal: R$ 25.000
       - Despesas mensais: R$ 18.000
       - Saúde financeira: ${(25000-18000)/25000*100}% de margem positiva
@@ -291,7 +291,7 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
         date: new Date(m.birthDate + 'T00:00:00'),
         type: 'membro'
       })),
-      ...employees.filter(e => e.birthDate).map(e => ({
+      ...funcionarios.filter(e => e.birthDate).map(e => ({
         name: e.employeeName,
         avatar: e.avatar,
         date: new Date(e.birthDate + 'T00:00:00'),
@@ -301,7 +301,7 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
     return all
       .filter(p => p.date.getMonth() === currentMonth)
       .sort((a, b) => a.date.getDate() - b.date.getDate());
-  }, [members, employees, currentMonth]);
+  }, [members, funcionarios, currentMonth]);
 
   // Verificar CNH vencidas ou quase vencendo
   const cnhAlerts = useMemo(() => {
@@ -311,7 +311,7 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
     const fifteenDaysFromNow = new Date();
     fifteenDaysFromNow.setDate(today.getDate() + 15);
 
-    return employees
+    return funcionarios
       .filter(e => e.cnh_vencimento)
       .map(e => {
         const vencimentoDate = new Date(e.cnh_vencimento);
@@ -332,7 +332,7 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
       })
       .filter(alert => alert.status !== 'ok')
       .sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration);
-  }, [employees]);
+  }, [funcionarios]);
 
   return (
     <div className="space-y-4">
@@ -396,14 +396,14 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
               {
                 l: 'Saldo em Contas',
                 v: `R$ ${kpis.saldoContas.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`,
-                sub: `${accounts.length} conta(s)`,
+                sub: `${contas_bancarias.length} conta(s)`,
                 t: '—',
                 positive: kpis.saldoContas >= 0,
                 i: <TrendingUp />, c: kpis.saldoContas >= 0 ? 'blue' : 'rose'
               },
               {
                 l: 'Funcionários',
-                v: employees.length,
+                v: funcionarios.length,
                 sub: 'colaboradores',
                 t: '—',
                 positive: true,

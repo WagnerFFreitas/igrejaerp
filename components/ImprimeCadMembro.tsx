@@ -18,7 +18,7 @@
 
 import React, { useState } from 'react';
 import { Printer, X } from 'lucide-react';
-import { Membro } from '../types';
+import { Membro } from '../tipos';
 
 interface ImprimeCadMembroProps {
   members: Membro[];

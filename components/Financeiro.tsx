@@ -30,17 +30,17 @@ import {
   Link as LinkIcon, Paperclip, CheckCircle2, AlertCircle, Layers,
   Briefcase, History, CheckCircle, Tag, MoreHorizontal
 } from 'lucide-react';
-import { Transacao, FinancialAccount, Usuario, Membro } from '../types';
+import { Transacao, FinancialAccount, Usuario, Membro } from '../tipos';
 import { COST_CENTERS, OPERATION_NATURES, CHURCH_PROJECTS } from '../constants';
-import { dbService } from '../services/databaseService';
-import { useAudit } from '../src/hooks/useAudit';
-import AuthService from '../src/services/authService';
+import { dbService } from '../services/bancoDadosService';
+import { useAudit } from '../src/hooks/useAuditoria';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 interface FinanceiroProps {
-  transactions: Transacao[];
+  transacoes: Transacao[];
   currentIdUnidade: string;
   setTransactions: React.Dispatch<React.SetStateAction<Transacao[]>>;
-  accounts: FinancialAccount[];
+  contas_bancarias: FinancialAccount[];
   setAccounts: React.Dispatch<React.SetStateAction<FinancialAccount[]>>;
   user?: Usuario;
   members: Membro[];
@@ -53,8 +53,8 @@ interface FinanceiroProps {
  * Define o bloco principal deste arquivo (financeiro).
  */
 
-export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdUnidade, setTransactions, accounts, setAccounts, user, members }) => {
-  const canWriteFinance = AuthService.hasPermission(user as any, 'finance', 'write');
+export const Financeiro: React.FC<FinanceiroProps> = ({ transacoes, currentIdUnidade, setTransactions, contas_bancarias, setAccounts, user, members }) => {
+  const canWriteFinance = AutenticacaoService.hasPermission(user as any, 'finance', 'write');
   const [activeTab, setActiveTab] = useState<'tesouraria' | 'conciliacao' | 'contas'>('tesouraria');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,7 +74,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdU
     natureza_operacao: 'nat6', 
     id_centro_custo: 'cc1', 
     id_projeto: '', 
-    id_conta: accounts[0]?.id || accounts[0]?.id_conta || '', 
+    id_conta: contas_bancarias[0]?.id || contas_bancarias[0]?.id_conta || '', 
     situacao: 'REALIZADO', 
     id_unidade: currentIdUnidade, 
     forma_pagamento: 'PIX', 
@@ -85,15 +85,15 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdU
     id_transacao_origem: undefined,
   });
 
-  const totals = useMemo(() => transactions.reduce((acc, curr) => {
+  const totals = useMemo(() => transacoes.reduce((acc, curr) => {
     if (curr.situacao === 'REALIZADO') {
       if (curr.tipo === 'ENTRADA') acc.income += curr.valor || 0;
       else acc.expense += curr.valor || 0;
     } else if (curr.situacao === 'PENDENTE') acc.payable += curr.valor || 0;
     return acc;
-  }, { income: 0, expense: 0, payable: 0 }), [transactions]);
+  }, { income: 0, expense: 0, payable: 0 }), [transacoes]);
 
-  const filtered = transactions.filter(t =>
+  const filtered = transacoes.filter(t =>
     (t.descricao || '').toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => new Date(a.data_transacao || '').getTime() - new Date(b.data_transacao || '').getTime());
 
@@ -228,7 +228,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdU
         natureza_operacao: 'nat6', 
         id_centro_custo: 'cc1',
         id_projeto: '', 
-        id_conta: accounts[0]?.id || accounts[0]?.id_conta || '', 
+        id_conta: contas_bancarias[0]?.id || contas_bancarias[0]?.id_conta || '', 
         situacao: 'REALIZADO',
         id_unidade: currentIdUnidade, 
         forma_pagamento: 'PIX', 
@@ -284,7 +284,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdU
           tipo: transactionData.tipo || 'SAIDA',
           categoria: transactionData.categoria || 'OUTROS',
           id_centro_custo: transactionData.id_centro_custo || 'cc1',
-          id_conta: transactionData.id_conta || accounts[0]?.id || accounts[0]?.id_conta || null,
+          id_conta: transactionData.id_conta || contas_bancarias[0]?.id || contas_bancarias[0]?.id_conta || null,
           natureza_operacao: transactionData.natureza_operacao || 'nat6',
           parcelado: true,
           numero_parcela: i,
@@ -302,7 +302,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdU
         parcelas.push(parcela);
       }
       
-      setTransactions([...parcelas, ...transactions]);
+      setTransactions([...parcelas, ...transacoes]);
       
       const totalComJuros = valorParcela * numeroParcelas;
       const msg = taxa > 0
@@ -640,7 +640,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdU
                     <div>
                       <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Conta / Caixa Ativo</label>
                       <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.id_conta} onChange={e => setFormData({...formData, id_conta: e.target.value})} >
-                        {accounts.map(acc => <option key={acc.id_conta || acc.id} value={acc.id_conta || acc.id}>{acc.nome || acc.name}</option>)}
+                        {contas_bancarias.map(acc => <option key={acc.id_conta || acc.id} value={acc.id_conta || acc.id}>{acc.nome || acc.name}</option>)}
                       </select>
                     </div>
                     <div>
@@ -707,7 +707,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdU
               <button onClick={() => setIsReportModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400"><X size={20}/></button>
             </div>
             <div className="p-8 overflow-y-auto custom-scrollbar bg-slate-50/30">
-              <Relatorios transactions={transactions} members={members} />
+              <Relatorios transacoes={transacoes} members={members} />
             </div>
           </div>
         </div>

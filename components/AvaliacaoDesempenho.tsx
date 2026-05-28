@@ -25,10 +25,10 @@ import {
 import { 
   PerformanceEvaluation, CompetencyEvaluation, GoalEvaluation, 
   PDIPlan, EvaluationCycle, DevelopmentPlan, Payroll, UserAuth 
-} from '../types';
+} from '../tipos';
 
 interface AvaliacaoDesempenhoProps {
-  employees: Payroll[];
+  funcionarios: Payroll[];
   currentIdUnidade: string;
   user?: UserAuth;
 }
@@ -41,7 +41,7 @@ interface AvaliacaoDesempenhoProps {
  */
 
 export default function AvaliacaoDesempenho({ 
-  employees, 
+  funcionarios, 
   currentIdUnidade, 
   user 
 }: AvaliacaoDesempenhoProps) {

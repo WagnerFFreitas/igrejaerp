@@ -23,7 +23,7 @@ import {
   Bell, Smartphone, Globe, Settings, RefreshCw, Download, Upload, Copy, Target, FileText,
   Sparkles, PencilLine, Eraser, History, Clock as ClockIcon, AlertTriangle
 } from 'lucide-react';
-import CommunicationService from '../services/communicationService';
+import ComunicacaoService from '../services/comunicacaoService';
 import { geminiService } from '../services/geminiService';
 import { 
   EmailCampaign, 
@@ -34,12 +34,12 @@ import {
   Notification,
   NotificationType,
   NotificationStatus
-} from '../types/communication';
-import { Membro, Payroll } from '../types';
+} from '../types/comunicacao';
+import { Membro, Payroll } from '../tipos';
 
 interface ComunicacaoProps {
   members?: Membro[];
-  employees?: Payroll[];
+  funcionarios?: Payroll[];
   currentIdUnidade?: string;
   user?: any;
 }
@@ -59,7 +59,7 @@ interface ComunicacaoProps {
 
 export const Comunicacao: React.FC<ComunicacaoProps> = ({ 
   members = [], 
-  employees = [], 
+  funcionarios = [], 
   currentIdUnidade = 'u-sede',
   user 
 }) => {
@@ -108,10 +108,10 @@ export const Comunicacao: React.FC<ComunicacaoProps> = ({
         templatesData,
         groupsData
       ] = await Promise.all([
-        CommunicationService.getEmailCampaigns(currentIdUnidade),
-        CommunicationService.getSMSMessages(currentIdUnidade),
-        CommunicationService.getTemplates(currentIdUnidade),
-        CommunicationService.getGroups(currentIdUnidade)
+        ComunicacaoService.getEmailCampaigns(currentIdUnidade),
+        ComunicacaoService.getSMSMessages(currentIdUnidade),
+        ComunicacaoService.getTemplates(currentIdUnidade),
+        ComunicacaoService.getGroups(currentIdUnidade)
       ]);
 
       setCampaigns(campaignsData);
@@ -128,7 +128,7 @@ export const Comunicacao: React.FC<ComunicacaoProps> = ({
 
   const loadStats = async () => {
     try {
-      const statsData = await CommunicationService.generateStats(currentIdUnidade, statsPeriod);
+      const statsData = await ComunicacaoService.generateStats(currentIdUnidade, statsPeriod);
       setStats(statsData);
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
@@ -214,7 +214,7 @@ export const Comunicacao: React.FC<ComunicacaoProps> = ({
     
     // Coleta emails únicos de membros (e funcionários se tivessem o campo)
     const memberEmails = members.map(m => m.email).filter(Boolean);
-    const employeeEmails = employees.map(e => e.email).filter(Boolean);
+    const employeeEmails = funcionarios.map(e => e.email).filter(Boolean);
     const allEmails = Array.from(new Set([...memberEmails, ...employeeEmails]));
     
     const bcc = allEmails.join(',');
@@ -228,7 +228,7 @@ export const Comunicacao: React.FC<ComunicacaoProps> = ({
   // Funções do sistema de campanhas
   const handleSendCampaign = async (campaignId: string) => {
     try {
-      await CommunicationService.sendEmailCampaign(campaignId, currentIdUnidade);
+      await ComunicacaoService.sendEmailCampaign(campaignId, currentIdUnidade);
       await loadCampaignData();
       alert('Campanha enviada com sucesso!');
     } catch (error) {
@@ -240,8 +240,8 @@ export const Comunicacao: React.FC<ComunicacaoProps> = ({
   // Formatar moeda
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     }).format(value);
   };
 
@@ -259,7 +259,7 @@ export const Comunicacao: React.FC<ComunicacaoProps> = ({
           <p className="text-slate-500 font-medium text-sm">Escritor Pastoral via IA e Gestão de Avisos ADJPA.</p>
         </div>
         <div className="bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100 flex items-center gap-3">
-          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Base Integrada: {members.length + employees.length} contatos</p>
+          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Base Integrada: {members.length + funcionarios.length} contatos</p>
         </div>
       </div>
 
@@ -334,7 +334,7 @@ export const Comunicacao: React.FC<ComunicacaoProps> = ({
         </div>
 
         <div className="bg-indigo-900 text-white p-8 rounded-[3.5rem] shadow-2xl relative overflow-hidden flex flex-col min-h-[500px]">
-          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><MessageSquare size={200} /></div>
+          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-eventos_igreja-none"><MessageSquare size={200} /></div>
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-black text-xl flex items-center gap-2 uppercase tracking-tighter"><PencilLine size={20} className="text-indigo-300" /> Revisão Pastoral</h3>

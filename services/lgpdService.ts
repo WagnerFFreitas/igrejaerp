@@ -31,13 +31,13 @@ export default class LGPDService {
     employeeId?: string; 
     policyId: string; 
     consentType: string; 
-    granted: boolean; 
+    concedido: boolean; 
   }) {
-    return apiClient.post('/lgpd/consent', data);
+    return apiClient.post('/lgpd/consentimentos', data);
   }
   
   static async getConsents(memberId: string) {
-    const response = await apiClient.get(`/lgpd/consents/${memberId}`) as any;
+    const response = await apiClient.get(`/lgpd/consentimentos/${memberId}`) as any;
     return response?.consents || [];
   }
 
@@ -61,7 +61,7 @@ export default class LGPDService {
     
     const idToUse = UNIT_ALIASES[normalizedUnitId] || normalizedUnitId;
     
-    return apiClient.get('/lgpd/policy', { unitId: idToUse }) as any;
+    return apiClient.get('/lgpd/politicas', { unitId: idToUse }) as any;
   }
 
   static async saveConsent(data: {
@@ -69,7 +69,7 @@ export default class LGPDService {
     employeeId?: string;
     policyId?: string;
     consentType?: string;
-    granted?: boolean;
+    concedido?: boolean;
     id?: string;
     userId?: string;
     userType?: string;
@@ -84,7 +84,7 @@ export default class LGPDService {
         employeeId: data.employeeId,
         policyId: data.policyId,
         consentType: data.consentType || 'DATA_PROCESSING',
-        granted: data.granted ?? true,
+        concedido: data.concedido ?? true,
       });
     }
 

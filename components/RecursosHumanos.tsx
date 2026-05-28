@@ -18,12 +18,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { BookOpen, Star, UserCheck, Plus, X, Save, ChevronDown, ChevronUp, FileText, Trophy } from 'lucide-react';
-import { Payroll, PerformanceEvaluation, UserAuth } from '../types';
+import { Payroll, PerformanceEvaluation, UserAuth } from '../tipos';
 import AvaliacaoService from '../services/avaliacaoService';
-import AuthService from '../src/services/authService';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 interface RecursosHumanosProps {
-  employees: Payroll[];
+  funcionarios: Payroll[];
   currentIdUnidade: string;
   evaluations: Record<string, any[]>;
   user?: UserAuth;
@@ -56,8 +56,8 @@ interface EmployeeRecord {
  * Define o bloco principal deste arquivo (recursos humanos).
  */
 
-export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, currentIdUnidade, evaluations, user }) => {
-  const canWriteHR = AuthService.hasPermission(user as any, 'hr', 'write');
+export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ funcionarios, currentIdUnidade, evaluations, user }) => {
+  const canWriteHR = AutenticacaoService.hasPermission(user as any, 'hr', 'write');
   const [records, setRecords] = useState<Record<string, EmployeeRecord>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [modalType, setModalType] = useState<'avaliacao' | 'pdi' | null>(null);
@@ -92,7 +92,7 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
     }
     if (!selectedEmployeeId || !avaliacaoForm.data) return;
 
-    const emp = employees.find(e => e.id === selectedEmployeeId);
+    const emp = funcionarios.find(e => e.id === selectedEmployeeId);
     const idUnidadeMap: Record<string, string> = {
       'u-sede':  '00000000-0000-0000-0000-000000000001',
       'u-matriz':'00000000-0000-0000-0000-000000000001',
@@ -139,7 +139,7 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
     }
     if (!selectedEmployeeId || !pdiForm.meta) return;
 
-    const emp = employees.find(e => e.id === selectedEmployeeId);
+    const emp = funcionarios.find(e => e.id === selectedEmployeeId);
     const idUnidadeMap: Record<string, string> = {
       'u-sede':  '00000000-0000-0000-0000-000000000001',
       'u-matriz':'00000000-0000-0000-0000-000000000001',
@@ -168,7 +168,7 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
     }
   };
 
-  const totalAvaliacoesPendentes = employees.filter(e => {
+  const totalAvaliacoesPendentes = funcionarios.filter(e => {
     const realEvals = getEmployeeRealEvaluations(e.id);
     const localEvals = getRecord(e.id).avaliacoes;
     return realEvals.length === 0 && localEvals.length === 0;
@@ -178,7 +178,7 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
   const ranking = useMemo(() => {
     console.log('🏆 Calculando ranking Top 10. Avaliações por funcionário:', evaluations);
     
-    const result = employees
+    const result = funcionarios
       .map(emp => {
         const realEvals = getEmployeeRealEvaluations(emp.id);
         const avg = realEvals.length > 0 
@@ -194,7 +194,7 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
     
     console.log('🏆 Ranking Top 10 final:', result.length, 'funcionários qualificados');
     return result;
-  }, [evaluations, employees, records]);
+  }, [evaluations, funcionarios, records]);
 
   const getRatingLabel = (avg: number) => {
     // avg está em escala 0-100 (das avaliações reais)
@@ -222,7 +222,7 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Colaboradores', val: employees.length, icon: <UserCheck size={18}/>, c: 'indigo' },
+          { label: 'Colaboradores', val: funcionarios.length, icon: <UserCheck size={18}/>, c: 'indigo' },
           { label: 'Avaliações Pendentes', val: totalAvaliacoesPendentes, icon: <Star size={18}/>, c: 'amber' },
           { label: 'PDIs Ativos', val: Object.values(records).reduce((s, r) => s + r.pdis.filter(p => p.status === 'EM_ANDAMENTO').length, 0), icon: <BookOpen size={18}/>, c: 'rose' },
         ].map((s, i) => (
@@ -353,7 +353,7 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
             <UserCheck size={14} className="text-indigo-600"/> Avaliação de Desempenho & PDI
           </h3>
         </div>        <div className="divide-y divide-slate-50">
-          {employees.map(emp => {
+          {funcionarios.map(emp => {
             const rec = getRecord(emp.id);
             const avg = getAvgScore(emp.id);
             const isExpanded = expandedId === emp.id;

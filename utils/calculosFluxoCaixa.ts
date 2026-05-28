@@ -23,7 +23,7 @@
  * - Prevê o futuro (projeções)
  */
 
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 /**
  * DADOS DIÁRIOS DE FLUXO DE CAIXA
@@ -90,7 +90,7 @@ export interface MovingAverage {
  * Estima arrecadação futura baseada em histórico
  * 
  * PARÂMETROS:
- * - transactions: Transaction[] → Histórico completo
+ * - transacoes: Transaction[] → Histórico completo
  * - days: number → Dias para projetar
  * - category?: string → Filtra categoria (ex: 'Dizimo')
  * 
@@ -104,12 +104,12 @@ export interface MovingAverage {
  * 4. Aplica fator sazonal (se tiver)
  */
 export function projetarReceitas(
-  transactions: Transaction[],
+  transacoes: Transaction[],
   days: number,
   category?: string
 ): number {
   // 1. Filtra receitas
-  let incomeTransactions = transactions.filter(t => t.type === 'INCOME');
+  let incomeTransactions = transacoes.filter(t => t.type === 'INCOME');
   
   if (category) {
     incomeTransactions = incomeTransactions.filter(t => t.category === category);
@@ -146,17 +146,17 @@ export function projetarReceitas(
  * Identifica tendência (subindo, descendo, estável)
  * 
  * PARÂMETROS:
- * - transactions: Transaction[]
+ * - transacoes: Transaction[]
  * - windowDays: number → Janela para média (ex: 30 dias)
  * 
  * RETORNO:
  * MovingAverage → Valor, tendência e variação %
  */
 export function calcularMediaMovelReceitas(
-  transactions: Transaction[],
+  transacoes: Transaction[],
   windowDays: number = 30
 ): MovingAverage {
-  const incomeTx = transactions.filter(t => t.type === 'INCOME');
+  const incomeTx = transacoes.filter(t => t.type === 'INCOME');
   
   // Divide em dois períodos
   const now = new Date();
@@ -211,18 +211,18 @@ export function calcularMediaMovelReceitas(
  * Calcula despesas recorrentes (aluguel, salários, etc.)
  * 
  * PARÂMETROS:
- * - transactions: Transaction[]
+ * - transacoes: Transaction[]
  * - days: number
  * 
  * RETORNO:
  * number → Total de despesas fixas projetadas
  */
 export function projetarDespesasFixas(
-  transactions: Transaction[],
+  transacoes: Transaction[],
   days: number
 ): number {
   // Filtra despesas
-  const expenseTx = transactions.filter(t => t.type === 'EXPENSE');
+  const expenseTx = transacoes.filter(t => t.type === 'EXPENSE');
   
   // Identifica recorrências mensais
   const monthlyExpenses = identifyMonthlyExpenses(expenseTx);
@@ -242,16 +242,16 @@ export function projetarDespesasFixas(
  * Detecta padrões de despesas que se repetem todo mês
  * 
  * PARÂMETRO:
- * - transactions: Transaction[]
+ * - transacoes: Transaction[]
  * 
  * RETORNO:
  * number → Média mensal
  */
-function identifyMonthlyExpenses(transactions: Transaction[]): number {
+function identifyMonthlyExpenses(transacoes: Transaction[]): number {
   // Agrupa por descrição similar
   const grouped = new Map<string, number[]>();
   
-  transactions.forEach(t => {
+  transacoes.forEach(t => {
     const key = t.description.toLowerCase();
     
     if (!grouped.has(key)) {
@@ -286,10 +286,10 @@ function identifyMonthlyExpenses(transactions: Transaction[]): number {
  * Estima despesas não-fixas baseadas em média histórica
  */
 export function projetarDespesasVariaveis(
-  transactions: Transaction[],
+  transacoes: Transaction[],
   days: number
 ): number {
-  const expenseTx = transactions.filter(t => t.type === 'EXPENSE');
+  const expenseTx = transacoes.filter(t => t.type === 'EXPENSE');
   
   // Últimos 90 dias
   const cutoff = new Date();
@@ -436,8 +436,8 @@ export function gerarAlertasFluxoCaixa(
  */
 export function formatCurrency(value: number): string {
   return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
+    style: 'moeda',
+    moeda: 'BRL'
   });
 }
 

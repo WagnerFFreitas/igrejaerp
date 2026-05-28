@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * FUNCIONARIOS.TSX
+ * ============================================================================
+ *
+ * O QUE ESTE ARQUIVO FAZ?
+ * ------------------------
+ * Componente visual do frontend para funcionarios.
+ *
+ * ONDE É USADO?
+ * -------------
+ * Usado na interface React como parte do frontend.
+ *
+ * COMO FUNCIONA?
+ * --------------
+ * Controla a apresentação e interações da interface com o usuário.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Briefcase, Plus, QrCode, Square, CheckSquare, Edit2, Search, Building, 
@@ -14,7 +32,7 @@ import html2canvas from 'html2canvas';
 import { TemplateCrachaFuncionario } from './TemplateCrachaFuncionario';
 import { dbService } from '../services/databaseService';
 import IndexedDBService from '../src/services/indexedDBService';
-import { StorageService } from '../src/services/storageService';
+import { ArmazenamentoService } from '../src/services/storageService';
 import { useAudit } from '../src/hooks/useAudit';
 import LGPDService from '../services/lgpdService';
 import LGPDConsentModal from './LGPDConsentModal';
@@ -22,12 +40,13 @@ import { ImprimeCadFuncionario } from './ImprimeCadFuncionario';
 import AvaliacaoModal from './AvaliacaoModal';
 import HistoricoSalarial from './HistoricoSalarial';
 import TermoAdesaoLGPD from './TermoAdesaoLGPD';
-import AuthService from '../src/services/authService';
-import { UnitService } from '../src/services/unitService';
+import AutenticacaoService from '../src/services/authService';
+import { UnidadeService } from '../src/services/unitService';
+import AvaliacaoService from '../services/avaliacaoService';
 
 interface FuncionariosProps {
   employees: Payroll[];
-  currentUnitId: string;
+  currentIdUnidade: string;
   setEmployees: React.Dispatch<React.SetStateAction<Payroll[]>>;
   user?: UserAuth;
   evaluations: Record<string, any[]>;
@@ -35,6 +54,13 @@ interface FuncionariosProps {
 }
 
 type EmployeeTab = 'pessoais' | 'contrato' | 'jornada' | 'banco_horas' | 'documentos' | 'endereco' | 'bancarios' | 'beneficios' | 'esocial' | 'dependentes' | 'folha' | 'lgpd' | 'avaliacao' | 'historico_salarial';
+
+/**
+ * BLOCO PRINCIPAL
+ * ===============
+ *
+ * Define o bloco principal deste arquivo (funcionarios).
+ */
 
 const InputField = ({ label, value, onChange, placeholder, type = "text", icon: Icon, readOnly = false }: any) => (
   <div className="space-y-1.5">
@@ -69,9 +95,9 @@ const SelectField = ({ label, value, onChange, options, icon: Icon }: any) => (
   </div>
 );
 
-export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUnitId, setEmployees, user, evaluations, setEvaluations }) => {
-  const canWriteEmployees = AuthService.hasPermission(user as any, 'employees', 'write');
-  const canWriteHR = AuthService.hasPermission(user as any, 'hr', 'write');
+export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentIdUnidade, setEmployees, user, evaluations, setEvaluations }) => {
+  const canWriteEmployees = AutenticacaoService.hasPermission(user as any, 'employees', 'write');
+  const canWriteHR = AutenticacaoService.hasPermission(user as any, 'hr', 'write');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -154,9 +180,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
   useEffect(() => {
     const loadLGPDData = async () => {
-      if (currentUnitId) {
+      if (currentIdUnidade) {
         try {
-          const policy = await LGPDService.getCurrentPolicy(currentUnitId);
+          const policy = await LGPDService.getCurrentPolicy(currentIdUnidade);
           setCurrentPolicy(policy);
         } catch (error) {
           console.error('Erro ao carregar política LGPD:', error);
@@ -165,18 +191,18 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     };
     
     loadLGPDData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   // Carregar dados da Unidade
   useEffect(() => {
     const loadUnitData = async () => {
       try {
-        const unitIdMap: Record<string, string> = {
+        const idUnidadeMap: Record<string, string> = {
           'u-sede': '00000000-0000-0000-0000-000000000001',
           'u-matriz': '00000000-0000-0000-0000-000000000001',
         };
-        const apiUnitId = unitIdMap[currentUnitId] || currentUnitId;
-        const unit = await UnitService.getUnitById(apiUnitId);
+        const apiIdUnidade = idUnidadeMap[currentIdUnidade] || currentIdUnidade;
+        const unit = await UnidadeService.getUnitById(apiIdUnidade);
         if (unit) {
           setCurrentUnitData(unit);
         }
@@ -184,15 +210,15 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
         console.error('Erro ao carregar unidade:', error);
       }
     };
-    if (currentUnitId) loadUnitData();
-  }, [currentUnitId]);
+    if (currentIdUnidade) loadUnitData();
+  }, [currentIdUnidade]);
 
   // Carregar consentimentos do funcionário selecionado
   useEffect(() => {
     const loadEmployeeConsents = async () => {
       if (editingEmployee?.id) {
         try {
-          const consents = await LGPDService.getUserConsents(editingEmployee.id, currentUnitId);
+          const consents = await LGPDService.getUserConsents(editingEmployee.id, currentIdUnidade);
           setEmployeeConsents(consents);
           
           // Atualizar formData com consentimentos existentes, preservando o anexo se houver
@@ -216,7 +242,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     };
     
     loadEmployeeConsents();
-  }, [editingEmployee?.id, currentUnitId]);
+  }, [editingEmployee?.id, currentIdUnidade]);
 
   // Carregar avaliações do funcionário selecionado
   useEffect(() => {
@@ -311,7 +337,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     departamento: '', cbo: '', data_admissao: '', birthDate: '',
     tipo_contrato: 'CLT', jornada_trabalho: '44h', regime_trabalho: 'PRESENCIAL',
     salario_base: 0, tipo_salario: 'MENSAL', status: 'ACTIVE',
-    unitId: currentUnitId, month: new Date().toISOString().slice(5, 7),
+    idUnidade: currentIdUnidade, month: new Date().toISOString().slice(5, 7),
     year: new Date().getFullYear().toString(),
     he50_qtd: 0, he100_qtd: 0, dsr_ativo: true, adic_noturno_qtd: 0,
     insalubridade_grau: 'NONE', periculosidade_ativo: false,
@@ -400,15 +426,24 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     return matchesSearch && matchesStatus && matchesType && matchesCargo;
   }).sort((a, b) => {
     const parseMatricula = (m: string) => {
-      const withYear = m.match(/F(\d+)\/(\d+)/);
+      if (!m) return { num: 9999999, ano: 9999 };
+      // Formato F01/2026 ou F01/2024
+      const withYear = m.match(/^F(\d+)\/(\d+)$/);
       if (withYear) return { num: parseInt(withYear[1]), ano: parseInt(withYear[2]) };
-      const noYear = m.match(/F(\d+)/);
+      // Formato F01 (sem ano)
+      const noYear = m.match(/^F(\d+)$/);
       if (noYear) return { num: parseInt(noYear[1]), ano: 0 };
-      return { num: 0, ano: 0 };
+      // Formato legado 2024003 → ano=2024, num=3
+      const legacy = m.match(/^(\d{4})(\d+)$/);
+      if (legacy) return { num: parseInt(legacy[2]), ano: parseInt(legacy[1]) };
+      // Qualquer número puro
+      const pure = m.match(/^(\d+)$/);
+      if (pure) return { num: parseInt(pure[1]), ano: 0 };
+      return { num: 9999999, ano: 9999 };
     };
 
-    const matA = parseMatricula(a.matricula);
-    const matB = parseMatricula(b.matricula);
+    const matA = parseMatricula(a.matricula || '');
+    const matB = parseMatricula(b.matricula || '');
 
     if (matA.ano !== matB.ano) return matA.ano - matB.ano;
     return matA.num - matB.num;
@@ -438,14 +473,14 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
   const handleDocumentUpload = async (file: File, docType: string) => {
     if (!file) return;
-    if (!StorageService.validateFileSize(file, 10)) {
+    if (!ArmazenamentoService.validateFileSize(file, 10)) {
       alert('Arquivo muito grande. Máximo 10MB.');
       return;
     }
     const employeeId = editingEmployee?.id || `E${Date.now()}`;
     setUploadingDoc(docType);
     try {
-      const url = await StorageService.uploadEmployeeDocument(currentUnitId, employeeId, docType, file);
+      const url = await ArmazenamentoService.uploadEmployeeDocument(currentIdUnidade, employeeId, docType, file);
       const field = `doc_${docType}` as any;
       setFormData(prev => ({ ...prev, [field]: url, documentos_upload: url }));
       alert(`Documento "${docType}" enviado com sucesso.`);
@@ -496,43 +531,66 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     }
 
     try {
-      // Simular salvamento (em produção usaria AvaliacaoService)
-      console.log('💾 Salvando avaliação:', avaliacao);
-      
-      // Atualizar lista de avaliações do funcionário no estado compartilhado
+      console.log('💾 Salvando avaliação no banco:', avaliacao);
+
+      // Normalizar idUnidade
+      const idUnidadeMap: Record<string, string> = {
+        'u-sede':  '00000000-0000-0000-0000-000000000001',
+        'u-matriz':'00000000-0000-0000-0000-000000000001',
+      };
+      const apiIdUnidade = idUnidadeMap[currentIdUnidade] || currentIdUnidade;
+
+      const payload = {
+        ...avaliacao,
+        idUnidade: apiIdUnidade,
+        employeeId: editingEmployee?.id,
+        employeeName: editingEmployee?.employeeName || formData.employeeName,
+        evaluationDate: avaliacao.evaluationDate || new Date().toISOString().split('T')[0],
+        evaluationType: avaliacao.evaluationType || 'ANNUAL',
+        overallScore: avaliacao.overallScore || 0,
+        overallRating: avaliacao.overallRating || 'SATISFACTORY',
+        competencies: avaliacao.competencies || [],
+        goals: avaliacao.goals || [],
+        strengths: Array.isArray(avaliacao.strengths) ? avaliacao.strengths.join('; ') : (avaliacao.strengths || null),
+        improvements: Array.isArray(avaliacao.improvementAreas) ? avaliacao.improvementAreas.join('; ') : (avaliacao.improvementAreas || null),
+        actionPlan: avaliacao.comments || null,
+        status: avaliacao.status || 'COMPLETED',
+        evaluatedBy: avaliacao.evaluatorName || null,
+      };
+
+      // Salvar no banco via AvaliacaoService
+      await AvaliacaoService.saveEvaluation(payload);
+
+      // Atualizar estado local para refletir imediatamente
       if (editingEmployee?.id) {
         const currentEvals = evaluations[editingEmployee.id] || [];
         const existingIndex = currentEvals.findIndex(e => e.id === avaliacao.id);
-        
         if (existingIndex >= 0) {
-          // Atualizar avaliação existente
-          const updatedEvaluations = [...currentEvals];
-          updatedEvaluations[existingIndex] = avaliacao;
-          setEvaluations(prev => ({ ...prev, [editingEmployee.id]: updatedEvaluations }));
+          const updated = [...currentEvals];
+          updated[existingIndex] = { ...avaliacao, overallScore: payload.overallScore };
+          setEvaluations(prev => ({ ...prev, [editingEmployee.id]: updated }));
         } else {
-          // Adicionar nova avaliação
-          setEvaluations(prev => ({ ...prev, [editingEmployee.id]: [...currentEvals, avaliacao] }));
+          setEvaluations(prev => ({ ...prev, [editingEmployee.id]: [...currentEvals, { ...avaliacao, overallScore: payload.overallScore }] }));
         }
       }
-      
-      // Registrar auditoria
-      await logAction('CREATE', 'AvaliacaoDesempenho', avaliacao.id, `Avaliação de desempenho registrada para ${formData.employeeName}`, {
+
+      await logAction('CREATE', 'AvaliacaoDesempenho', avaliacao.id, `Avaliação registrada para ${formData.employeeName}`, {
         evaluationType: avaliacao.evaluationType,
         overallScore: avaliacao.overallScore,
         status: avaliacao.status
       });
 
-      console.log('✅ Avaliação salva com sucesso');
+      console.log('✅ Avaliação salva no banco com sucesso');
       alert('Avaliação salva com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Erro ao salvar avaliação:', error);
-      alert('Erro ao salvar avaliação. Tente novamente.');
+      alert('Erro ao salvar avaliação: ' + (error.message || 'Verifique o console.'));
     }
   };
 
   const handleGenerateLGPDReport = async () => {
     try {
-      const report = await LGPDService.generateConsentReport(currentUnitId);
+      const report = await LGPDService.generateConsentReport(currentIdUnidade);
       setLgpdReport(report);
       
       // Exportar relatório em JSON
@@ -583,9 +641,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
         ...formData,
         id: employeeId,
         matricula: generatedMatricula,
-        unitId: currentUnitId,
-        createdAt: editingEmployee?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        idUnidade: currentIdUnidade,
+        criado: editingEmployee?.criado || editingEmployee?.createdAt || new Date().toISOString(),
+        atualizado: new Date().toISOString()
       };
 
       console.log("📋 Dados do funcionário preparados:", { 
@@ -603,13 +661,13 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
       // Registrar auditoria
       if (editingEmployee) {
         await logAction('UPDATE', 'Employee', employeeData.id, employeeData.employeeName, { 
-          action: `${user?.name || 'Usuário'} alterou o cadastro do funcionário ${employeeData.employeeName}`,
+          action: `${user?.nome || 'Usuário'} alterou o cadastro do funcionário ${employeeData.employeeName}`,
           changedFields: getChangedEmployeeFields(editingEmployee, formData)
         });
         console.log("🔍 Auditoria: Atualização de funcionário registrada");
       } else {
         await logAction('CREATE', 'Employee', employeeData.id, employeeData.employeeName, { 
-          action: `${user?.name || 'Usuário'} cadastrou novo funcionário: ${employeeData.employeeName}`
+          action: `${user?.nome || 'Usuário'} cadastrou novo funcionário: ${employeeData.employeeName}`
         });
         console.log("🔍 Auditoria: Criação de funcionário registrada");
       }
@@ -624,7 +682,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
           id: savedId,
           matricula: generatedMatricula,
           employeeName: employeeData.employeeName,
-          unitId: currentUnitId,
+          idUnidade: currentIdUnidade,
         } as Payroll;
         setEmployees(prev => [...prev, newEmployee]);
         console.log("✅ Funcionário adicionado na lista global");
@@ -657,7 +715,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
       funcao: emp.funcao || emp.cargo || '',
       data_admissao: emp.data_admissao || (emp as any).admissionDate || '',
       salario_base: emp.salario_base ?? (emp as any).salary ?? 0,
-      unitId: emp.unitId || currentUnitId,
+      idUnidade: emp.idUnidade || currentIdUnidade,
       status: emp.status || 'ACTIVE',
       tipo_contrato: emp.tipo_contrato || 'CLT',
       tipo_salario: (emp as any).tipo_salario || 'MENSAL',
@@ -700,7 +758,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     setFormData({
       ...getInitialFormData(),
       matricula: generatedMatricula,
-      unitId: currentUnitId,
+      idUnidade: currentIdUnidade,
       vale_alimentacao: taxConfig.defaultVA || 0,
       vale_refeicao: taxConfig.defaultVR || 0,
     });
@@ -713,22 +771,35 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     if (cleanCEP.length !== 8) return;
     setIsSearchingCEP(true);
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
-      const data = await response.json();
-      if (!data.erro) {
+      // Tenta via proxy do backend (evita CORS)
+      let data: any = null;
+      try {
+        const res = await fetch(`/api/cep/${cleanCEP}`);
+        if (res.ok) data = await res.json();
+      } catch { /* fallback para ViaCEP direto */ }
+
+      // Fallback: ViaCEP direto
+      if (!data) {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+        if (res.ok) data = await res.json();
+      }
+
+      if (data && !data.erro && !data.error) {
         setFormData(prev => ({
           ...prev,
           address: {
             ...prev.address!,
-            zipCode: data.cep,
-            street: data.logradouro,
+            zipCode: data.cep || cep,
+            street: data.logradouro || data.street || '',
             complement: prev.address?.complement || '',
-            neighborhood: data.bairro,
-            city: data.localidade,
-            state: data.uf,
+            neighborhood: data.bairro || data.neighborhood || '',
+            city: data.localidade || data.city || '',
+            state: data.uf || data.state || '',
             country: prev.address?.country || 'Brasil'
           }
         }));
+      } else {
+        alert('CEP não encontrado. Verifique e tente novamente.');
       }
     } catch (e) { console.error(e); }
     finally { setIsSearchingCEP(false); }
@@ -851,8 +922,88 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     }
   };
 
-  const handleDirectPrint = () => {
-    window.print();
+  const handleDirectPrint = async () => {
+    const selectedEmployees = employees.filter(e => selectedIds.includes(e.id));
+    if (selectedEmployees.length === 0) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const images: { dataUrl: string; widthPx: number; heightPx: number }[] = [];
+
+      for (const emp of selectedEmployees) {
+        const el = document.getElementById(`badge-to-print-${emp.id}`);
+        if (!el) continue;
+        const canvas = await html2canvas(el, {
+          scale: 4,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          imageTimeout: 0,
+        });
+        images.push({
+          dataUrl: canvas.toDataURL('image/png', 1.0),
+          widthPx: canvas.width,
+          heightPx: canvas.height,
+        });
+      }
+
+      if (images.length === 0) {
+        alert('Nenhum crachá encontrado para imprimir.');
+        return;
+      }
+
+      // Converte px → mm e monta HTML com imagens (sem depender de CSS externo)
+      const imgsHtml = images.map(img => {
+        const widthMm  = (img.widthPx  / 4 / 96) * 25.4;
+        const heightMm = (img.heightPx / 4 / 96) * 25.4;
+        return `<img src="${img.dataUrl}" style="display:block;width:${widthMm}mm;height:${heightMm}mm;margin:0 auto;" />`;
+      }).join('\n');
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Crachás de Funcionários</title>
+  <style>
+    @page { size: A4; margin: 35mm 12mm 15mm 12mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body { margin: 0; padding: 0; background: white; }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8mm;
+      padding: 12mm 0 0 0;
+    }
+    img {
+      display: block;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+  ${imgsHtml}
+</body>
+</html>`;
+
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) {
+        alert('Habilite pop-ups para imprimir.');
+        return;
+      }
+      win.document.write(html);
+      win.document.close();
+      win.onload = () => {
+        win.focus();
+        setTimeout(() => win.print(), 600);
+      };
+    } catch (e) {
+      console.error('Erro ao preparar impressão:', e);
+      alert('Erro ao preparar impressão. Tente usar o botão "Baixar PDF".');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const toggleSelectAll = () => {
@@ -1125,7 +1276,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                       <InputField label="Telefone Fixo" value={formData.telefone} onChange={(v:any) => setFormData({...formData, telefone: v})} placeholder="(00) 0000-0000" icon={Phone} />
                       <InputField label="Celular (WhatsApp)" value={formData.celular} onChange={(v:any) => setFormData({...formData, celular: v})} placeholder="(00) 00000-0000" icon={Phone} />
                       <InputField label="Contato de Emergência" value={formData.emergency_contact} onChange={(v:any) => setFormData({...formData, emergency_contact: v})} placeholder="Nome e Telefone" icon={Phone} />
-                      <InputField label="Vínculo com Membro (ID)" value={formData.membro_id} onChange={(v:any) => setFormData({...formData, membro_id: v})} placeholder="ID do Membro (se houver)" icon={Users2} />
+                      <InputField label="Vínculo com Membro (ID)" value={formData.id_membro} onChange={(v:any) => setFormData({...formData, id_membro: v})} placeholder="ID do Membro (se houver)" icon={Users2} />
                       <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                         <div className="flex items-center gap-3 pt-6">
                           <input type="checkbox" checked={formData.is_pcd} onChange={(e) => setFormData({...formData, is_pcd: e.target.checked})} className="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500" />
@@ -1257,7 +1408,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                     <InputField label="Saldo Atual" value={formData.bh_saldo_atual} onChange={(v:any) => setFormData({...formData, bh_saldo_atual: v})} placeholder="Ex: 08:00" />
                     <InputField label="Período de Apuração" value={formData.bh_periodo_apuracao} onChange={(v:any) => setFormData({...formData, bh_periodo_apuracao: v})} placeholder="Ex: Mensal" />
                     <InputField label="Data Início Acordo" value={formData.bh_data_inicio_acordo} onChange={(v:any) => setFormData({...formData, bh_data_inicio_acordo: v})} type="date" />
-                    <InputField label="Data Fim Acordo" value={formData.bh_data_fim_acordo} onChange={(v:any) => setFormData({...formData, bh_data_fim_acordo: v})} type="date" />
+                    <InputField label="Data Fim Acordo" value={formData.bh_data_final_acordo} onChange={(v:any) => setFormData({...formData, bh_data_final_acordo: v})} type="date" />
                     <InputField label="Limite de Saldo" value={formData.bh_limite_saldo} onChange={(v:any) => setFormData({...formData, bh_limite_saldo: v})} placeholder="Ex: 40h" />
                     <InputField label="Período de Compensação" value={formData.bh_periodo_compensacao} onChange={(v:any) => setFormData({...formData, bh_periodo_compensacao: v})} placeholder="Ex: 6 meses" />
                     <InputField label="Multiplicador HE Dia" value={formData.bh_multiplicador_diurna} onChange={(v:any) => setFormData({...formData, bh_multiplicador_diurna: v})} placeholder="Ex: 1.5" />
@@ -1531,11 +1682,17 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                       
                       <div className="space-y-3">
                         <button
-                          onClick={() => setShowTermoLGPD(true)}
+                          onClick={() => {
+                            if (!currentUnitData?.nome || !currentUnitData?.cnpj) {
+                              alert('Aguarde o carregamento dos dados da instituição ou verifique a conexão com o servidor.');
+                              return;
+                            }
+                            setShowTermoLGPD(true);
+                          }}
                           className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                         >
                           <FileText size={16} />
-                          Imprimir Termo LGPD
+                          {currentUnitData ? 'Imprimir Termo LGPD' : 'Carregando dados da Instituição...'}
                         </button>
                         
                         <div className="relative mt-3">
@@ -1728,7 +1885,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
               {activeTab === 'historico_salarial' && (
                 <HistoricoSalarial 
                   employees={employees}
-                  currentUnitId={currentUnitId}
+                  currentIdUnidade={currentIdUnidade}
                   user={user}
                   selectedEmployee={editingEmployee || undefined}
                 />
@@ -1819,8 +1976,11 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                           if (!n.value || !b.value) return alert("Preencha nome e data de nascimento.");
                           const newDep: Dependent = {
                             id: Math.random().toString(36).substr(2, 9),
+                            nome: n.value,
                             name: n.value,
+                            parentesco: r.value as any,
                             relationship: r.value as any,
+                            dataNascimento: b.value,
                             birthDate: b.value
                           };
                           setFormData({...formData, dependentes_lista: [...(formData.dependentes_lista || []), newDep]});
@@ -1956,31 +2116,46 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
                   <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6">
                     <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2"><CreditCard size={14}/> Upload de Documentos</h4>
+                    <p className="text-[10px] text-slate-400">Os documentos são convertidos para base64 e salvos no banco de dados junto com o cadastro do funcionário. Clique em "Salvar Registro" após anexar.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {[
                         { key: 'rg_cnh', label: 'Documento de Identidade (RG/CNH)', icon: <Camera size={24} className="mb-2"/> },
                         { key: 'comprovante_residencia', label: 'Comprovante de Residência', icon: <FileText size={24} className="mb-2"/> },
                         { key: 'ctps', label: 'Carteira de Trabalho (CTPS)', icon: <Briefcase size={24} className="mb-2"/> },
                         { key: 'aso', label: 'ASO (Atestado de Saúde Ocupacional)', icon: <Heart size={24} className="mb-2"/> },
-                      ].map(doc => (
-                        <label key={doc.key} className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 bg-white hover:bg-slate-50 transition-all cursor-pointer relative">
-                          {uploadingDoc === doc.key ? (
-                            <Loader2 size={24} className="mb-2 animate-spin text-indigo-500"/>
-                          ) : (formData as any)[`doc_${doc.key}`] ? (
-                            <CheckCircle2 size={24} className="mb-2 text-emerald-500"/>
-                          ) : doc.icon}
-                          <span className="text-xs font-bold text-slate-600 text-center">{doc.label}</span>
-                          <span className="text-[10px] uppercase tracking-widest mt-1">
-                            {(formData as any)[`doc_${doc.key}`] ? 'Enviado ✓' : 'PDF, JPG, PNG — máx 10MB'}
-                          </span>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            onChange={e => { const f = e.target.files?.[0]; if (f) handleDocumentUpload(f, doc.key); }}
-                          />
-                        </label>
-                      ))}
+                      ].map(doc => {
+                        const docUrl = (formData as any)[`doc_${doc.key}`];
+                        return (
+                          <div key={doc.key} className="space-y-2">
+                            <label className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 bg-white hover:bg-slate-50 transition-all cursor-pointer relative ${docUrl ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'}`}>
+                              {uploadingDoc === doc.key ? (
+                                <Loader2 size={24} className="mb-2 animate-spin text-indigo-500"/>
+                              ) : docUrl ? (
+                                <CheckCircle2 size={24} className="mb-2 text-emerald-500"/>
+                              ) : doc.icon}
+                              <span className="text-xs font-bold text-slate-600 text-center">{doc.label}</span>
+                              <span className="text-[10px] uppercase tracking-widest mt-1">
+                                {docUrl ? 'Anexado ✓ — clique para substituir' : 'PDF, JPG, PNG — máx 10MB'}
+                              </span>
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                onChange={e => { const f = e.target.files?.[0]; if (f) handleDocumentUpload(f, doc.key); }}
+                              />
+                            </label>
+                            {docUrl && (
+                              <button
+                                type="button"
+                                onClick={() => openDocumentInNewTab(docUrl, `${doc.label} — ${formData.employeeName || 'Funcionário'}`)}
+                                className="w-full py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-[10px] font-black uppercase hover:bg-emerald-100 transition-all flex items-center justify-center gap-1.5"
+                              >
+                                <FileText size={12}/> Visualizar Documento
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -2042,9 +2217,11 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                 </button>
                 <button 
                   onClick={handleDirectPrint}
-                  className="flex-1 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase text-xs flex items-center justify-center gap-2 shadow-xl hover:bg-indigo-700 transition-all"
+                  disabled={isGeneratingPDF}
+                  className="flex-1 py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase text-xs flex items-center justify-center gap-2 shadow-xl hover:bg-indigo-700 transition-all disabled:opacity-60"
                 >
-                  <Printer size={18}/> Imprimir Crachás Agora
+                  {isGeneratingPDF ? <Loader2 size={18} className="animate-spin"/> : <Printer size={18}/>}
+                  {isGeneratingPDF ? 'Preparando impressão...' : 'Imprimir Crachás Agora'}
                 </button>
               </div>
            </div>
@@ -2121,56 +2298,27 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
             })()
           }
           telefone={formData.phone || editingEmployee.phone || (formData as any).telefone || (editingEmployee as any).telefone || (formData as any).celular || (editingEmployee as any).celular}
-          igrejaNome={currentUnitData?.name || DADOS_IGREJA_PADRAO.nome}
-          igrejaCnpj={currentUnitData?.cnpj || DADOS_IGREJA_PADRAO.cnpj}
+          igrejaNome={currentUnitData?.nome || ''}
+          igrejaCnpj={currentUnitData?.cnpj || ''}
           igrejaEndereco={
             (() => {
-              const unitData = currentUnitData as any;
-              const baseAddress =
-                currentUnitData?.address ||
-                unitData?.endereco ||
-                unitData?.logradouro ||
-                unitData?.street ||
-                unitData?.address?.street ||
-                '';
-              const addressNumber =
-                unitData?.numero ||
-                unitData?.number ||
-                unitData?.address?.number ||
-                '';
-              const neighborhood =
-                unitData?.bairro ||
-                unitData?.neighborhood ||
-                unitData?.district ||
-                unitData?.address?.neighborhood ||
-                '';
-              const city =
-                currentUnitData?.city ||
-                unitData?.cidade ||
-                unitData?.address?.city ||
-                '';
-              const state =
-                currentUnitData?.state ||
-                unitData?.estado ||
-                unitData?.uf ||
-                unitData?.address?.state ||
-                '';
+              const baseAddress = currentUnitData?.enderecoLinha1 || currentUnitData?.endereco || '';
+              const city = currentUnitData?.cidade || '';
+              const state = currentUnitData?.estado || '';
               const cityState = [city, state].filter(Boolean).join('/');
-
-              return [
-                baseAddress ? `${baseAddress}${addressNumber ? `, ${addressNumber}` : ''}` : '',
-                neighborhood,
-                cityState
-              ].filter(Boolean).join(' - ') || DADOS_IGREJA_PADRAO.endereco;
+              return [baseAddress, cityState].filter(Boolean).join(' - ') || '';
             })()
           }
+          igrejaEnderecoLinha1={currentUnitData?.enderecoLinha1 || ''}
+          igrejaEnderecoLinha2={currentUnitData?.enderecoLinha2 || ''}
+          igrejaTelefone={currentUnitData?.telefone || ''}
           igrejaContato={
             (currentUnitData as any)?.email ||
             (currentUnitData as any)?.lgpdEmail ||
             (currentUnitData as any)?.contatoEmail ||
             (currentUnitData as any)?.responsavelEmail ||
             user?.email ||
-            DADOS_IGREJA_PADRAO.email
+            ''
           }
           consentimentos={{
             dataProcessing: formData.lgpdConsent?.dataProcessing,

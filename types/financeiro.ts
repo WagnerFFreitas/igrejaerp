@@ -7,7 +7,7 @@
  * Nomenclatura PT-BR alinhada ao schema PostgreSQL.
  */
 
-import { Transacao } from '../types';
+import { Transacao } from '../tipos';
 
 // ============================================================================
 // EXTENSÃO DE TRANSAÇÃO

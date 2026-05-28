@@ -24,7 +24,7 @@
 
 import { parseOFX, convertToTransaction, isDuplicate } from '../utils/ofxParser';
 import { ImportedTransaction, BankStatement, OFXImportResult } from '../utils/ofxParser';
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 /**
  * FORMATOS SUPORTADOS
@@ -41,7 +41,7 @@ export interface ImportResult {
   fileName: string;
   format: StatementFormat;
   statement?: BankStatement;
-  transactions?: Partial<Transaction>[];
+  transacoes?: Partial<Transaction>[];
   duplicates?: number;
   error?: string;
   warnings?: string[];
@@ -126,10 +126,10 @@ export class StatementImportService {
       }
       
       // 5. Converte transações importadas para Transaction
-      const transactions: Partial<Transaction>[] = [];
+      const transacoes: Partial<Transaction>[] = [];
       let duplicates = 0;
       
-      for (const imported of result.data.transactions) {
+      for (const imported of result.data.transacoes) {
         // Verifica duplicidade
         if (isDuplicate(imported, existingTransactions)) {
           duplicates++;
@@ -138,7 +138,7 @@ export class StatementImportService {
         
         // Converte
         const transaction = convertToTransaction(imported, accountId, unitId);
-        transactions.push(transaction);
+        transacoes.push(transaction);
       }
       
       // 6. Retorna resultado
@@ -147,7 +147,7 @@ export class StatementImportService {
         fileName: file.name,
         format,
         statement: result.data,
-        transactions,
+        transacoes,
         duplicates,
         warnings: result.warnings,
       };
@@ -229,24 +229,24 @@ export class StatementImportService {
    * Verifica se dados fazem sentido
    * 
    * PARÂMETROS:
-   * - transactions: Partial<Transaction>[]
+   * - transacoes: Partial<Transaction>[]
    * 
    * RETORNO:
    * { valid: boolean, errors: string[] }
    */
-  validateImportedData(transactions: Partial<Transaction>[]): {
+  validateImportedData(transacoes: Partial<Transaction>[]): {
     valid: boolean;
     errors: string[];
   } {
     const errors: string[] = [];
     
     // 1. Verifica se tem transações
-    if (transactions.length === 0) {
+    if (transacoes.length === 0) {
       errors.push('Nenhuma transação encontrada');
     }
     
     // 2. Valida cada transação
-    transactions.forEach((t, index) => {
+    transacoes.forEach((t, index) => {
       // Descrição obrigatória
       if (!t.description) {
         errors.push(`Transação ${index + 1}: Sem descrição`);
@@ -277,15 +277,15 @@ export class StatementImportService {
    * Separa transações por accountId
    * 
    * PARÂMETRO:
-   * - transactions: Transaction[]
+   * - transacoes: Transaction[]
    * 
    * RETORNO:
    * Map<string, Transaction[]> → accountId → transações
    */
-  groupByAccount(transactions: Transaction[]): Map<string, Transaction[]> {
+  groupByAccount(transacoes: Transaction[]): Map<string, Transaction[]> {
     const grouped = new Map<string, Transaction[]>();
     
-    transactions.forEach(t => {
+    transacoes.forEach(t => {
       const accountId = t.accountId || 'unknown';
       
       if (!grouped.has(accountId)) {
@@ -306,13 +306,13 @@ export class StatementImportService {
    * Pega só transações pendentes de conciliação
    * 
    * PARÂMETRO:
-   * - transactions: Transaction[]
+   * - transacoes: Transaction[]
    * 
    * RETORNO:
    * Transaction[] → Apenas não conciliadas
    */
-  filterNotConciliated(transactions: Transaction[]): Transaction[] {
-    return transactions.filter(t => !t.isConciliated);
+  filterNotConciliated(transacoes: Transaction[]): Transaction[] {
+    return transacoes.filter(t => !t.isConciliated);
   }
 
   /**
@@ -323,18 +323,18 @@ export class StatementImportService {
    * Quantas receitas e despesas
    * 
    * PARÂMETRO:
-   * - transactions: Transaction[]
+   * - transacoes: Transaction[]
    * 
    * RETORNO:
    * { income: number, expense: number, total: number }
    */
-  countByType(transactions: Transaction[]): {
+  countByType(transacoes: Transaction[]): {
     income: number;
     expense: number;
     total: number;
   } {
-    const income = transactions.filter(t => t.type === 'INCOME').length;
-    const expense = transactions.filter(t => t.type === 'EXPENSE').length;
+    const income = transacoes.filter(t => t.type === 'INCOME').length;
+    const expense = transacoes.filter(t => t.type === 'EXPENSE').length;
     
     return {
       income,

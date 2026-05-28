@@ -13,7 +13,12 @@
     "db:test": "node database/test-connection.js",
     "db:setup": "psql -h localhost -U desenvolvedor -d igrejaerp -f database/migration/postgres_schema.sql",
     "api:build": "cd api && npm run build",
-    "api:start": "cd api && npm start"
+    "api:start": "cd api && npm start",
+    "migracao:dry-run": "node scripts/renomear-arquivos.js --dry-run",
+    "migracao:renomear": "node scripts/renomear-arquivos.js",
+    "migracao:validar": "node scripts/validar-nomenclatura.js",
+    "migracao:substituir": "node scripts/substituir-nomenclatura.js --dry-run",
+    "migracao:executar": "node scripts/substituir-nomenclatura.js"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
@@ -32,6 +37,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.3",
     "@types/react-dom": "^19.2.3",

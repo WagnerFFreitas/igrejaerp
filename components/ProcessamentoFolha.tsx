@@ -19,17 +19,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calculator, Printer, Check, Edit3, DollarSign, ArrowDownRight, ArrowUpRight, Save, Loader2, RefreshCw, FileText, TrendingUp, Shield, Calendar, Lock, Unlock, AlertCircle, Download, Filter, Eye, X, Search } from 'lucide-react';
-import { dbService } from '../services/databaseService';
-import { exportService } from '../services/exportService';
-import { Payroll, PayrollInput, TaxConfig, PayrollPeriod } from '../types';
-import { payrollService } from '../services/payrollService';
+import { dbService } from '../services/bancoDadosService';
+import { exportService } from '../services/exportacaoService';
+import { Payroll, PayrollInput, TaxConfig, PayrollPeriod } from '../tipos';
+import { payrollService } from '../services/folhaService';
 import IndexedDBService from '../src/services/indexedDBService';
 import { DEFAULT_TAX_CONFIG } from '../constants';
 import { jsPDF } from 'jspdf';
-import AuthService from '../src/services/authService';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 interface ProcessamentoFolhaProps {
-  employees: Payroll[];
+  funcionarios: Payroll[];
   setEmployees: React.Dispatch<React.SetStateAction<Payroll[]>>;
   currentUnitId: string;
   user?: any;
@@ -42,9 +42,9 @@ interface ProcessamentoFolhaProps {
  * Define o bloco principal deste arquivo (processamento folha).
  */
 
-export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employees, setEmployees, currentUnitId, user }) => {
-  const canWritePayroll = AuthService.hasPermission(user, 'payroll', 'write');
-  const canManagePayroll = AuthService.hasPermission(user, 'payroll', 'manage');
+export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ funcionarios, setEmployees, currentUnitId, user }) => {
+  const canWritePayroll = AutenticacaoService.hasPermission(user, 'folha_pagamento', 'write');
+  const canManagePayroll = AutenticacaoService.hasPermission(user, 'folha_pagamento', 'manage');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Payroll | null>(null);
@@ -116,7 +116,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         setEmployees(latestEmployees);
         
         // Carregar períodos
-        const periods = await IndexedDBService.get('payroll_periods', 'all') || [];
+        const periods = await IndexedDBService.get('periodos_folha', 'all') || [];
         setPeriodHistory(periods);
         
         // Verificar período atual
@@ -157,8 +157,8 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
   }, [currentUnitId]);
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === employees.length) setSelectedIds([]);
-    else setSelectedIds(employees.map(e => e.id));
+    if (selectedIds.length === funcionarios.length) setSelectedIds([]);
+    else setSelectedIds(funcionarios.map(e => e.id));
   };
 
   const handleSyncData = async () => {
@@ -179,10 +179,10 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
     setIsRangeModalOpen(false);
     
     console.log('🔍 Filtrando funcionários. Faixa:', rangeStart, rangeEnd);
-    console.log('👥 Total de funcionários:', employees.length);
+    console.log('👥 Total de funcionários:', funcionarios.length);
 
-    // Filter employees based on range
-    const filteredEmployees = employees.filter(emp => {
+    // Filter funcionarios based on range
+    const filteredEmployees = funcionarios.filter(emp => {
       const matricula = (emp.matricula || '').toString().trim();
       const start = rangeStart.toString().trim();
       const end = rangeEnd.toString().trim();
@@ -210,7 +210,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
       return true;
     });
 
-    // Sort filtered employees by matricula
+    // Sort filtered funcionarios by matricula
     filteredEmployees.sort((a, b) => {
       const parse = (m: string) => {
         const withYear = m.match(/F(\d+)\/(\d+)/);
@@ -586,7 +586,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         createdBy: 'system'
       };
       
-      await IndexedDBService.save('payroll_periods', newPeriod);
+      await IndexedDBService.save('periodos_folha', newPeriod);
       setCurrentPeriod(newPeriod);
       setPeriodHistory([...periodHistory, newPeriod]);
       alert('Período aberto com sucesso!');
@@ -608,14 +608,14 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         ...currentPeriod,
         status: 'CLOSED' as const,
         closedAt: new Date().toISOString(),
-        totalEmployees: employees.length,
-        totalPayroll: employees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0),
-        totalINSS: employees.reduce((sum, emp) => sum + (emp.inss || 0), 0),
-        totalFGTS: employees.reduce((sum, emp) => sum + (emp.total_proventos || 0) * 0.08, 0),
-        totalIRRF: employees.reduce((sum, emp) => sum + (emp.irrf || 0), 0)
+        totalEmployees: funcionarios.length,
+        totalPayroll: funcionarios.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0),
+        totalINSS: funcionarios.reduce((sum, emp) => sum + (emp.inss || 0), 0),
+        totalFGTS: funcionarios.reduce((sum, emp) => sum + (emp.total_proventos || 0) * 0.08, 0),
+        totalIRRF: funcionarios.reduce((sum, emp) => sum + (emp.irrf || 0), 0)
       };
       
-      await IndexedDBService.save('payroll_periods', updatedPeriod);
+      await IndexedDBService.save('periodos_folha', updatedPeriod);
       setCurrentPeriod(updatedPeriod);
       
       // Atualizar histórico
@@ -630,7 +630,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
   };
 
   const getFilteredEmployees = () => {
-    return employees.filter(emp => {
+    return funcionarios.filter(emp => {
       const matchesSearch = !searchTerm || 
         emp.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.matricula?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -653,8 +653,8 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
       const currentYear = new Date().getFullYear();
       
       console.log(`📊 Gerando holerites para ${selectedEmployees.length} funcionários...`);
-      const units = await dbService.getUnits();
-      const currentUnit = units.find(u => u.id === currentUnitId);
+      const unidades = await dbService.getUnits();
+      const currentUnit = unidades.find(u => u.id === currentUnitId);
 
       const payrollsToExport = selectedEmployees.map(emp => ({
         ...emp,
@@ -689,7 +689,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
               name: emp.employeeName,
               salary: emp.salario_base || 0,
               workHours: 220,
-              dependents: emp.dependentes_lista || [],
+              dependentes: emp.dependentes_lista || [],
               regime: 'CLT',
               idUnidade: emp.idUnidade,
               cpf: emp.cpf || '',
@@ -717,7 +717,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
             mealAllowance: emp.va_ativo ? (emp.vale_alimentacao || 0) : 0,
             mealTicket: emp.vr_ativo ? (emp.vale_refeicao || 0) : 0,
             transport: emp.vt_ativo ? (emp.vale_transporte_total || 0) : 0,
-            pharmacy: emp.vale_farmacia || 0,
+            farmacia: emp.vale_farmacia || 0,
             lifeInsurance: emp.seguro_vida || 0,
             advance: emp.adiantamento || 0,
             consignado: emp.consignado || 0,
@@ -747,7 +747,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
 
       alert(`Folha processada com sucesso para ${processedResults.length} funcionários.`);
       
-      const updatedEmployees = employees.map(emp => {
+      const updatedEmployees = funcionarios.map(emp => {
         const processed = processedResults.find(p => p.id === emp.id);
         return processed || emp;
       });
@@ -843,7 +843,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
           name: editingEmployee.employeeName,
           salary: editingEmployee.salario_base || 0,
           workHours: 220,
-          dependents: editingEmployee.dependentes_lista || [],
+          dependentes: editingEmployee.dependentes_lista || [],
           regime: 'CLT',
           cpf: editingEmployee.cpf || '',
           pis: editingEmployee.pis || '',
@@ -868,7 +868,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         mealAllowance: editingEmployee.va_ativo ? (editingEmployee.vale_alimentacao || 0) : 0,
         mealTicket: editingEmployee.vr_ativo ? (editingEmployee.vale_refeicao || 0) : 0,
         transport: editingEmployee.vt_ativo ? (editingEmployee.vale_transporte_total || 0) : 0,
-        pharmacy: editingEmployee.vale_farmacia || 0,
+        farmacia: editingEmployee.vale_farmacia || 0,
         lifeInsurance: editingEmployee.seguro_vida || 0,
         advance: editingEmployee.adiantamento || 0,
         consignado: editingEmployee.consignado || 0,
@@ -1009,19 +1009,19 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100">
            <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">Total Proventos</p>
            <p className="text-2xl font-black text-emerald-900">
-             R$ {employees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+             R$ {funcionarios.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
            </p>
         </div>
         <div className="bg-rose-50 p-6 rounded-[2rem] border border-rose-100">
            <p className="text-[10px] font-black text-rose-600 uppercase mb-1">Total Descontos</p>
            <p className="text-2xl font-black text-rose-900">
-             R$ {employees.reduce((sum, emp) => sum + (emp.total_descontos || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+             R$ {funcionarios.reduce((sum, emp) => sum + (emp.total_descontos || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
            </p>
         </div>
         <div className="bg-slate-900 p-6 rounded-[2rem] shadow-xl">
            <p className="text-[10px] font-black text-indigo-300 uppercase mb-1">Custo Patronal Estimado</p>
            <p className="text-2xl font-black text-white">
-             R$ {(employees.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0) * 1.28).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+             R$ {(funcionarios.reduce((sum, emp) => sum + (emp.total_proventos || 0), 0) * 1.28).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
            </p>
         </div>
       </div>
@@ -1032,7 +1032,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
             <tr>
               <th className="px-6 py-4 w-12 text-center">
                 <div onClick={toggleSelectAll} className="cursor-pointer mx-auto flex items-center justify-center">
-                   {selectedIds.length === employees.length && employees.length > 0 ? <Check className="text-indigo-600" size={16}/> : <div className="w-4 h-4 border-2 border-slate-200 rounded"/>}
+                   {selectedIds.length === funcionarios.length && funcionarios.length > 0 ? <Check className="text-indigo-600" size={16}/> : <div className="w-4 h-4 border-2 border-slate-200 rounded"/>}
                 </div>
               </th>
               <th className="px-4 py-4">Cadastro</th>
@@ -1044,7 +1044,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-xs">
-            {[...employees].sort((a, b) => {
+            {[...funcionarios].sort((a, b) => {
               const parse = (m: string) => {
                 const withYear = m.match(/F(\d+)\/(\d+)/);
                 if (withYear) return { num: parseInt(withYear[1]), ano: parseInt(withYear[2]) };

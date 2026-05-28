@@ -23,13 +23,13 @@ import {
   ShieldAlert, Fingerprint, RefreshCw, MapPin, FileText, Percent, 
   AlertCircle, CheckCircle2, Trash2, Globe, DatabaseZap, CloudDownload, Users
 } from 'lucide-react';
-import { UserAuth, TaxConfig, Member, Payroll, Employee } from '../types';
+import { UserAuth, TaxConfig, Member, Payroll, Employee } from '../tipos';
 import { DEFAULT_TAX_CONFIG } from '../constants';
-import CryptoService from '../src/services/cryptoService';
+import CriptografiaService from '../src/services/criptografiaService';
 import IndexedDBService from '../src/services/indexedDBService';
-import { dbService } from '../services/databaseService';
+import { dbService } from '../services/bancoDadosService';
 import { ThemeSettings } from './ConfiguracoesTheme';
-import AuthService from '../src/services/authService';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 interface ConfiguracoesProps {
   user: UserAuth;
@@ -47,8 +47,8 @@ type ConfigTab = 'backup' | 'fiscal' | 'certificado' | 'tabelas' | 'theme';
 export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
   const isDeveloper = user.role === 'DEVELOPER';
   const canEditConfig =
-    AuthService.hasPermission(user as any, 'settings', 'write') ||
-    AuthService.hasPermission(user as any, 'settings', 'manage');
+    AutenticacaoService.hasPermission(user as any, 'settings', 'write') ||
+    AutenticacaoService.hasPermission(user as any, 'settings', 'manage');
   const [activeTab, setActiveTab] = useState<ConfigTab>('backup');
   const [taxConfig, setTaxConfig] = useState<TaxConfig>(DEFAULT_TAX_CONFIG);
   const [isLoadingConfig, setIsLoadingConfig] = useState(false);
@@ -85,10 +85,10 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       });
 
       // 2. Atualizar todos os funcionários com os novos valores padrão de VA e VR
-      const employees = await dbService.getEmployees(user.idUnidade);
+      const funcionarios = await dbService.getEmployees(user.idUnidade);
       let updatedCount = 0;
 
-      for (const emp of employees) {
+      for (const emp of funcionarios) {
         // Atualizar apenas se o funcionário tiver o benefício ativo
         // Ou talvez o usuário queira que atualize de qualquer forma?
         // "ALTERE DE TODOS OS FUNCIONARIOS"
@@ -131,7 +131,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       
       // Limpar cache local para forçar busca do Firebase
       await IndexedDBService.clear('members');
-      await IndexedDBService.clear('employees');
+      await IndexedDBService.clear('funcionarios');
       
       // Buscar dados atualizados do Firebase
       const members = await dbService.getMembers(idUnidade);
@@ -149,12 +149,12 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         }
       }
       
-      const employees = await dbService.getEmployees(idUnidade);
-      console.log("🔍 Funcionários encontrados:", employees.length);
+      const funcionarios = await dbService.getEmployees(idUnidade);
+      console.log("🔍 Funcionários encontrados:", funcionarios.length);
       const employeeNames = new Map<string, string>(); // Map name -> id
       const duplicateEmployees: string[] = [];
       
-      for (const emp of employees) {
+      for (const emp of funcionarios) {
         const normalizedName = emp.employeeName.trim().toLowerCase();
         if (employeeNames.has(normalizedName)) {
           console.log("⚠️ Duplicata encontrada (funcionário):", emp.employeeName, emp.id);
@@ -188,7 +188,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       
       // Limpar cache local novamente para forçar recarregamento limpo
       await IndexedDBService.clear('members');
-      await IndexedDBService.clear('employees');
+      await IndexedDBService.clear('funcionarios');
       
       alert(`✅ Limpeza concluída! Foram removidos ${duplicateMembers.length} membros e ${duplicateEmployees.length} funcionários duplicados.`);
       window.location.reload();
@@ -217,13 +217,13 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         },
         data: {
           members: [],
-          transactions: [],
-          accounts: [],
-          employees: [],
-          assets: [],
+          transacoes: [],
+          contas_bancarias: [],
+          funcionarios: [],
+          patrimonios: [],
           leaves: [],
-          payroll: [],
-          units: [],
+          folha_pagamento: [],
+          unidades: [],
           system_config: []
         }
       };
@@ -245,36 +245,36 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       console.log("📂 Buscando dados do IndexedDB...");
       
       const members = await getFromIndexedDB('members');
-      const transactions = await getFromIndexedDB('transactions');
-      const accounts = await getFromIndexedDB('accounts');
-      const employees = await getFromIndexedDB('employees');
-      const assets = await getFromIndexedDB('assets');
+      const transacoes = await getFromIndexedDB('transacoes');
+      const contas_bancarias = await getFromIndexedDB('contas_bancarias');
+      const funcionarios = await getFromIndexedDB('funcionarios');
+      const patrimonios = await getFromIndexedDB('patrimonios');
       const leaves = await getFromIndexedDB('leaves');
-      const payroll = await getFromIndexedDB('payroll');
-      const units = await getFromIndexedDB('units');
+      const folha_pagamento = await getFromIndexedDB('folha_pagamento');
+      const unidades = await getFromIndexedDB('unidades');
       const system_config = await getFromIndexedDB('system_config');
 
       backupData.data.members = members;
-      backupData.data.transactions = transactions;
-      backupData.data.accounts = accounts;
-      backupData.data.employees = employees;
-      backupData.data.assets = assets;
+      backupData.data.transacoes = transacoes;
+      backupData.data.contas_bancarias = contas_bancarias;
+      backupData.data.funcionarios = funcionarios;
+      backupData.data.patrimonios = patrimonios;
       backupData.data.leaves = leaves;
-      backupData.data.payroll = payroll;
-      backupData.data.units = units;
+      backupData.data.folha_pagamento = folha_pagamento;
+      backupData.data.unidades = unidades;
       backupData.data.system_config = system_config;
 
       // Estatísticas do backup
       const stats = {
         totalItems: 0,
         members: members.length,
-        transactions: transactions.length,
-        accounts: accounts.length,
-        employees: employees.length,
-        assets: assets.length,
+        transacoes: transacoes.length,
+        contas_bancarias: contas_bancarias.length,
+        funcionarios: funcionarios.length,
+        patrimonios: patrimonios.length,
         leaves: leaves.length,
-        payroll: payroll.length,
-        units: units.length,
+        folha_pagamento: folha_pagamento.length,
+        unidades: unidades.length,
         system_config: system_config.length
       };
       
@@ -307,7 +307,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       URL.revokeObjectURL(url);
 
       // Alert de sucesso
-      alert(`✅ Backup concluído!\n\n📊 Estatísticas:\n• Membros: ${stats.members}\n• Transações: ${stats.transactions}\n• Contas: ${stats.accounts}\n• Funcionários: ${stats.employees}\n• Ativos: ${stats.assets}\n• Folhas: ${stats.leaves}\n• Folha de Pagamento: ${stats.payroll}\n• Unidades: ${stats.units}\n• Configurações: ${stats.system_config}\n• Total: ${stats.totalItems} itens\n\n🔒 Segurança: Dados sensíveis foram mascarados para proteção`);
+      alert(`✅ Backup concluído!\n\n📊 Estatísticas:\n• Membros: ${stats.members}\n• Transações: ${stats.transacoes}\n• Contas: ${stats.contas_bancarias}\n• Funcionários: ${stats.funcionarios}\n• Ativos: ${stats.patrimonios}\n• Folhas: ${stats.leaves}\n• Folha de Pagamento: ${stats.folha_pagamento}\n• Unidades: ${stats.unidades}\n• Configurações: ${stats.system_config}\n• Total: ${stats.totalItems} itens\n\n🔒 Segurança: Dados sensíveis foram mascarados para proteção`);
 
     } catch (error) {
       console.error("❌ Erro ao gerar backup:", error);
@@ -337,7 +337,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         }
 
         // Confirmar restauração
-        const confirmMessage = `⚠️ ATENÇÃO: Isso irá SUBSTITUIR todos os dados atuais!\n\n📊 Dados do backup:\n• Membros: ${backup.statistics.members}\n• Transações: ${backup.statistics.transactions}\n• Contas: ${backup.statistics.accounts}\n• Funcionários: ${backup.statistics.employees}\n• Ativos: ${backup.statistics.assets}\n• Folhas: ${backup.statistics.leaves}\n• Folha de Pagamento: ${backup.statistics.payroll}\n• Unidades: ${backup.statistics.units}\n• Configurações: ${backup.statistics.system_config}\n• Total: ${backup.statistics.totalItems} itens\n\nDeseja continuar?`;
+        const confirmMessage = `⚠️ ATENÇÃO: Isso irá SUBSTITUIR todos os dados atuais!\n\n📊 Dados do backup:\n• Membros: ${backup.statistics.members}\n• Transações: ${backup.statistics.transacoes}\n• Contas: ${backup.statistics.contas_bancarias}\n• Funcionários: ${backup.statistics.funcionarios}\n• Ativos: ${backup.statistics.patrimonios}\n• Folhas: ${backup.statistics.leaves}\n• Folha de Pagamento: ${backup.statistics.folha_pagamento}\n• Unidades: ${backup.statistics.unidades}\n• Configurações: ${backup.statistics.system_config}\n• Total: ${backup.statistics.totalItems} itens\n\nDeseja continuar?`;
         
         if (!confirm(confirmMessage)) {
           console.log("❌ Restore cancelado pelo usuário");
@@ -370,13 +370,13 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         
         const results = {
           members: await saveToIndexedDB('members', backup.data.members || []),
-          transactions: await saveToIndexedDB('transactions', backup.data.transactions || []),
-          accounts: await saveToIndexedDB('accounts', backup.data.accounts || []),
-          employees: await saveToIndexedDB('employees', backup.data.employees || []),
-          assets: await saveToIndexedDB('assets', backup.data.assets || []),
+          transacoes: await saveToIndexedDB('transacoes', backup.data.transacoes || []),
+          contas_bancarias: await saveToIndexedDB('contas_bancarias', backup.data.contas_bancarias || []),
+          funcionarios: await saveToIndexedDB('funcionarios', backup.data.funcionarios || []),
+          patrimonios: await saveToIndexedDB('patrimonios', backup.data.patrimonios || []),
           leaves: await saveToIndexedDB('leaves', backup.data.leaves || []),
-          payroll: await saveToIndexedDB('payroll', backup.data.payroll || []),
-          units: await saveToIndexedDB('units', backup.data.units || []),
+          folha_pagamento: await saveToIndexedDB('folha_pagamento', backup.data.folha_pagamento || []),
+          unidades: await saveToIndexedDB('unidades', backup.data.unidades || []),
           system_config: await saveToIndexedDB('system_config', backup.data.system_config || [])
         };
 
@@ -385,7 +385,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         console.log("✅ Restore concluído:", results);
         console.log("🔄 Recarregando página para atualizar dados...");
         
-        alert(`✅ Restore concluído com sucesso!\n\n📊 Itens restaurados:\n• Membros: ${results.members}\n• Transações: ${results.transactions}\n• Contas: ${results.accounts}\n• Funcionários: ${results.employees}\n• Ativos: ${results.assets}\n• Folhas: ${results.leaves}\n• Folha de Pagamento: ${results.payroll}\n• Unidades: ${results.units}\n• Configurações: ${results.system_config}\n• Total: ${totalRestored} itens\n\n🔄 A página será recarregada para atualizar os dados.`);
+        alert(`✅ Restore concluído com sucesso!\n\n📊 Itens restaurados:\n• Membros: ${results.members}\n• Transações: ${results.transacoes}\n• Contas: ${results.contas_bancarias}\n• Funcionários: ${results.funcionarios}\n• Ativos: ${results.patrimonios}\n• Folhas: ${results.leaves}\n• Folha de Pagamento: ${results.folha_pagamento}\n• Unidades: ${results.unidades}\n• Configurações: ${results.system_config}\n• Total: ${totalRestored} itens\n\n🔄 A página será recarregada para atualizar os dados.`);
         
         // Recarregar página para atualizar os dados
         setTimeout(() => {
@@ -488,7 +488,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
               <div className="w-full lg:w-1/3 space-y-4">
                 <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Selecione o Estado para Sincronizar</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-indigo-400">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-eventos_igreja-none text-indigo-400">
                     <Globe size={18} />
                   </div>
                   <select 
