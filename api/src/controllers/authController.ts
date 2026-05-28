@@ -32,6 +32,69 @@ import { createAuditLog } from '../services/auditService';
 
 const db = Database.getInstance();
 
+const PERFIL_TO_ROLE: Record<string, string> = {
+  DESENVOLVEDOR: 'DEVELOPER',
+  ADMIN: 'ADMIN',
+  SECRETARIO: 'SECRETARY',
+  TESOUREIRO: 'TREASURER',
+  PASTOR: 'PASTOR',
+  RH: 'RH',
+  FINANCEIRO: 'FINANCEIRO',
+  MEMBRO: 'MEMBER',
+};
+
+const ROLE_TO_PERFIL: Record<string, string> = {
+  DEVELOPER: 'DESENVOLVEDOR',
+  ADMIN: 'ADMIN',
+  SECRETARY: 'SECRETARIO',
+  TREASURER: 'TESOUREIRO',
+  PASTOR: 'PASTOR',
+  RH: 'RH',
+  FINANCEIRO: 'FINANCEIRO',
+  MEMBER: 'MEMBRO',
+};
+
+function normalizePerfil(roleOrPerfil: string): string {
+  const value = String(roleOrPerfil || 'MEMBRO').toUpperCase();
+  return ROLE_TO_PERFIL[value] || value;
+}
+
+function mapAuthUser(row: any) {
+  const role = PERFIL_TO_ROLE[row.perfil] || row.perfil;
+  return {
+    ...row,
+    id: row.id_usuario,
+    idUnidade: row.id_unidade,
+    email: row.email || row.login,
+    role,
+    perfil: row.perfil,
+    username: row.login || row.email?.split('@')[0],
+    status: row.esta_ativo ? 'ACTIVE' : 'INACTIVE',
+  };
+}
+
+const AUTH_USER_SELECT = `
+  SELECT
+    u.id_usuario,
+    u.id_usuario AS id,
+    u.id_pessoa,
+    u.login,
+    u.senha_hash,
+    u.perfil,
+    u.esta_ativo,
+    u.ultimo_login,
+    u.criado_em AS criado,
+    u.atualizado_em AS atualizado,
+    p.nome AS nome_usuario,
+    p.nome AS name,
+    p.email,
+    p.id_unidade,
+    un.nome AS unit_name
+  FROM usuarios u
+  JOIN pessoas p ON p.id_pessoa = u.id_pessoa
+  LEFT JOIN unidades un ON un.id_unidade = p.id_unidade
+`;
+
 export class AuthController {
   private async safeCreateAuditLog(payload: Parameters<typeof createAuditLog>[0]): Promise<void> {
     try {
@@ -72,21 +135,19 @@ export class AuthController {
         });
       }
 
-      // Buscar usuário no banco
       const result = await db.query(`
-        SELECT u.*, un.nome_unidade as unit_name 
-        FROM users u 
-        JOIN units un ON u.unit_id = un.id 
+        ${AUTH_USER_SELECT}
         WHERE (
-          LOWER(u.email) = LOWER($1) OR
-          LOWER(SPLIT_PART(u.email, '@', 1)) = LOWER($2) OR
-          u.nome_usuario ILIKE $2
+          LOWER(p.email) = LOWER($1) OR
+          LOWER(u.login) = LOWER($1) OR
+          LOWER(SPLIT_PART(p.email, '@', 1)) = LOWER($2) OR
+          p.nome ILIKE $2
         ) AND COALESCE(u.esta_ativo, true) = true
       `, [resolvedIdentifier, identifier]);
 
       if (result.rows.length === 0) {
         await this.safeCreateAuditLog({
-          unitId: '',
+          idUnidade: '',
           userId: '',
           userName: rawIdentifier || 'desconhecido',
           action: 'USER_LOGIN',
@@ -113,24 +174,24 @@ export class AuthController {
       let isPasswordValid = false;
       
       // Se a senha não está hasheada (formato antigo do Firebase)
-      if (password === user.hash_senha) {
+      if (password === user.senha_hash) {
         isPasswordValid = true;
         // Atualizar para hash bcrypt
         const hashedPassword = await bcrypt.hash(password, 10);
-        await db.query('UPDATE users SET hash_senha = $1 WHERE id = $2', [hashedPassword, user.id]);
+        await db.query('UPDATE usuarios SET senha_hash = $1 WHERE id_usuario = $2', [hashedPassword, user.id_usuario]);
       } else {
         // Verificar com bcrypt
-        isPasswordValid = await bcrypt.compare(password, user.hash_senha);
+        isPasswordValid = await bcrypt.compare(password, user.senha_hash);
       }
 
       if (!isPasswordValid) {
         await this.safeCreateAuditLog({
-          unitId: user.unit_id,
-          userId: user.id,
+          idUnidade: user.id_unidade,
+          userId: user.id_usuario,
           userName: user.nome_usuario,
           action: 'USER_LOGIN',
           entidade: 'User',
-          entidadeId: user.id,
+          entidadeId: user.id_usuario,
           entidadeName: user.nome_usuario,
           date: new Date().toISOString(),
           ip: this.getRequestIp(req),
@@ -151,8 +212,8 @@ export class AuthController {
       const tokenPayload = {
         userId: user.id,
         email: user.email,
-        role: user.role,
-        unitId: user.unit_id
+        role: PERFIL_TO_ROLE[user.perfil] || user.perfil,
+        idUnidade: user.id_unidade
       };
       
       const token = jwt.sign(
@@ -164,14 +225,14 @@ export class AuthController {
       const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
 
       // Atualizar último login
-      await db.query('UPDATE users SET ultimo_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+      await db.query('UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP WHERE id_usuario = $1', [user.id_usuario]);
       await this.safeCreateAuditLog({
-        unitId: user.unit_id,
-        userId: user.id,
+        idUnidade: user.id_unidade,
+        userId: user.id_usuario,
         userName: user.nome_usuario,
         action: 'USER_LOGIN',
         entidade: 'User',
-        entidadeId: user.id,
+        entidadeId: user.id_usuario,
         entidadeName: user.nome_usuario,
         date: new Date().toISOString(),
         ip: this.getRequestIp(req),
@@ -180,16 +241,14 @@ export class AuthController {
       });
 
       // Retornar dados do usuário (sem senha)
-      const { hash_senha, ...userWithoutPassword } = user;
+      const { senha_hash, hash_senha, ...userWithoutPassword } = user;
+      const mappedAuthUser = mapAuthUser(userWithoutPassword);
       
-      // Mapear unit_id para unitId para compatibilidade com o frontend
       const mappedUser = {
-        ...userWithoutPassword,
-        unitId: userWithoutPassword.unit_id,
-        username: userWithoutPassword.email?.split('@')[0] || identifier,
-        status: userWithoutPassword.esta_ativo ? 'ACTIVE' : 'INACTIVE',
-        permissions: await getEffectivePermissions(user.id, user.role),
-        unrestrictedAccess: user.role === 'DEVELOPER'
+        ...mappedAuthUser,
+        username: mappedAuthUser.username || identifier,
+        permissions: await getEffectivePermissions(mappedAuthUser.id, mappedAuthUser.role),
+        unrestrictedAccess: mappedAuthUser.role === 'DEVELOPER'
       };
 
       res.json({
@@ -211,10 +270,12 @@ export class AuthController {
 
   async register(req: Request, res: Response) {
     try {
-      const { name, username, email, password, role, unitId } = req.body;
+      const { name, username, email, password, role, perfil, idUnidade } = req.body;
       const normalizedEmail = String(email || '').trim().toLowerCase();
+      const login = String(username || normalizedEmail).trim().toLowerCase();
+      const dbPerfil = normalizePerfil(perfil || role);
 
-      if (!name || !normalizedEmail || !password || !role || !unitId) {
+      if (!name || !normalizedEmail || !password || !dbPerfil || !idUnidade) {
         return res.status(400).json({
           error: {
             message: 'Todos os campos são obrigatórios',
@@ -225,8 +286,11 @@ export class AuthController {
 
       // Verificar se usuário já existe
       const existingUser = await db.query(
-        'SELECT id FROM users WHERE LOWER(email) = $1',
-        [normalizedEmail]
+        `SELECT u.id_usuario
+         FROM usuarios u
+         JOIN pessoas p ON p.id_pessoa = u.id_pessoa
+         WHERE LOWER(p.email) = $1 OR LOWER(u.login) = $2`,
+        [normalizedEmail, login]
       );
 
       if (existingUser.rows.length > 0) {
@@ -239,7 +303,7 @@ export class AuthController {
       }
 
       // Verificar se unidade existe
-      const unitExists = await db.query('SELECT id FROM units WHERE id = $1', [unitId]);
+      const unitExists = await db.query('SELECT id_unidade FROM unidades WHERE id_unidade = $1', [idUnidade]);
       if (unitExists.rows.length === 0) {
         return res.status(400).json({
           error: {
@@ -252,21 +316,29 @@ export class AuthController {
       // Hash da senha
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Criar usuário
-      const result = await db.query(`
-        INSERT INTO users (user.nome_usuario, email, hash_senha, role, unit_id, esta_ativo)
-        VALUES ($1, $2, $3, $4, $5, true)
-        RETURNING id, user.nome_usuario, email, role, unit_id, esta_ativo, criado
-      `, [name, normalizedEmail, hashedPassword, role, unitId]);
+      const pessoaResult = await db.query(
+        `INSERT INTO pessoas (id_unidade, nome, email, ativo)
+         VALUES ($1, $2, $3, true)
+         RETURNING id_pessoa`,
+        [idUnidade, name, normalizedEmail]
+      );
 
-      const newUser = result.rows[0];
+      const result = await db.query(`
+        INSERT INTO usuarios (id_pessoa, login, senha_hash, perfil, esta_ativo)
+        VALUES ($1, $2, $3, $4::perfil_usuario, true)
+        RETURNING id_usuario
+      `, [pessoaResult.rows[0].id_pessoa, login, hashedPassword, dbPerfil]);
+
+      const userResult = await db.query(`${AUTH_USER_SELECT} WHERE u.id_usuario = $1`, [result.rows[0].id_usuario]);
+
+      const newUser = mapAuthUser(userResult.rows[0]);
 
       // Gerar token
       const tokenPayload = { 
         userId: newUser.id, 
         email: newUser.email, 
         role: newUser.role,
-        unitId: newUser.unit_id 
+        idUnidade: newUser.idUnidade
       };
       
       const token = jwt.sign(
@@ -277,9 +349,6 @@ export class AuthController {
       res.status(201).json({
         user: {
           ...newUser,
-          unitId: newUser.unit_id,
-          username: normalizedEmail.split('@')[0],
-          status: newUser.esta_ativo ? 'ACTIVE' : 'INACTIVE',
           permissions: await getEffectivePermissions(newUser.id, newUser.role),
           unrestrictedAccess: newUser.role === 'DEVELOPER'
         },
@@ -315,10 +384,8 @@ export class AuthController {
 
       // Buscar usuário atualizado
       const result = await db.query(`
-        SELECT u.*, un.nome_unidade as unit_name 
-        FROM users u 
-        JOIN units un ON u.unit_id = un.id 
-        WHERE u.id = $1 AND COALESCE(u.esta_ativo, true) = true
+        ${AUTH_USER_SELECT}
+        WHERE u.id_usuario = $1 AND COALESCE(u.esta_ativo, true) = true
       `, [decoded.userId]);
 
       if (result.rows.length === 0) {
@@ -330,16 +397,13 @@ export class AuthController {
         });
       }
 
-      const { hash_senha, ...userWithoutPassword } = result.rows[0];
+      const { senha_hash, hash_senha, ...userWithoutPassword } = result.rows[0];
+      const mappedAuthUser = mapAuthUser(userWithoutPassword);
       
-      // Mapear unit_id para unitId para compatibilidade com o frontend
       const mappedUser = {
-        ...userWithoutPassword,
-        unitId: userWithoutPassword.unit_id,
-        username: userWithoutPassword.email?.split('@')[0] || userWithoutPassword.name,
-        status: userWithoutPassword.esta_ativo ? 'ACTIVE' : 'INACTIVE',
-        permissions: await getEffectivePermissions(userWithoutPassword.id, userWithoutPassword.role),
-        unrestrictedAccess: userWithoutPassword.role === 'DEVELOPER'
+        ...mappedAuthUser,
+        permissions: await getEffectivePermissions(mappedAuthUser.id, mappedAuthUser.role),
+        unrestrictedAccess: mappedAuthUser.role === 'DEVELOPER'
       };
 
       res.json({

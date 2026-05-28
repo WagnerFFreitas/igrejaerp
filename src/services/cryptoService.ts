@@ -153,7 +153,7 @@ export class CryptoService {
       // Mantém dados não sensíveis
       name: member.name,
       id: member.id,
-      unitId: member.unitId,
+      idUnidade: member.idUnidade,
       situacao: member.situacao,
       cargo_igreja: member.cargo_igreja,
       ministerio: member.ministerio,
@@ -186,7 +186,7 @@ export class CryptoService {
       // Mantém dados não sensíveis
       employee_name: employee.employee_name,
       id: employee.id,
-      unitId: employee.unitId,
+      idUnidade: employee.idUnidade,
       cargo: employee.cargo,
       funcao: employee.funcao,
       departamento: employee.departamento,
@@ -232,7 +232,7 @@ export class CryptoService {
       salario_familia: this.maskMonetaryValue(payroll.salario_familia),
       // Mantém dados não sensíveis
       id: payroll.id,
-      unitId: payroll.unitId,
+      idUnidade: payroll.idUnidade,
       employeeName: payroll.employeeName,
       matricula: payroll.matricula,
       cargo: payroll.cargo,

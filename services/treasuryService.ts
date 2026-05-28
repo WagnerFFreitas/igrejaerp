@@ -152,42 +152,45 @@ class TreasuryService {
       const data = await apiClient.get<any[]>('/accounts', { unitId });
       return (data || []).map((a: any) => ({
         id: a.id,
-        unitId: a.unitId,
-        nome: a.name,
-        tipo: a.type === 'SAVINGS'
+        unitId: a.unitId || unitId,
+        nome: a.name || a.nome || 'Conta sem nome',
+        tipo: a.type === 'SAVINGS' || a.tipo === 'CONTA_POUPANCA'
           ? 'CONTA_POUPANCA'
-          : a.type === 'INVESTMENT'
+          : a.type === 'INVESTMENT' || a.tipo === 'CONTA_INVESTIMENTO'
             ? 'CONTA_INVESTIMENTO'
-            : a.type === 'CASH'
+            : a.type === 'CASH' || a.tipo === 'CARTEIRA_DIGITAL'
               ? 'CARTEIRA_DIGITAL'
               : 'CONTA_CORRENTE',
-        banco: a.bankName || a.name || 'Conta Interna',
-        agencia: a.agencyNumber || '0000',
-        numero: a.accountNumber || '000000',
-        digito: undefined,
-        saldo: a.currentBalance || 0,
-        saldoBloqueado: 0,
-        saldoDisponivel: a.currentBalance || 0,
-        moeda: 'BRL',
-        dataAbertura: a.createdAt || new Date().toISOString(),
-        dataEncerramento: undefined,
-        titular: 'Igreja',
-        documentos: [],
-        limites: {
-          saqueDiario: 0,
-          transferenciaDiaria: 0,
+        banco: a.bankName || a.banco || 'Conta Interna',
+        agencia: a.agencyNumber || a.agencia || '0000',
+        numero: a.accountNumber || a.numero || '000000',
+        digito: a.digito || undefined,
+        saldo: a.currentBalance || a.saldo || 0,
+        saldoBloqueado: a.saldoBloqueado || 0,
+        saldoDisponivel: a.currentBalance || a.saldoDisponivel || a.saldo || 0,
+        moeda: a.moeda || 'BRL',
+        status: a.status === 'INACTIVE' ? 'INATIVA' : a.status === 'BLOCKED' ? 'BLOQUEADA' : 'ATIVA',
+        dataAbertura: a.dataAbertura || a.createdAt || new Date().toISOString(),
+        titular: a.titular || 'Igreja',
+        documentos: a.documentos || [],
+        limites: a.limites || {
+          saqueDiario: 10000,
+          transferenciaDiaria: 50000,
           emprestimoMaximo: 0,
         },
-        taxas: {
+        taxas: a.taxas || {
           manutencao: 0,
           saque: 0,
           transferencia: 0,
         },
-        alertas: { saldoMinimo: a.minimumBalance || 0, saldoMaximo: 9999999, movimentacaoSuspeita: false },
-        status: a.status === 'INACTIVE' ? 'INATIVA' : a.status === 'BLOCKED' ? 'BLOQUEADA' : 'ATIVA',
-        createdBy: 'system',
-        createdAt: a.createdAt,
-        updatedAt: a.updatedAt,
+        alertas: a.alertas || {
+          saldoMinimo: a.minimumBalance || 0,
+          saldoMaximo: 9999999,
+          movimentacaoSuspeita: false,
+        },
+        createdBy: a.createdBy || 'system',
+        createdAt: a.createdAt || new Date().toISOString(),
+        updatedAt: a.updatedAt || new Date().toISOString(),
       }));
     } catch (e) {
       console.error('❌ getTreasuryAccounts:', e);

@@ -31,7 +31,7 @@ import * as path from 'path';
 
 const tableDefinitions: Record<string, string[]> = {
   membros: [
-    'id', 'unidade_id', 'matricula', 'nome', 'cpf', 'rg', 'email', 'telefone', 'whatsapp', 'profissao',
+    'id', 'id_unidade', 'matricula', 'nome', 'cpf', 'rg', 'email', 'telefone', 'whatsapp', 'profissao',
     'funcao', 'status', 'data_nascimento', 'sexo', 'estado_civil', 'nome_conjuge', 'data_casamento',
     'nome_pai', 'nome_mae', 'tipo_sanguineo', 'contato_emergencia', 'cep', 'logradouro',
     'numero', 'complemento', 'bairro', 'cidade', 'estado', 'data_conversao', 'local_conversao',
@@ -41,17 +41,17 @@ const tableDefinitions: Record<string, string[]> = {
     'participa_campanhas', 'banco', 'agencia_bancaria', 'conta_bancaria', 'chave_pix', 'observacoes',
     'necessidades_especiais', 'talentos', 'tags', 'familia_id', 'avatar', 'cell_group',
     'dons_espirituais', 'escolaridade', 'is_pcd', 'tipo_deficiencia', 'celular',
-    'lgpd_consent', 'criado', 'atualizado', 'profile_data'
+    'lgpd_consent', 'criado', 'atualizado', 'dados_perfil'
   ],
   transactions: [
-    'id', 'unidade_id', 'descricao', 'valor', 'data_transacao', 'tipo_transacao', 'situacao', 'data_competencia', 'categoria',
-    'centro_custo', 'natureza_operacao', 'conta_id', 'membro_id', 'forma_pagamento', 'projeto_id',
+    'id', 'id_unidade', 'descricao', 'valor', 'data_transacao', 'tipo_transacao', 'situacao', 'data_competencia', 'categoria',
+    'centro_custo', 'natureza_operacao', 'id_conta', 'id_membro', 'forma_pagamento', 'projeto_id',
     'nome_fornecedor', 'data_vencimento', 'data_pagamento', 'valor_pago', 'valor_restante', 'parcelado',
-    'numero_parcela', 'total_parcelas', 'pai_id', 'conciliado', 'conciliation_date',
+    'numero_parcela', 'total_parcelas', 'id_transacao_origem', 'conciliado', 'conciliation_date',
     'notes', 'external_id', 'criado', 'atualizado'
   ],
   employees: [
-    'id', 'unit_id', 'nome', 'cpf', 'rg', 'ctps', 'ctps_serie', 'pis',
+    'id', 'id_unidade', 'nome', 'cpf', 'rg', 'ctps', 'ctps_serie', 'pis',
     'birth_date', 'sexo', 'estado_civil', 'blood_type', 'email', 'telefone', 'celular',
     'emergency_contact', 'naturalidade', 'escolaridade', 'raca_cor',
     'nome_mae', 'nome_pai', 'deficiencia', 'deficiencia_obs', 'avatar', 'observacoes_saude',
@@ -82,9 +82,9 @@ const tableDefinitions: Record<string, string[]> = {
     'esocial_teletrabalho', 'esocial_clausula_asseguratoria', 'esocial_sucessao_trab',
     'esocial_tipo_admissao', 'esocial_cnpj_anterior', 'esocial_matricula_anterior',
     'esocial_data_admissao_origem',
-    'ativo', 'criado', 'atualizado', 'profile_data'
+    'ativo', 'criado', 'atualizado', 'dados_perfil'
   ],
-  payroll_periods: ['id', 'unit_id', 'month', 'year', 'start_date', 'end_date', 'criado_por', 'notes', 'status'],
+  payroll_periods: ['id', 'id_unidade', 'month', 'year', 'start_date', 'end_date', 'criado_por', 'notes', 'status'],
   payroll_calculations: [
     'id', 'employee_id', 'competency_month', 'gross_salary',
     'base_salary', 'overtime', 'night_shift', 'hazard_pay', 'commission', 'bonuses', 'family_salary', 'other_allowances',
@@ -94,19 +94,19 @@ const tableDefinitions: Record<string, string[]> = {
     'inss_base', 'inss_rate', 'inss_value', 'irrf_base', 'irrf_rate', 'irrf_deduction', 'irrf_value', 'fgts_base', 'fgts_rate', 'fgts_value'
   ],
   assets: [
-    'id', 'unit_id', 'nome', 'descricao', 'categoria', 'data_aquisicao', 'valor_aquisicao', 'valor_atual',
+    'id', 'id_unidade', 'nome', 'descricao', 'categoria', 'data_aquisicao', 'valor_aquisicao', 'valor_atual',
     'taxa_depreciacao', 'metodo_depreciacao', 'valor_contabil_atual', 'depreciacao_acumulada', 'vida_util_meses',
     'localizacao', 'cep', 'logradouro', 'numero', 'complemento', 'bairro',
     'cidade', 'estado', 'situacao', 'condicao', 'numero_ativo', 'numero_serie', 'nota_fiscal_aquisicao',
     'marca', 'modelo', 'fornecedor', 'responsavel', 'criado', 'atualizado'
   ],
-  inventory_counts: ['id', 'unit_id', 'count_date', 'counted_by', 'status', 'total_assets', 'total_expected', 'started_at', 'completed_at', 'total_found', 'completion_percentage'],
+  inventory_counts: ['id', 'id_unidade', 'count_date', 'counted_by', 'status', 'total_assets', 'total_expected', 'started_at', 'completed_at', 'total_found', 'completion_percentage'],
   inventory_items: ['id', 'inventory_count_id', 'asset_id', 'asset_name', 'category', 'expected_quantity', 'counted_quantity', 'difference', 'condition', 'observations'],
-  church_events: ['id', 'unit_id', 'titulo', 'descricao', 'data_evento', 'hora_evento', 'local_evento', 'quantidade_presentes', 'type', 'eh_recorrente', 'padrao_recorrencia', 'data_fim_recorrencia', 'evento_pai_id', 'eh_evento_gerado', 'criado', 'atualizado'],
-  app_audit_logs: ['id', 'unit_id', 'usuario_id', 'nome_usuario', 'action', 'entidade', 'entidade_id', 'nome_entidade', 'data_evento', 'ip', 'agente_usuario', 'details', 'success', 'mensagem_erro', 'hash_anterior', 'hash', 'imutavel', 'criado'],
+  church_events: ['id', 'id_unidade', 'titulo', 'descricao', 'data_evento', 'hora_evento', 'local_evento', 'quantidade_presentes', 'type', 'eh_recorrente', 'padrao_recorrencia', 'data_final_recorrencia', 'evento_id_transacao_origem', 'eh_evento_gerado', 'criado', 'atualizado'],
+  app_audit_logs: ['id', 'id_unidade', 'usuario_id', 'nome_usuario', 'action', 'entidade', 'entidade_id', 'nome_entidade', 'data_evento', 'ip', 'agente_usuario', 'details', 'success', 'mensagem_erro', 'hash_anterior', 'hash', 'imutavel', 'criado'],
   app_permission_modules: ['id', 'codigo', 'name', 'categoria', 'descricao', 'criado', 'atualizado'],
-  app_role_permissions: ['id', 'role', 'codigo_modulo', 'pode_ler', 'pode_escrever', 'pode_excluir', 'pode_gerenciar', 'criado', 'atualizado'],
-  app_user_permissions: ['id', 'usuario_id', 'codigo_modulo', 'pode_ler', 'pode_escrever', 'pode_excluir', 'pode_gerenciar', 'criado', 'atualizado'],
+  app_role_permissions: ['id', 'role', 'codigo_modulo', 'ler', 'escrever', 'excluir', 'gerenciar', 'criado', 'atualizado'],
+  app_user_permissions: ['id', 'usuario_id', 'codigo_modulo', 'ler', 'escrever', 'excluir', 'gerenciar', 'criado', 'atualizado'],
 };
 
 async function checkDatabase() {

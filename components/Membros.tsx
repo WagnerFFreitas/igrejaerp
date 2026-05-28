@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import TermoVoluntariado from './TermoVoluntariado';
 import { TermoAdesaoLGPD } from './TermoAdesaoLGPD';
-import { Member, Transaction, FinancialAccount, MemberContribution, Dependent, UserAuth, LGPDConsent, LGPDPolicy, Unit } from '../types';
+import { Membro, Transacao, FinancialAccount, MemberContribution, Dependent, Usuario, LGPDConsent, LGPDPolicy, Unidade } from '../types';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { dbService } from '../services/databaseService';
@@ -42,13 +42,14 @@ import { UnitService } from '../src/services/unitService';
 type MemberTab = 'pessoais' | 'familia' | 'endereco' | 'vida_crista' | 'ministerios' | 'financeiro' | 'rh' | 'outros' | 'lgpd';
 
 interface MembrosProps {
-  members: Member[];
-  currentUnitId: string;
-  setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+  members: Membro[];
+  currentUnitId?: string;
+  currentIdUnidade?: string; // Para compatibilidade
+  setMembers: React.Dispatch<React.SetStateAction<Membro[]>>;
+  setTransactions: React.Dispatch<React.SetStateAction<Transacao[]>>;
   accounts: FinancialAccount[];
   setAccounts: React.Dispatch<React.SetStateAction<FinancialAccount[]>>;
-  user?: UserAuth;
+  user?: Usuario;
 }
 
 /**
@@ -87,7 +88,12 @@ const SelectField = ({ label, value, onChange, options, className = "" }: any) =
   </div>
 );
 
-export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMembers, setTransactions, accounts, setAccounts, user }) => {
+export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, currentIdUnidade, setMembers, setTransactions, accounts, setAccounts, user }) => {
+  // Debug: verificar props recebidas
+  console.log('🔍 Membros props:', { currentUnitId, currentIdUnidade, membersCount: members.length });
+  
+  // Usa currentUnitId se disponível, senão usa currentIdUnidade para compatibilidade
+  const effectiveUnitId = currentUnitId || currentIdUnidade || 'u-sede';
   const canWriteMembers = AuthService.hasPermission(user as any, 'members', 'write');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -97,18 +103,13 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
   const { logAction } = useAudit(user || null);
 
   // Função para identificar campos alterados
-  const getChangedFields = (original: Member, current: any) => {
+  const getChangedFields = (original: Membro, current: any) => {
     const changes: any = {};
-    const simpleFields: (keyof Member)[] = [
-      'nome', 'cpf', 'rg', 'email', 'telefone', 'whatsapp', 'profissao',
-      'funcao', 'status', 'nomePai', 'nomeMae', 'tipoSanguineo', 'contatoEmergencia',
-      'dataConversao', 'localConversao', 'dataBatismo', 'igrejaBatismo', 'pastorBatizador',
-      'batismoEspiritoSanto', 'dataMembro', 'igrejaOrigem', 'cursoDiscipulado', 'escolaBiblica',
-      'ministerioPrincipal', 'funcaoMinisterio', 'cargoEclesiastico', 'dataConsagracao',
-      'ehDizimista', 'ehOfertanteRegular', 'participaCampanhas', 'banco', 'agenciaBancaria',
-      'contaBancaria', 'chavePix', 'dataNascimento', 'sexo', 'estadoCivil', 'nomeConjuge',
-      'dataCasamento', 'talentos', 'cellGroup', 'observacoes', 'necessidadesEspeciais',
-      'familiaId', 'avatar'
+    const simpleFields: (keyof Membro)[] = [
+      'nome', 'cpf', 'rg', 'email', 'telefone', 'celular',
+      'situacao', 'data_conversao', 'data_batismo', 'data_ingresso',
+      'endereco', 'numero', 'bairro', 'cidade', 'estado', 'cep',
+      'observacoes', 'avatar'
     ];
 
     simpleFields.forEach(field => {
@@ -117,97 +118,40 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
       }
     });
 
-    // Comparação profunda para objetos
-    if (JSON.stringify(current.endereco) !== JSON.stringify(original.endereco)) {
-      changes.endereco = current.endereco;
-    }
-    
-    if (JSON.stringify(current.dependentes) !== JSON.stringify(original.dependentes)) {
-      changes.dependentes = current.dependentes;
-    }
-    
-    if (JSON.stringify(current.contribuicoes) !== JSON.stringify(original.contribuicoes)) {
-      changes.contribuicoes = current.contribuicoes;
-    }
-    
-    if (JSON.stringify(current.tags) !== JSON.stringify(original.tags)) {
-      changes.tags = current.tags;
-    }
-
-    if (JSON.stringify(current.lgpdConsent) !== JSON.stringify(original.lgpdConsent)) {
-      changes.lgpdConsent = current.lgpdConsent;
-    }
-
     return changes;
   };
 
-  const initialMemberForm: Partial<Member> = {
+  const initialMemberForm: Partial<Membro> = {
     nome: '',
-    unidadeId: '',
-    status: 'ACTIVE',
-    funcao: 'MEMBER',
+    id_unidade: '',
+    situacao: 'ACTIVE',
     matricula: '',
     cpf: '',
     rg: '',
     email: '',
     telefone: '',
-    whatsapp: '',
-    profissao: '',
-    nomePai: '',
-    nomeMae: '',
-    tipoSanguineo: '',
-    contatoEmergencia: '',
-    dataConversao: '',
-    localConversao: '',
-    dataBatismo: '',
-    igrejaBatismo: '',
-    pastorBatizador: '',
-    batismoEspiritoSanto: 'NAO',
-    dataMembro: '',
-    igrejaOrigem: '',
-    cursoDiscipulado: 'NAO_INICIADO',
-    escolaBiblica: 'NAO_FREQUENTA',
-    ministerioPrincipal: '',
-    funcaoMinisterio: '',
-    outrosMinisterios: [],
-    cargoEclesiastico: '',
-    dataConsagracao: '',
-    ehDizimista: false,
-    ehOfertanteRegular: false,
-    participaCampanhas: false,
-    contribuicoes: [],
-    banco: '',
-    agenciaBancaria: '',
-    contaBancaria: '',
-    chavePix: '',
-    dependentes: [],
-    dataNascimento: '',
+    celular: '',
+    data_conversao: '',
+    data_batismo: '',
+    data_ingresso: '',
+    dizimista: false,
+    ofertante: false,
+    data_nascimento: '',
     sexo: 'M',
-    estadoCivil: 'SINGLE',
-    nomeConjuge: '',
-    dataCasamento: '',
-    talentos: '',
-    cellGroup: '',
-    endereco: {
-      cep: '',
-      logradouro: '',
-      numero: '',
-      complemento: '',
-      bairro: '',
-      cidade: '',
-      estado: ''
-    },
+    estado_civil: 'SINGLE',
+    endereco: '',
+    numero: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    cep: '',
     observacoes: '',
-    necessidadesEspeciais: '',
-    tags: [],
-    familiaId: '',
-    avatar: '',
-    donsEspirituais: ''
+    avatar: ''
   };
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editingMember, setEditingMember] = useState<Membro | null>(null);
   const [activeTab, setActiveTab] = useState<MemberTab>('pessoais');
   const [isSearchingCEP, setIsSearchingCEP] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -231,10 +175,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
   const [lgpdReport, setLgpdReport] = useState<any>(null);
 
   // Estado da Unidade
-  const [currentUnitData, setCurrentUnitData] = useState<Unit | null>(null);
+  const [currentUnitData, setCurrentUnitData] = useState<Unidade | null>(null);
+  const [isLoadingUnit, setIsLoadingUnit] = useState(true);
 
   const stats = useMemo(() => ({
-    active: members.filter(m => m.status === 'ACTIVE').length,
+    active: members.filter(m => m.situacao === 'ACTIVE').length,
     leaders: members.filter(m => m.funcao === 'LEADER').length,
     visitors: members.filter(m => m.funcao === 'VISITOR').length,
     total: members.length
@@ -266,27 +211,54 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
   useEffect(() => {
     const fetchUnitAndPolicy = async () => {
       try {
-        const unitIdMap: Record<string, string> = {
+        setIsLoadingUnit(true);
+        const idUnidadeMap: Record<string, string> = {
           'u-sede': '00000000-0000-0000-0000-000000000001',
           'u-matriz': '00000000-0000-0000-0000-000000000001',
         };
-        const apiUnitId = unitIdMap[currentUnitId] || currentUnitId;
+        const apiIdUnidade = idUnidadeMap[effectiveUnitId] || effectiveUnitId;
+        
+        console.log('🔍 Iniciando busca de unidade:', { effectiveUnitId, apiIdUnidade });
+        
+        // Verificar se o ID é um UUID válido (formato básico)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!apiIdUnidade || apiIdUnidade === 'undefined' || !uuidRegex.test(apiIdUnidade)) {
+          console.warn('⚠️ ID de unidade inválido:', apiIdUnidade);
+          setCurrentUnitData(null);
+          setIsLoadingUnit(false);
+          return;
+        }
+        
+        console.log('🔍 Buscando unidade com ID:', apiIdUnidade);
         
         const [unitData, policyData] = await Promise.all([
-          UnitService.getUnitById(apiUnitId),
-          LGPDService.getCurrentPolicy(apiUnitId)
+          UnitService.getUnitById(apiIdUnidade),
+          LGPDService.getCurrentPolicy(apiIdUnidade).catch(err => {
+            console.warn('⚠️ Erro ao carregar política LGPD, usando padrão:', err);
+            return { version: '1.0', title: 'Política Padrão', isActive: true };
+          })
         ]);
         
+        console.log('✅ Dados da unidade recebidos:', unitData);
         setCurrentUnitData(unitData);
         setCurrentPolicy(policyData);
-        console.log('✅ Dados da unidade e política carregados:', { unit: unitData.name, policy: policyData.version });
+        console.log('✅ Dados da unidade e política carregados:', { unit: unitData?.nome || unitData?.name, policy: policyData.version });
+        console.log('🎯 currentUnitData definido como:', unitData);
       } catch (error) {
         console.error('❌ Erro ao carregar dados da unidade:', error);
+        setCurrentUnitData(null);
+      } finally {
+        setIsLoadingUnit(false);
       }
     };
 
-    fetchUnitAndPolicy();
-  }, [currentUnitId]);
+    if (effectiveUnitId && effectiveUnitId !== 'undefined') {
+      fetchUnitAndPolicy();
+    } else {
+      console.warn('⚠️ effectiveUnitId não definido, pulando busca de unidade');
+      setIsLoadingUnit(false);
+    }
+  }, [effectiveUnitId]);
 
   const openDocumentInNewTab = (dataUrl: string, fileName: string) => {
     if (!dataUrl) return;
@@ -360,7 +332,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     return date.toISOString().split('T')[0];
   };
 
-  const [formData, setFormData] = useState<Partial<Member>>(initialMemberForm);
+  const [formData, setFormData] = useState<Partial<Membro>>(initialMemberForm);
 
   // Só gera matrícula automaticamente para NOVOS membros (quando editingMember é null)
   // Durante edição, a matrícula deve ser preservada
@@ -375,7 +347,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
   useEffect(() => {
     const loadLGPDData = async () => {
       try {
-        const policy = await LGPDService.getCurrentPolicy(currentUnitId);
+        const policy = await LGPDService.getCurrentPolicy(effectiveUnitId);
         setCurrentPolicy(policy);
       } catch (error) {
         console.error('Erro ao carregar política LGPD:', error);
@@ -383,24 +355,24 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     };
     
     loadLGPDData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   // Carregar consentimentos do membro selecionado
   useEffect(() => {
     const loadMemberConsents = async () => {
-      if (editingMember?.id) {
+      if (editingMember?.id_membro) {
         try {
-          const consents = await LGPDService.getUserConsents(editingMember.id, currentUnitId);
+          const consents = await LGPDService.getUserConsents(editingMember.id_membro, effectiveUnitId);
           setMemberConsents(consents);
           
           // Atualizar formData com consentimentos existentes, preservando o anexo que já está no estado
           setFormData(prev => {
-            // Garante que lgpdConsent exista em prev antes de tentar espalhar
-            const existingLgpdConsent = (prev.lgpdConsent || {}) as Partial<NonNullable<Member['lgpdConsent']>>;
+            // Garante que lgpd_consent exista em prev antes de tentar espalhar
+            const existingLgpdConsent = (prev.lgpd_consent || {}) as Partial<NonNullable<Membro['lgpd_consent']>>;
             
             return { 
               ...prev, 
-              lgpdConsent: {
+              lgpd_consent: {
                 ...existingLgpdConsent, // Preserva o documentUrl e outros campos
                 dataProcessing: consents.find(c => c.consentType === 'DATA_PROCESSING')?.granted || false,
                 communication: consents.find(c => c.consentType === 'COMMUNICATION')?.granted || false,
@@ -418,7 +390,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     };
     
     loadMemberConsents();
-  }, [editingMember?.id, currentUnitId]);
+  }, [editingMember?.id_membro, currentIdUnidade]);
 
   const titheMap = useMemo(() => {
     const months = [];
@@ -458,10 +430,10 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
       (searchDigits !== '' && normalizeDigits(m.matricula || '').includes(searchDigits)) ||
       (searchDigits !== '' && normalizeDigits(m.cpf || '').includes(searchDigits));
 
-    const matchesStatus = !filterStatus || m.status === filterStatus;
+    const matchesStatus = !filterStatus || m.situacao === filterStatus;
     const matchesRole = !filterRole || m.funcao === filterRole;
-    const matchesMinistry = !filterMinistry || m.ministerioPrincipal === filterMinistry;
-    const matchesTithable = !filterTithable || (filterTithable === 'SIM' ? m.ehDizimista : !m.ehDizimista);
+    const matchesMinistry = !filterMinistry || m.ministerio_principal === filterMinistry;
+    const matchesTithable = !filterTithable || (filterTithable === 'SIM' ? m.dizimista : !m.dizimista);
 
     // Se searchTerm estiver vazio, matchesSearch deve ser sempre true
     const finalSearchMatch = searchTerm === '' ? true : matchesSearch;
@@ -498,20 +470,18 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
         const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
         if (res.ok) data = await res.json();
       }
-
       if (data && !data.erro && !data.error) {
+        console.log('📍 Dados do CEP recebidos:', data);
         setFormData(prev => ({
           ...prev,
-          endereco: {
-            ...prev.endereco!,
-            logradouro: data.logradouro || data.street || '',
-            bairro: data.bairro || data.neighborhood || '',
-            cidade: data.localidade || data.city || '',
-            estado: data.uf || data.state || '',
-            cep: data.cep || cep
-          }
+          endereco: data.logradouro || data.street || '',
+          bairro: data.bairro || data.neighborhood || '',
+          cidade: data.localidade || data.city || '',
+          estado: data.uf || data.state || '',
+          cep: data.cep || cep
         }));
       } else {
+        console.error('❌ CEP não encontrado');
         alert('CEP não encontrado. Verifique e tente novamente.');
       }
     } catch (e) {
@@ -528,12 +498,12 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
       // Atualizar formData com os consentimentos
       setFormData(prev => ({
         ...prev,
-        lgpdConsent: {
-          ...(prev.lgpdConsent || {}),
-          dataProcessing: consent.consentType === 'DATA_PROCESSING' ? consent.granted : (prev.lgpdConsent?.dataProcessing || false),
-          communication: consent.consentType === 'COMMUNICATION' ? consent.granted : (prev.lgpdConsent?.communication || false),
-          marketing: consent.consentType === 'MARKETING' ? consent.granted : (prev.lgpdConsent?.marketing || false),
-          financial: consent.consentType === 'FINANCIAL' ? consent.granted : (prev.lgpdConsent?.financial || false),
+        lgpd_consent: {
+          ...(prev.lgpd_consent || {}),
+          dataProcessing: consent.consentType === 'DATA_PROCESSING' ? consent.granted : (prev.lgpd_consent?.dataProcessing || false),
+          communication: consent.consentType === 'COMMUNICATION' ? consent.granted : (prev.lgpd_consent?.communication || false),
+          marketing: consent.consentType === 'MARKETING' ? consent.granted : (prev.lgpd_consent?.marketing || false),
+          financial: consent.consentType === 'FINANCIAL' ? consent.granted : (prev.lgpd_consent?.financial || false),
           consentDate: consent.consentDate,
           policyVersion: consent.policyVersion
           // documentUrl é preservado pelo spread
@@ -559,7 +529,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
 
   const handleGenerateLGPDReport = async () => {
     try {
-      const report = await LGPDService.generateConsentReport(currentUnitId);
+      const report = await LGPDService.generateConsentReport(effectiveUnitId);
       setLgpdReport(report);
       
       // Exportar relatório em JSON
@@ -607,7 +577,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     
     try {
       console.log("📝 Gerando ID do membro...");
-      const memberId = editingMember?.id || `tmp-member-${Date.now()}`;
+      const memberId = editingMember?.id_membro || `tmp-member-${Date.now()}`;
       
       // Só gera nova matrícula se for um NOVO membro (editingMember === null)
       // Se estiver editando, mantém a matrícula original
@@ -615,33 +585,33 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
         ? (formData.matricula || editingMember.matricula) // Edição: mantém a original
         : (formData.matricula || getNextMemberMatricula()); // Novo: gera uma
       
-      let memberData = { ...formData, id: memberId, matricula } as Member;
+      let memberData = { ...formData, id_membro: memberId, matricula } as Membro;
       
-      console.log("👤 Dados do membro preparados:", { id: memberData.id, name: memberData.nome, matricula: memberData.matricula });
+      console.log("👤 Dados do membro preparados:", { id: memberData.id_membro, name: memberData.nome, matricula: memberData.matricula });
 
       if (avatarFile) {
         console.log("📷 Fazendo upload da foto...");
         try {
-          const downloadURL = await StorageService.uploadProfilePhoto(currentUnitId, memberId, avatarFile);
+          const downloadURL = await StorageService.uploadProfilePhoto(currentIdUnidade, memberId, avatarFile);
           memberData.avatar = downloadURL;
           console.log("✅ Foto uploaded com sucesso");
         } catch (error) {
           console.warn("⚠️ Erro ao fazer upload da foto:", error);
-          memberData.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.nome || 'M')}&background=003399&color=fff&bold=true`;
+          memberData.avatar = memberData.avatar; // Mantém apenas foto real
         }
       } else if (!memberData.avatar) {
         console.log("🎨 Usando avatar padrão");
-        memberData.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.nome || 'M')}&background=003399&color=fff&bold=true`;
+        // Não gera avatar automático - usa apenas foto real
       }
 
       console.log("💾 Salvando membro no database...");
-      const savedMember = await dbService.saveMember(memberData) as Member;
+      const savedMember = await dbService.saveMember(memberData) as Membro;
       console.log("✅ Membro salvo:", savedMember);
       console.log("🔍 Matrícula no membro salvo:", savedMember.matricula);
       
       // Registrar auditoria
       if (editingMember) {
-        await logAction('UPDATE', 'Member', memberData.id, memberData.nome, { 
+        await logAction('UPDATE', 'Member', memberData.id_membro, memberData.nome, { 
           action: `${user?.nome || 'Usuário'} alterou o cadastro do membro ${memberData.nome}`,
           changedFields: getChangedFields(editingMember, memberData)
         });
@@ -655,8 +625,8 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
       
       // Atualiza a lista de membros com os dados retornados pelo backend (que contém a nova versão)
       if (editingMember) {
-        setMembers(prev => prev.map(m => m.id === editingMember.id ? savedMember : m));
-        console.log("✅ Membro atualizado na lista global com nova versão:", savedMember.version);
+        setMembers(prev => prev.map(m => m.id_membro === editingMember.id_membro ? savedMember : m));
+        console.log("✅ Membro atualizado na lista global com nova versão:", (savedMember as any).version);
       } else {
         setMembers(prev => [savedMember, ...prev]);
         console.log("✅ Membro adicionado à lista global");
@@ -688,7 +658,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
     setIsGeneratingPDF(true);
     try {
       const pdf = new jsPDF('p', 'mm', 'a4', true);
-      const selectedMembers = members.filter(m => selectedMemberIds.includes(m.id));
+      const selectedMembers = members.filter(m => selectedMemberIds.includes(m.id_membro));
       const cardHeight = 53.98;
       const cardWidth = 176.2; 
       let currentY = 15;
@@ -698,7 +668,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
           pdf.addPage();
           currentY = 15;
         }
-        const el = document.getElementById(`card-to-print-${selectedMembers[i].id}`);
+        const el = document.getElementById(`card-to-print-${selectedMembers[i].id_membro}`);
         if (el) {
           const canvas = await html2canvas(el, { 
             scale: 8, 
@@ -707,7 +677,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
             backgroundColor: '#ffffff',
             imageTimeout: 0,
             onclone: (clonedDoc) => {
-              const card = clonedDoc.getElementById(`card-to-print-${selectedMembers[i].id}`);
+              const card = clonedDoc.getElementById(`card-to-print-${selectedMembers[i].id_membro}`);
               if (card) {
                 (card.style as any).fontSmooth = 'always';
                 (card.style as any).webkitFontSmoothing = 'antialiased';
@@ -739,7 +709,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
       const images: { dataUrl: string; widthPx: number; heightPx: number }[] = [];
 
       for (const m of selectedMembers) {
-        const el = document.getElementById(`card-to-print-${m.id}`);
+        const el = document.getElementById(`card-to-print-${m.id_membro}`);
         if (!el) continue;
         const canvas = await html2canvas(el, {
           scale: 4,
@@ -858,7 +828,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 ...initialMemberForm,
                 nome: '',
                 matricula: generatedMatricula,
-                unidadeId: currentUnitId,
+                idUnidade: currentIdUnidade,
                 status: 'ACTIVE',
                 funcao: 'MEMBER',
                 endereco: {
@@ -1023,7 +993,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <img src={member.avatar} className="w-10 h-10 rounded-full object-cover border border-slate-100" alt="" />
-                      {member.ehDizimista && (
+                      {member.dizimista && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white">
                           $
                         </div>
@@ -1036,8 +1006,8 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                   </div>
                 </td>
                 <td className="px-0 py-4">
-                  <p className="font-bold text-slate-800 text-xs">{member.cargoEclesiastico || 'Membro'}</p>
-                  <p className="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">{member.ministerioPrincipal || 'Geral'}</p>
+                  <p className="font-bold text-slate-800 text-xs">{member.cargo_eclesiastico || 'Membro'}</p>
+                  <p className="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">{member.ministerio_principal || 'Geral'}</p>
                 </td>
                 <td className="px-1 py-4">
                   <button className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-bold uppercase hover:bg-slate-100 transition-all">
@@ -1047,26 +1017,26 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 </td>
                 <td className="px-1 py-4">
                   <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
-                    member.ehDizimista ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                    member.dizimista ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
                   }`}>
-                    {member.ehDizimista ? 'Dizimista' : (member.funcao === 'VISITOR' ? 'Visitante' : 'Membro')}
+                    {member.dizimista ? 'Dizimista' : (member.funcao === 'VISITOR' ? 'Visitante' : 'Membro')}
                   </span>
                 </td>
                 <td className="px-0 py-4">
                   <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
-                    member.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 
-                    member.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
+                    member.situacao === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 
+                    member.situacao === 'PENDING' ? 'bg-amber-50 text-amber-600' :
                     'bg-rose-50 text-rose-600'
                   }`}>
-                    {member.status === 'ACTIVE' ? 'Ativo' : 
-                     member.status === 'PENDING' ? 'Pendente' : 
+                    {member.situacao === 'ACTIVE' ? 'Ativo' : 
+                     member.situacao === 'PENDING' ? 'Pendente' : 
                      'Inativo'}
                   </span>
                 </td>
                 <td className="px-2 py-4 text-right">
                   <div className="flex justify-end gap-3 text-slate-400">
-                    <button onClick={() => { setEditingMember(member); setSelectedMemberIds([member.id]); setIsIDCardOpen(true); }} className="hover:text-slate-900"><QrCode size={16} /></button>
-                    <button onClick={() => { setSelectedMemberIds([member.id]); setShowPrintModal(true); }} className="hover:text-slate-900" title="Imprimir Cadastro"><Printer size={16} /></button>
+                    <button onClick={() => { setEditingMember(member); setSelectedMemberIds([member.id_membro]); setIsIDCardOpen(true); }} className="hover:text-slate-900"><QrCode size={16} /></button>
+                    <button onClick={() => { setSelectedMemberIds([member.id_membro]); setShowPrintModal(true); }} className="hover:text-slate-900" title="Imprimir Cadastro"><Printer size={16} /></button>
                     <button onClick={() => { 
                         if (!canWriteMembers) return;
                         
@@ -1075,37 +1045,14 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                         const memberWithMatricula = { 
                           ...member, 
                           matricula: member.matricula || '', // Mantém a original ou string vazia
-                          status: member.status || 'ACTIVE'
+                          situacao: member.situacao || 'ACTIVE'
                         };
 
-                        const profileData = member.profile_data || {};
-                        const mergedAddress = memberWithMatricula.endereco?.logradouro
-                          ? memberWithMatricula.endereco
-                          : {
-                              cep: memberWithMatricula.endereco?.cep || profileData.endereco?.cep || member.cep || profileData.cep || '',
-                              logradouro: memberWithMatricula.endereco?.logradouro || profileData.endereco?.logradouro || (typeof (member as any).address === 'string' ? (member as any).address : '') || (member as any).endereco || profileData.endereco || '',
-                              numero: memberWithMatricula.endereco?.numero || profileData.endereco?.numero || (member as any).numero || profileData.numero || '',
-                              complemento: memberWithMatricula.endereco?.complemento || profileData.endereco?.complemento || (member as any).complemento || profileData.complemento || '',
-                              bairro: memberWithMatricula.endereco?.bairro || profileData.endereco?.bairro || (member as any).bairro || profileData.bairro || '',
-                              cidade: memberWithMatricula.endereco?.cidade || profileData.endereco?.cidade || (member as any).cidade || profileData.cidade || '',
-                              estado: memberWithMatricula.endereco?.estado || profileData.endereco?.estado || (member as any).estado || profileData.estado || (member as any).uf || profileData.uf || '',
-                            };
-
-                        const rawLgpdConsent = profileData.lgpdConsent || member.lgpdConsent || {};
-                        // Valida documentUrl — só mantém se for data URL ou URL http válida
-                        const docUrl = rawLgpdConsent.documentUrl;
-                        const validDocUrl = docUrl && typeof docUrl === 'string' && docUrl.length > 50 &&
-                          (docUrl.startsWith('data:') || docUrl.startsWith('http')) ? docUrl : undefined;
-
                         const initialFormData = {
-                          ...profileData,
                           ...memberWithMatricula,
-                          version: memberWithMatricula.version || 0,
-                          rg: memberWithMatricula.rg || profileData.rg || profileData.identidade || '',
-                          telefone: memberWithMatricula.telefone || (member as any).telefone || profileData.telefone || '',
-                          whatsapp: memberWithMatricula.whatsapp || (member as any).whatsapp || profileData.whatsapp || '',
-                          endereco: mergedAddress,
-                          lgpdConsent: { ...rawLgpdConsent, documentUrl: validDocUrl }
+                          ...(memberWithMatricula.dados_perfil || {}),
+                          version: (memberWithMatricula as any).version || 0,
+                          id_unidade: memberWithMatricula.id_unidade || currentIdUnidade || ''
                         };
 
                         setEditingMember(memberWithMatricula); 
@@ -1160,7 +1107,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                   <div className="flex items-center gap-6 pb-6 border-b border-slate-100">
                     <div className="relative group">
                       <div className="w-24 h-24 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                        <img src={formData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.nome || 'M')}&background=003399&color=fff&bold=true`} className="w-full h-full object-cover" />
+                        <img src={formData.avatar} className="w-full h-full object-cover" />
                       </div>
                       <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-3xl">
                         <Camera className="text-white mb-1" size={24} />
@@ -1178,29 +1125,39 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <InputField label="E-mail" value={formData.email} onChange={(v:any) => setFormData({...formData, email: v})} />
-                    <InputField label="Telefone" value={formData.telefone} onChange={(v:any) => setFormData({...formData, telefone: v})} />
-                    <InputField label="WhatsApp" value={formData.whatsapp} onChange={(v:any) => setFormData({...formData, whatsapp: v})} />
-                    <InputField label="Nascimento" type="date" value={toDateValue(formData.dataNascimento)} onChange={(v:any) => setFormData({...formData, dataNascimento: v})} />
+                    <InputField label="Telefone Fixo" value={formData.telefone} onChange={(v:any) => setFormData({...formData, telefone: v})} />
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider">Celular / WhatsApp</label>
+                      <div className="flex gap-2">
+                        <input className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none" value={formData.celular || ''} onChange={e => {
+                          const newCelular = e.target.value;
+                          const wasWhatsapp = formData.whatsapp && formData.whatsapp === formData.celular;
+                          setFormData({...formData, celular: newCelular, whatsapp: wasWhatsapp ? newCelular : formData.whatsapp});
+                        }} placeholder="(00) 00000-0000" />
+                        <label className="flex items-center gap-1.5 px-3 py-2 border border-emerald-200 bg-emerald-50 rounded-xl text-[10px] font-bold text-emerald-700 cursor-pointer hover:bg-emerald-100 transition-colors whitespace-nowrap">
+                          <input type="checkbox" checked={!!formData.whatsapp && formData.whatsapp === formData.celular && !!formData.celular} onChange={e => setFormData({...formData, whatsapp: e.target.checked ? formData.celular : ''})} className="w-3.5 h-3.5 accent-emerald-600" /> Tem WhatsApp
+                        </label>
+                      </div>
+                    </div>
+                    <InputField label="Nascimento" type="date" value={toDateValue(formData.data_nascimento)} onChange={(v:any) => setFormData({...formData, data_nascimento: v})} />
                     <SelectField label="Sexo" value={formData.sexo} onChange={(v:any) => setFormData({...formData, sexo: v})} options={[{value:'M', label:'Masculino'}, {value:'F', label:'Feminino'}]} />
                     <InputField label="Profissão" value={formData.profissao} onChange={(v:any) => setFormData({...formData, profissao: v})} />
-                    <SelectField label="Status" value={formData.status || 'ACTIVE'} onChange={(v:any) => setFormData({...formData, status: v})} options={[{value:'ACTIVE', label:'Ativo'}, {value:'INACTIVE', label:'Inativo'}, {value:'PENDING', label:'Pendente'}]} />
+                    <SelectField label="Status" value={formData.situacao || 'ACTIVE'} onChange={(v:any) => setFormData({...formData, situacao: v})} options={[{value:'ACTIVE', label:'Ativo'}, {value:'INACTIVE', label:'Inativo'}, {value:'PENDING', label:'Pendente'}]} />
                     <SelectField label="Cargo/Função" value={formData.funcao} onChange={(v:any) => setFormData({...formData, funcao: v})} options={[{value:'MEMBER', label:'Membro'}, {value:'VISITOR', label:'Visitante'}, {value:'VOLUNTEER', label:'Voluntário'}, {value:'STAFF', label:'Staff'}, {value:'LEADER', label:'Líder'}]} />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                    <InputField label="Nome do Pai" value={formData.nomePai} onChange={(v:any) => setFormData({...formData, nomePai: v})} />
-                    <InputField label="Nome da Mãe" value={formData.nomeMae} onChange={(v:any) => setFormData({...formData, nomeMae: v})} />
-                    <InputField label="E-mail Pessoal" value={(formData as any).email_pessoal} onChange={(v:any) => setFormData({...formData, email_pessoal: v} as any)} placeholder="email@pessoal.com" />
-                    <InputField label="Celular" value={formData.telefone} onChange={(v:any) => setFormData({...formData, telefone: v})} placeholder="(00) 00000-0000" />
-                    <InputField label="Escolaridade" value={(formData as any).escolaridade} onChange={(v:any) => setFormData({...formData, escolaridade: v} as any)} placeholder="Ex: Ensino Superior" />
+                    <InputField label="Nome do Pai" value={formData.nome_pai} onChange={(v:any) => setFormData({...formData, nome_pai: v})} />
+                    <InputField label="Nome da Mãe" value={formData.nome_mae} onChange={(v:any) => setFormData({...formData, nome_mae: v})} />
+                    <InputField label="Escolaridade" value={formData.escolaridade} onChange={(v:any) => setFormData({...formData, escolaridade: v})} placeholder="Ex: Ensino Superior" />
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-wider">É PCD?</label>
                       <div className="flex gap-3">
                         <label className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
-                          <input type="checkbox" checked={!!(formData as any).is_pcd} onChange={e => setFormData({...formData, is_pcd: e.target.checked} as any)} className="w-4 h-4 accent-indigo-600" /> Sim
+                          <input type="checkbox" checked={!!formData.is_pcd} onChange={e => setFormData({...formData, is_pcd: e.target.checked})} className="w-4 h-4 accent-indigo-600" /> Sim
                         </label>
-                        {(formData as any).is_pcd && (
-                          <input className="flex-1 px-3 py-1 border border-slate-200 rounded-xl text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Tipo de deficiência" value={(formData as any).tipo_deficiencia || ''} onChange={e => setFormData({...formData, tipo_deficiencia: e.target.value} as any)} />
+                        {formData.is_pcd && (
+                          <input className="flex-1 px-3 py-1 border border-slate-200 rounded-xl text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Tipo de deficiência" value={formData.tipo_deficiencia || ''} onChange={e => setFormData({...formData, tipo_deficiencia: e.target.value})} />
                         )}
                       </div>
                     </div>
@@ -1214,11 +1171,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4">
                          <h4 className="text-[10px] font-black text-indigo-600 uppercase flex items-center gap-2"><Heart size={14}/> Estado Civil</h4>
-                         <SelectField label="Estado Civil" value={formData.estadoCivil} onChange={(v:any) => setFormData({...formData, estadoCivil: v})} options={[{value:'SINGLE', label:'Solteiro(a)'}, {value:'MARRIED', label:'Casado(a)'}, {value:'DIVORCED', label:'Divorciado(a)'}, {value:'WIDOWED', label:'Viúvo(a)'}]} />
-                         {formData.estadoCivil === 'MARRIED' && (
+                         <SelectField label="Estado Civil" value={formData.estado_civil} onChange={(v:any) => setFormData({...formData, estado_civil: v})} options={[{value:'SINGLE', label:'Solteiro(a)'}, {value:'MARRIED', label:'Casado(a)'}, {value:'DIVORCED', label:'Divorciado(a)'}, {value:'WIDOWED', label:'Viúvo(a)'}]} />
+                         {formData.estado_civil === 'MARRIED' && (
                            <>
-                             <InputField label="Nome do Cônjuge" value={formData.nomeConjuge} onChange={(v:any) => setFormData({...formData, nomeConjuge: v})} />
-                             <InputField label="Data de Casamento" type="date" value={formData.dataCasamento} onChange={(v:any) => setFormData({...formData, dataCasamento: v})} />
+                             <InputField label="Nome do Cônjuge" value={formData.nome_conjuge} onChange={(v:any) => setFormData({...formData, nome_conjuge: v})} />
+                             <InputField label="Data de Casamento" type="date" value={formData.data_casamento} onChange={(v:any) => setFormData({...formData, data_casamento: v})} />
                            </>
                          )}
                       </div>
@@ -1226,7 +1183,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                       <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4">
                          <h4 className="text-[10px] font-black text-indigo-600 uppercase flex items-center gap-2"><Users2 size={14}/> Vínculo Familiar</h4>
                          <p className="text-[10px] text-slate-500 font-medium italic">Agrupe membros da mesma família para gestão unificada.</p>
-                         <InputField label="ID da Família" value={formData.familiaId} onChange={(v:any) => setFormData({...formData, familiaId: v})} placeholder="Ex: FAM-001" />
+                         <InputField label="ID da Família" value={formData.id_familia} onChange={(v:any) => setFormData({...formData, id_familia: v})} placeholder="Ex: FAM-001" />
                       </div>
 
                       <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4 md:col-span-2">
@@ -1280,21 +1237,13 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                       <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4">
                          <h4 className="text-[10px] font-black text-indigo-600 uppercase flex items-center gap-2"><Heart size={14}/> Informações de Saúde</h4>
                          <div className="grid grid-cols-2 gap-4">
-                            <SelectField label="Tipo Sanguíneo" value={formData.tipoSanguineo} onChange={(v:any) => setFormData({...formData, tipoSanguineo: v})} options={[{value:'A+', label:'A+'}, {value:'A-', label:'A-'}, {value:'B+', label:'B+'}, {value:'B-', label:'B-'}, {value:'O+', label:'O+'}, {value:'O-', label:'O-'}, {value:'AB+', label:'AB+'}, {value:'AB-', label:'AB-'}]} />
-                            <InputField label="Contato Emergência" value={formData.contatoEmergencia} onChange={(v:any) => setFormData({...formData, contatoEmergencia: v})} placeholder="(00) 00000-0000" />
-                            <InputField label="Necessidades Especiais" value={formData.necessidadesEspeciais} onChange={(v:any) => setFormData({...formData, necessidadesEspeciais: v})} className="col-span-2" />
+                            <SelectField label="Tipo Sanguíneo" value={formData.tipo_sanguineo} onChange={(v:any) => setFormData({...formData, tipo_sanguineo: v})} options={[{value:'A+', label:'A+'}, {value:'A-', label:'A-'}, {value:'B+', label:'B+'}, {value:'B-', label:'B-'}, {value:'O+', label:'O+'}, {value:'O-', label:'O-'}, {value:'AB+', label:'AB+'}, {value:'AB-', label:'AB-'}]} />
+                            <InputField label="Contato Emergência" value={formData.contato_emergencia} onChange={(v:any) => setFormData({...formData, contato_emergencia: v})} placeholder="(00) 00000-0000" />
+                            <InputField label="Necessidades Especiais" value={formData.necessidades_especiais} onChange={(v:any) => setFormData({...formData, necessidades_especiais: v})} className="col-span-2" />
                          </div>
                       </div>
 
-                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4">
-                         <h4 className="text-[10px] font-black text-indigo-600 uppercase flex items-center gap-2"><Landmark size={14}/> Dados Bancários</h4>
-                         <div className="grid grid-cols-2 gap-4">
-                            <InputField label="Banco" value={formData.banco} onChange={(v:any) => setFormData({...formData, banco: v})} />
-                            <InputField label="Agência" value={formData.agenciaBancaria} onChange={(v:any) => setFormData({...formData, agenciaBancaria: v})} />
-                            <InputField label="Conta" value={formData.contaBancaria} onChange={(v:any) => setFormData({...formData, contaBancaria: v})} />
-                            <InputField label="Chave PIX" value={formData.chavePix} onChange={(v:any) => setFormData({...formData, chavePix: v})} />
-                         </div>
-                      </div>
+
                    </div>
                 </div>
               )}
@@ -1303,57 +1252,57 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                 <div className="grid grid-cols-12 gap-4">
                    <InputField 
                      label="CEP" 
-                     value={formData.endereco?.cep} 
+                     value={formData.cep} 
                      onChange={(v:any) => {
                        const masked = v.replace(/\D/g, '').replace(/(\d{5})(\d{3})/, "$1-$2").substring(0, 9);
-                       setFormData({...formData, endereco: {...formData.endereco!, cep: masked}});
+                       setFormData({...formData, cep: masked});
                        if (masked.length === 9) handleCEPLookup(masked);
                      }} 
                      className="col-span-4" 
                    />
-                   <InputField label="Cidade" value={formData.endereco?.cidade} onChange={(v:any) => setFormData({...formData, endereco: {...formData.endereco!, cidade: v}})} className="col-span-8" />
-                   <InputField label="Rua" value={formData.endereco?.logradouro} onChange={(v:any) => setFormData({...formData, endereco: {...formData.endereco!, logradouro: v}})} className="col-span-9" />
-                   <InputField label="Nº" value={formData.endereco?.numero} onChange={(v:any) => setFormData({...formData, endereco: {...formData.endereco!, numero: v}})} className="col-span-3" />
-                   <InputField label="Complemento" value={formData.endereco?.complemento} onChange={(v:any) => setFormData({...formData, endereco: {...formData.endereco!, complemento: v}})} className="col-span-4" />
-                   <InputField label="Bairro" value={formData.endereco?.bairro} onChange={(v:any) => setFormData({...formData, endereco: {...formData.endereco!, bairro: v}})} className="col-span-4" />
-                   <InputField label="Estado" value={formData.endereco?.estado} onChange={(v:any) => setFormData({...formData, endereco: {...formData.endereco!, estado: v}})} className="col-span-4" />
+                   <InputField label="Cidade" value={formData.cidade} onChange={(v:any) => setFormData({...formData, cidade: v})} className="col-span-8" />
+                   <InputField label="Rua" value={formData.endereco} onChange={(v:any) => setFormData({...formData, endereco: v})} className="col-span-9" />
+                   <InputField label="Nº" value={formData.numero} onChange={(v:any) => setFormData({...formData, numero: v})} className="col-span-3" />
+                   <InputField label="Complemento" value={formData.complemento} onChange={(v:any) => setFormData({...formData, complemento: v})} className="col-span-4" />
+                   <InputField label="Bairro" value={formData.bairro} onChange={(v:any) => setFormData({...formData, bairro: v})} className="col-span-4" />
+                   <InputField label="Estado" value={formData.estado} onChange={(v:any) => setFormData({...formData, estado: v})} className="col-span-4" />
                 </div>
               )}
 
               {activeTab === 'vida_crista' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <InputField label="Data de Conversão" type="date" value={toDateValue(formData.dataConversao)} onChange={(v:any) => setFormData({...formData, dataConversao: v})} />
-                   <InputField label="Local de Conversão" value={formData.localConversao} onChange={(v:any) => setFormData({...formData, localConversao: v})} />
-                   <InputField label="Data de Batismo" type="date" value={toDateValue(formData.dataBatismo)} onChange={(v:any) => setFormData({...formData, dataBatismo: v})} />
-                   <InputField label="Igreja do Batismo" value={formData.igrejaBatismo} onChange={(v:any) => setFormData({...formData, igrejaBatismo: v})} />
-                   <InputField label="Pastor que Batizou" value={formData.pastorBatizador} onChange={(v:any) => setFormData({...formData, pastorBatizador: v})} />
-                   <SelectField label="Batismo no Espírito Santo" value={formData.batismoEspiritoSanto} onChange={(v:any) => setFormData({...formData, batismoEspiritoSanto: v})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
-                   <InputField label="Igreja de Origem" value={formData.igrejaOrigem} onChange={(v:any) => setFormData({...formData, igrejaOrigem: v})} />
-                   <SelectField label="Curso de Discipulado" value={formData.cursoDiscipulado} onChange={(v:any) => setFormData({...formData, cursoDiscipulado: v})} options={[{value:'NAO_INICIADO', label:'Não Iniciado'}, {value:'EM_ANDAMENTO', label:'Em Andamento'}, {value:'CONCLUIDO', label:'Concluído'}]} />
-                   <SelectField label="Escola Bíblica" value={formData.escolaBiblica} onChange={(v:any) => setFormData({...formData, escolaBiblica: v})} options={[{value:'ATIVO', label:'Ativo'}, {value:'INATIVO', label:'Inativo'}, {value:'NAO_FREQUENTA', label:'Não Frequenta'}]} />
+                   <InputField label="Data de Conversão" type="date" value={toDateValue(formData.data_conversao)} onChange={(v:any) => setFormData({...formData, data_conversao: v})} />
+                   <InputField label="Local de Conversão" value={formData.local_conversao} onChange={(v:any) => setFormData({...formData, local_conversao: v})} />
+                   <InputField label="Data de Batismo" type="date" value={toDateValue(formData.data_batismo)} onChange={(v:any) => setFormData({...formData, data_batismo: v})} />
+                   <InputField label="Igreja do Batismo" value={formData.igreja_batismo} onChange={(v:any) => setFormData({...formData, igreja_batismo: v})} />
+                   <InputField label="Pastor que Batizou" value={formData.pastor_batizador} onChange={(v:any) => setFormData({...formData, pastor_batizador: v})} />
+                   <SelectField label="Batismo no Espírito Santo" value={formData.batismo_espirito_santo} onChange={(v:any) => setFormData({...formData, batismo_espirito_santo: v})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
+                   <InputField label="Igreja de Origem" value={formData.igreja_origem} onChange={(v:any) => setFormData({...formData, igreja_origem: v})} />
+                   <SelectField label="Curso de Discipulado" value={formData.curso_discipulado} onChange={(v:any) => setFormData({...formData, curso_discipulado: v})} options={[{value:'NAO_INICIADO', label:'Não Iniciado'}, {value:'EM_ANDAMENTO', label:'Em Andamento'}, {value:'CONCLUIDO', label:'Concluído'}]} />
+                   <SelectField label="Escola Bíblica" value={formData.escola_biblica} onChange={(v:any) => setFormData({...formData, escola_biblica: v})} options={[{value:'ATIVO', label:'Ativo'}, {value:'INATIVO', label:'Inativo'}, {value:'NAO_FREQUENTA', label:'Não Frequenta'}]} />
                 </div>
               )}
 
               {activeTab === 'ministerios' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <InputField label="Cargo Eclesiástico" value={formData.cargoEclesiastico} onChange={(v:any) => setFormData({...formData, cargoEclesiastico: v})} />
-                   <InputField label="Data Consagração" type="date" value={toDateValue(formData.dataConsagracao)} onChange={(v:any) => setFormData({...formData, dataConsagracao: v})} />
-                   <InputField label="Ministério Principal" value={formData.ministerioPrincipal} onChange={(v:any) => setFormData({...formData, ministerioPrincipal: v})} />
-                   <InputField label="Função no Ministério" value={formData.funcaoMinisterio} onChange={(v:any) => setFormData({...formData, funcaoMinisterio: v})} />
-                   <InputField label="Outros Ministérios" value={formData.outrosMinisterios?.join(', ')} onChange={(v:any) => setFormData({...formData, outrosMinisterios: v.split(',').map((s:string) => s.trim())})} placeholder="Separados por vírgula" />
-                   <InputField label="Data Membresia" type="date" value={toDateValue(formData.dataMembro)} onChange={(v:any) => setFormData({...formData, dataMembro: v})} />
+                   <InputField label="Cargo Eclesiástico" value={formData.cargo_eclesiastico} onChange={(v:any) => setFormData({...formData, cargo_eclesiastico: v})} />
+                   <InputField label="Data Consagração" type="date" value={toDateValue(formData.data_consagracao)} onChange={(v:any) => setFormData({...formData, data_consagracao: v})} />
+                   <InputField label="Ministério Principal" value={formData.ministerio_principal} onChange={(v:any) => setFormData({...formData, ministerio_principal: v})} />
+                   <InputField label="Função no Ministério" value={formData.funcao_ministerio} onChange={(v:any) => setFormData({...formData, funcao_ministerio: v})} />
+                   <InputField label="Outros Ministérios" value={formData.outros_ministerios?.join(', ')} onChange={(v:any) => setFormData({...formData, outros_ministerios: v.split(',').map((s:string) => s.trim())})} placeholder="Separados por vírgula" />
+                   <InputField label="Data Membresia" type="date" value={toDateValue(formData.data_ingresso)} onChange={(v:any) => setFormData({...formData, data_ingresso: v})} />
                    <InputField label="Talentos" value={formData.talentos} onChange={(v:any) => setFormData({...formData, talentos: v})} />
-                   <InputField label="Dons Espirituais" value={formData.donsEspirituais} onChange={(v:any) => setFormData({...formData, donsEspirituais: v})} />
-                   <InputField label="Célula/Grupo" value={formData.cellGroup} onChange={(v:any) => setFormData({...formData, cellGroup: v})} />
+                   <InputField label="Dons Espirituais" value={formData.dons_espirituais} onChange={(v:any) => setFormData({...formData, dons_espirituais: v})} />
+                   <InputField label="Célula/Grupo" value={formData.cell_group} onChange={(v:any) => setFormData({...formData, cell_group: v})} />
                 </div>
               )}
 
               {activeTab === 'financeiro' && (
                 <div className="space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <SelectField label="É Dizimista?" value={formData.ehDizimista ? 'SIM' : 'NAO'} onChange={(v:any) => setFormData({...formData, ehDizimista: v === 'SIM'})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
-                      <SelectField label="É Ofertante Regular?" value={formData.ehOfertanteRegular ? 'SIM' : 'NAO'} onChange={(v:any) => setFormData({...formData, ehOfertanteRegular: v === 'SIM'})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
-                      <SelectField label="Participa de Campanhas?" value={formData.participaCampanhas ? 'SIM' : 'NAO'} onChange={(v:any) => setFormData({...formData, participaCampanhas: v === 'SIM'})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
+                      <SelectField label="É Dizimista?" value={formData.dizimista ? 'SIM' : 'NAO'} onChange={(v:any) => setFormData({...formData, dizimista: v === 'SIM'})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
+                      <SelectField label="É Ofertante Regular?" value={formData.eh_ofertante_regular ? 'SIM' : 'NAO'} onChange={(v:any) => setFormData({...formData, eh_ofertante_regular: v === 'SIM'})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
+                      <SelectField label="Participa de Campanhas?" value={formData.participa_campanhas ? 'SIM' : 'NAO'} onChange={(v:any) => setFormData({...formData, participa_campanhas: v === 'SIM'})} options={[{value:'SIM', label:'Sim'}, {value:'NAO', label:'Não'}]} />
                    </div>
 
                    <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 space-y-4">
@@ -1398,32 +1347,29 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                              setFormData(updatedMember);
                              
                              // Create Transaction in Financeiro
-                             const transactionData: Partial<Transaction> = {
-                               description: newContribution.descricao,
-                               amount: val,
-                               date: dateInput.value,
-                               type: 'INCOME',
-                               category: typeInput.value,
-                               operationNature: 'nat1', // Receitas de Contribuições
-                               costCenter: 'cc1', // Sede
-                               projectId: '',
-                               accountId: accounts[0]?.id || '',
-                               status: 'PAID',
-                               unitId: currentUnitId,
-                               paymentMethod: 'PIX',
-                               memberId: formData.id,
-                             };
+                             const transactionData: Partial<Transacao> = {
+                                descricao: newContribution.descricao,
+                                valor: val,
+                                data_transacao: dateInput.value,
+                                tipo: 'ENTRADA',
+                                categoria: typeInput.value,
+                                id_conta: accounts[0]?.id || '',
+                                situacao: 'REALIZADO',
+                                id_unidade: currentIdUnidade,
+                                forma_pagamento: 'PIX',
+                                id_membro: formData.id_membro,
+                              };
 
-                             try {
-                               // Save member first
-                               await dbService.saveMember(updatedMember);
-                               setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember as Member : m));
+                              try {
+                                // Save member first
+                                await dbService.saveMember(updatedMember);
+                                setMembers(prev => prev.map(m => m.id_membro === updatedMember.id_membro ? updatedMember as Membro : m));
 
-                               const savedId = await dbService.saveTransaction(transactionData);
-                               setTransactions(prev => [...prev, { ...transactionData, id: savedId } as Transaction]);
-                               
-                               valInput.value = '';
-                               alert("Contribuição registrada com sucesso no perfil e no financeiro!");
+                                const savedId = await dbService.saveTransaction(transactionData);
+                                setTransactions(prev => [...prev, { ...transactionData, id_transacao: savedId } as Transacao]);
+                                
+                                valInput.value = '';
+                                alert("Contribuição registrada com sucesso no perfil e no financeiro!");
                              } catch (error) {
                                console.error("Erro ao salvar:", error);
                                alert("Houve um erro ao registrar a contribuição. Verifique o console.");
@@ -1493,10 +1439,10 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200"></div>
                         <div className="space-y-8 relative">
                           {[
-                            { label: 'Conversão', date: formData.dataConversao, icon: <Flame size={12}/>, color: 'bg-orange-500' },
-                            { label: 'Batismo', date: formData.dataBatismo, icon: <Baby size={12}/>, color: 'bg-blue-500' },
-                            { label: 'Membresia', date: formData.dataMembro, icon: <Users size={12}/>, color: 'bg-indigo-500' },
-                            { label: 'Consagração', date: formData.dataConsagracao, icon: <Award size={12}/>, color: 'bg-purple-500' },
+                            { label: 'Conversão', date: formData.data_conversao, icon: <Flame size={12}/>, color: 'bg-orange-500' },
+                            { label: 'Batismo', date: formData.data_batismo, icon: <Baby size={12}/>, color: 'bg-blue-500' },
+                            { label: 'Membresia', date: formData.data_ingresso, icon: <Users size={12}/>, color: 'bg-indigo-500' },
+                            { label: 'Consagração', date: formData.data_consagracao, icon: <Award size={12}/>, color: 'bg-purple-500' },
                           ].map((step, i) => (
                             <div key={i} className="flex items-center gap-6 ml-2">
                               <div className={`w-5 h-5 rounded-full ${step.date ? step.color : 'bg-slate-200'} z-10 flex items-center justify-center text-white shadow-sm`}>
@@ -1596,7 +1542,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                           </div>
                         ))}
                       </div>
-                    ) : formData.lgpdConsent?.documentUrl && formData.lgpdConsent.documentUrl.length > 10 ? (
+                    ) : formData.lgpd_consent?.documentUrl && formData.lgpd_consent.documentUrl.length > 10 ? (
                       <div className="text-center py-6 bg-white rounded-xl border border-green-200">
                         <Shield className="w-12 h-12 mx-auto mb-3 text-green-500" />
                         <p className="font-bold text-green-700 mb-1">Termo Assinado Anexado</p>
@@ -1604,9 +1550,9 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                         <button 
                           onClick={(e) => {
                             e.preventDefault();
-                            if (formData.lgpdConsent?.documentUrl) {
+                            if (formData.lgpd_consent?.documentUrl) {
                               openDocumentInNewTab(
-                                formData.lgpdConsent.documentUrl, 
+                                formData.lgpd_consent.documentUrl, 
                                 `Termo-LGPD-${formData.nome || 'Membro'}`
                               );
                             }
@@ -1659,8 +1605,8 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                                 reader.onloadend = () => {
                                   setFormData(prev => ({
                                     ...prev,
-                                    lgpdConsent: {
-                                      ...(prev.lgpdConsent || {
+                                    lgpd_consent: {
+                                      ...(prev.lgpd_consent || {
                                         dataProcessing: true, communication: true, marketing: true, financial: true, policyVersion: currentPolicy?.version || '1.0'
                                       }),
                                       documentUrl: reader.result as string
@@ -1765,9 +1711,34 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
               </div>
 
               <div className="flex-1 overflow-y-auto p-12 bg-slate-50 flex flex-col items-center gap-8 custom-scrollbar" id="printable-area">
-                {members.filter(m => selectedMemberIds.includes(m.id)).map(m => (
-                   <TemplateCarteiraMembro key={m.id} member={m} unit={currentUnitData} id={`card-to-print-${m.id}`} />
-                ))}
+                {isLoadingUnit ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 size={48} className="animate-spin text-indigo-600" />
+                    <span className="ml-4 text-lg font-bold text-slate-600">Carregando dados da instituição...</span>
+                  </div>
+                ) : (
+                  <>
+                    {console.log('🎴 Renderizando cartões:', { 
+                      selectedCount: selectedMemberIds.length, 
+                      selectedIds: selectedMemberIds,
+                      currentUnitData: currentUnitData?.nome || 'Sem dados',
+                      membersCount: members.length 
+                    })}
+                    {selectedMemberIds.length === 0 ? (
+                      <div className="flex items-center justify-center h-64 text-slate-400">
+                        <p className="text-lg font-bold">Selecione pelo menos um membro para imprimir carteirinhas</p>
+                      </div>
+                    ) : (
+                      <>
+                        {console.log('🎴 Renderizando cartões. selectedMemberIds:', selectedMemberIds)}
+                        {members.filter(m => selectedMemberIds.includes(m.id_membro)).map(m => {
+                          console.log('🎴 Chamando TemplateCarteiraMembro para:', m.nome);
+                          return <TemplateCarteiraMembro key={m.id_membro} member={m} unit={currentUnitData} id={`card-to-print-${m.id_membro}`} />
+                        })}
+                      </>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="p-6 border-t flex flex-col md:flex-row gap-4 bg-white shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
@@ -1808,9 +1779,9 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
           onClose={() => setShowLGPDModal(false)}
           onConsent={handleLGPDConsent}
           userType="MEMBER"
-          userId={formData.id || ''}
+          userId={formData.id_membro || ''}
           userName={formData.nome || ''}
-          currentConsent={memberConsents.find(c => c.userId === formData.id)}
+          currentConsent={memberConsents.find(c => c.userId === formData.id_membro)}
           currentPolicy={currentPolicy || undefined}
         />
       )}
@@ -1823,19 +1794,14 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
           rg={formData.rg || editingMember.rg || (formData as any).identidade || (editingMember as any).identidade || ''}
           endereco={
             (() => {
-              const endereco = formData.endereco || editingMember.endereco;
-              if (endereco?.logradouro) {
-                const cityState = [endereco.cidade, endereco.estado].filter(Boolean).join('/');
-                return [
-                  `${endereco.logradouro}, ${endereco.numero || 's/n'}`,
-                  endereco.complemento,
-                  endereco.bairro,
-                  cityState,
-                ].filter(Boolean).join(' - ');
-              }
-              const legacyCityState = [(editingMember as any).cidade, (editingMember as any).estado].filter(Boolean).join('/');
-              const legacyAddress = typeof (editingMember as any).address === 'string' ? (editingMember as any).address : '';
-              return [legacyAddress, (editingMember as any).numero, (editingMember as any).bairro, legacyCityState].filter(Boolean).join(' - ') || undefined;
+              const parts = [
+                formData.endereco || editingMember.endereco,
+                formData.numero || editingMember.numero,
+                formData.complemento || (editingMember as any).complemento,
+                formData.bairro || editingMember.bairro,
+                [formData.cidade || editingMember.cidade, formData.estado || editingMember.estado].filter(Boolean).join('/')
+              ].filter(Boolean);
+              return parts.length > 0 ? parts.join(' - ') : undefined;
             })()
           }
           telefone={formData.telefone || formData.whatsapp || editingMember.telefone || editingMember.whatsapp || (formData as any).celular || (editingMember as any).celular}
@@ -1861,12 +1827,14 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
           rg={formData.rg || editingMember.rg || (formData as any).identidade || (editingMember as any).identidade || ''}
           endereco={
             (() => {
-              const endereco = formData.endereco || editingMember.endereco;
-              if (endereco?.logradouro) {
-                const cityState = [endereco.cidade, endereco.estado].filter(Boolean).join('/');
-                return [`${endereco.logradouro}, ${endereco.numero || 's/n'}`, endereco.complemento, endereco.bairro, cityState].filter(Boolean).join(' - ');
-              }
-              return undefined;
+              const parts = [
+                formData.endereco || editingMember.endereco,
+                formData.numero || editingMember.numero,
+                formData.complemento || (editingMember as any).complemento,
+                formData.bairro || editingMember.bairro,
+                [formData.cidade || editingMember.cidade, formData.estado || editingMember.estado].filter(Boolean).join('/')
+              ].filter(Boolean);
+              return parts.length > 0 ? parts.join(' - ') : undefined;
             })()
           }
           telefone={formData.telefone || formData.whatsapp || editingMember.telefone || editingMember.whatsapp || ''}

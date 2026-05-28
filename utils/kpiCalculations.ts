@@ -6,7 +6,7 @@
  * ============================================================================
  */
 
-import { Transaction, Member, Payroll, Asset } from '../types';
+import { Transacao, Membro, PayrollCalculation, Asset } from '../types';
 
 /**
  * Calcular crescimento percentual
@@ -137,10 +137,10 @@ export function calcularYoY(valorAnoAtual: number, valorAnoAnterior: number): {
 /**
  * Agrupar transações por categoria
  */
-export function agruparPorCategoria(transactions: Transaction[]): Record<string, number> {
+export function agruparPorCategoria(transactions: Transacao[]): Record<string, number> {
   return transactions.reduce((acc, t) => {
-    const category = t.category || 'Outros';
-    acc[category] = (acc[category] || 0) + t.amount;
+    const category = t.categoria || 'Outros';
+    acc[category] = (acc[category] || 0) + t.valor;
     return acc;
   }, {} as Record<string, number>);
 }

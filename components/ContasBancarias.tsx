@@ -32,8 +32,8 @@ import {
   TrendingUp, DollarSign, Calendar, Search, Filter, MoreVertical,
   Landmark, PiggyBank, CreditCard, Move, FileText, X, Save
 } from 'lucide-react';
-import { FinancialAccountEnhanced, AccountService, accountService } from '../services/accountService';
-import { Transaction } from '../types';
+import { FinancialAccountEnhanced, accountService } from '../services/accountService';
+import { Transacao } from '../types';
 import { POPULAR_BANKS, ACCOUNT_TYPES } from '../constants/banks';
 
 /**
@@ -42,7 +42,7 @@ import { POPULAR_BANKS, ACCOUNT_TYPES } from '../constants/banks';
  * O que este componente precisa receber para funcionar
  */
 interface ContasBancariasProps {
-  currentUnitId: string;        // ID da unidade/filial da igreja
+  currentIdUnidade: string;        // ID da unidade/filial da igreja
   onTransactionAdded?: () => void;  // Função para avisar quando criar transação
 }
 
@@ -55,8 +55,8 @@ interface TransferModalData {
   isOpen: boolean;
   fromAccountId: string;
   toAccountId: string;
-  amount: number;
-  description: string;
+  valor: number;
+  descricao: string;
 }
 
 /**
@@ -64,7 +64,7 @@ interface TransferModalData {
  * ====================
  */
 export const ContasBancarias: React.FC<ContasBancariasProps> = ({ 
-  currentUnitId, 
+  currentIdUnidade, 
   onTransactionAdded 
 }) => {
   
@@ -87,7 +87,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   
   // Extrato da conta selecionada
-  const [accountStatement, setAccountStatement] = useState<Transaction[]>([]);
+  const [accountStatement, setAccountStatement] = useState<Transacao[]>([]);
   
   // Saldo consolidado (total geral)
   const [consolidatedBalance, setConsolidatedBalance] = useState<{
@@ -112,8 +112,8 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
     isOpen: false,
     fromAccountId: '',
     toAccountId: '',
-    amount: 0,
-    description: '',
+    valor: 0,
+    descricao: '',
   });
   
   // Busca textual
@@ -150,7 +150,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
       setIsLoading(true);
       
       // Busca contas
-      const allAccounts = await accountService.getAccounts(currentUnitId);
+      const allAccounts = await accountService.getAccounts(currentIdUnidade);
       setAccounts(allAccounts);
       
       // Busca saldo consolidado
@@ -172,12 +172,12 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
    */
   const filteredAccounts = accounts.filter(account => {
     // Filtro por tipo
-    if (filterType !== 'ALL' && account.accountType !== filterType) {
+    if (filterType !== 'ALL' && account.tipo !== filterType) {
       return false;
     }
     
     // Filtro por busca
-    if (searchTerm && !account.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+    if (searchTerm && !account.nome.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
@@ -202,9 +202,8 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
     try {
       const payload = {
         ...formData,
-        unitId: currentUnitId,
-        isActive: true,
-        isDefault: false,
+        id_unidade: currentIdUnidade,
+        situacao: 'ATIVO',
       };
 
       await accountService.saveAccount(payload);
@@ -235,7 +234,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
         return;
       }
       
-      if (transferModal.amount <= 0) {
+      if (transferModal.valor <= 0) {
         alert('Valor deve ser maior que zero!');
         return;
       }
@@ -244,8 +243,8 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
       await accountService.transferBetweenAccounts(
         transferModal.fromAccountId,
         transferModal.toAccountId,
-        transferModal.amount,
-        transferModal.description
+        transferModal.valor,
+        transferModal.descricao
       );
       
       alert('Transferência realizada com sucesso!');
@@ -282,19 +281,17 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
    */
   const handleEditAccount = (account: FinancialAccountEnhanced) => {
     setAccountDraft({
-      name: account.name,
-      accountType: account.accountType,
-      type: account.type,
-      bankCode: account.bankCode,
-      bankName: account.bankName,
-      agencyNumber: account.agencyNumber,
-      accountNumber: account.accountNumber,
-      currentBalance: account.currentBalance,
-      minimumBalance: account.minimumBalance,
-      status: account.status,
-      isActive: account.isActive
+      nome: account.nome,
+      tipo: account.tipo,
+      codigo_banco: account.codigo_banco,
+      nome_banco: account.nome_banco,
+      numero_agencia: account.numero_agencia,
+      numero_conta: account.numero_conta,
+      saldo_atual: account.saldo_atual,
+      saldo_minimo: account.saldo_minimo,
+      situacao: account.situacao,
     });
-    setEditingAccountId(account.id);
+    setEditingAccountId(account.id_conta);
     setIsAccountModalOpen(true);
   };
   
@@ -452,9 +449,9 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-50 text-[11px]">
               {filteredAccounts.map(account => (
-                <tr key={account.id} className="hover:bg-slate-50/50 transition-all">
+                <tr key={account.id_conta} className="hover:bg-slate-50/50 transition-all">
                   <td className="px-4 py-3">
-                    {account.accountType === 'CASH' ? (
+                    {account.tipo === 'CASH' ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-700 rounded-lg font-black text-[9px] uppercase">
                         <PiggyBank size={12} /> Caixa
                       </span>
@@ -466,21 +463,21 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
                   </td>
                   <td className="px-4 py-3">
                     <div>
-                      <p className="font-bold text-slate-900 leading-none">{account.name}</p>
-                      {account.accountNumber && (
+                      <p className="font-bold text-slate-900 leading-none">{account.nome}</p>
+                      {account.numero_conta && (
                         <p className="text-[8px] text-slate-400 font-medium uppercase mt-1">
-                          Conta: {account.accountNumber}
+                          Conta: {account.numero_conta}
                         </p>
                       )}
                     </div>
                   </td>
                   <td className={`px-6 py-3 text-right font-black ${
-                    account.currentBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                    account.saldo_atual >= 0 ? 'text-emerald-600' : 'text-rose-600'
                   }`}>
-                    {formatCurrency(account.currentBalance)}
+                    {formatCurrency(account.saldo_atual)}
                   </td>
                   <td className="px-6 py-3 text-center">
-                    {account.isActive ? (
+                    {account.situacao === 'ATIVO' ? (
                       <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[9px] uppercase">
                         Ativa
                       </span>
@@ -493,7 +490,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
                   <td className="px-6 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => handleViewStatement(account.id)}
+                        onClick={() => handleViewStatement(account.id_conta)}
                         className="text-slate-400 hover:text-indigo-600 transition-colors"
                         title="Ver Extrato"
                       >
@@ -504,7 +501,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
                         onClick={() => setTransferModal({
                           ...transferModal,
                           isOpen: true,
-                          fromAccountId: account.id,
+                          fromAccountId: account.id_conta,
                         })}
                         className="text-slate-400 hover:text-emerald-600 transition-colors"
                         title="Transferir"
@@ -521,7 +518,7 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
                       </button>
                       
                       <button
-                        onClick={() => handleDeleteAccount(account.id)}
+                        onClick={() => handleDeleteAccount(account.id_conta)}
                         className="text-slate-400 hover:text-red-600 transition-colors"
                         title="Excluir Conta"
                       >
@@ -555,8 +552,8 @@ export const ContasBancarias: React.FC<ContasBancariasProps> = ({
           accounts={accounts}
           fromAccountId={transferModal.fromAccountId}
           toAccountId={transferModal.toAccountId}
-          amount={transferModal.amount}
-          description={transferModal.description}
+          amount={transferModal.valor}
+          description={transferModal.descricao}
           onClose={() => setTransferModal({ ...transferModal, isOpen: false })}
           onTransfer={handleTransfer}
         />
@@ -590,17 +587,15 @@ interface NovaContaModalProps {
 
 const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, onSave }) => {
   const [formData, setFormData] = useState<Partial<FinancialAccountEnhanced>>({
-    name: '',
-    type: 'BANK',
-    accountType: 'BANK',
-    currentBalance: 0,
-    isActive: true,
-    isDefault: false,
+    nome: '',
+    tipo: 'BANK',
+    saldo_atual: 0,
+    situacao: 'ATIVO',
     ...initialData,
   });
   
   const handleSubmit = async () => {
-    if (!formData.name) {
+    if (!formData.nome) {
       alert('Informe o nome da conta!');
       return;
     }
@@ -639,8 +634,8 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
             </label>
             <input
               className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.nome}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               placeholder="Ex: Caixa Matriz, Conta Corrente Bradesco..."
             />
           </div>
@@ -652,11 +647,10 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
               </label>
               <select
                 className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                value={formData.accountType}
+                value={formData.tipo}
                 onChange={(e) => setFormData({ 
                   ...formData, 
-                  accountType: e.target.value as any,
-                  type: e.target.value === 'CASH' ? 'CASH' : 'BANK'
+                  tipo: e.target.value as any
                 })}
               >
                 {ACCOUNT_TYPES.map(type => (
@@ -666,18 +660,18 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
             </div>
             
             {/* Campo de banco - aparece apenas se não for caixa */}
-            {formData.accountType !== 'CASH' && (
+            {formData.tipo !== 'CASH' && (
               <div>
                 <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
                   Banco
                 </label>
                 <select
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                  value={formData.bankCode || ''}
+                  value={formData.codigo_banco || ''}
                   onChange={(e) => setFormData({ 
                     ...formData, 
-                    bankCode: e.target.value,
-                    bankName: POPULAR_BANKS.find(b => b.code === e.target.value)?.name || ''
+                    codigo_banco: e.target.value,
+                    nome_banco: POPULAR_BANKS.find(b => b.code === e.target.value)?.name || ''
                   })}
                 >
                   <option value="">Selecione um banco...</option>
@@ -690,7 +684,7 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
           </div>
           
           {/* Campos bancários - aparecem apenas se não for caixa */}
-          {formData.accountType !== 'CASH' && (
+          {formData.tipo !== 'CASH' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
@@ -698,8 +692,8 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
                 </label>
                 <input
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                  value={formData.agencyNumber || ''}
-                  onChange={(e) => setFormData({ ...formData, agencyNumber: e.target.value })}
+                  value={formData.numero_agencia || ''}
+                  onChange={(e) => setFormData({ ...formData, numero_agencia: e.target.value })}
                   placeholder="0000"
                 />
               </div>
@@ -710,8 +704,8 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
                 </label>
                 <input
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                  value={formData.accountNumber || ''}
-                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                  value={formData.numero_conta || ''}
+                  onChange={(e) => setFormData({ ...formData, numero_conta: e.target.value })}
                   placeholder="00000-0"
                 />
               </div>
@@ -726,8 +720,8 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
               <input
                 type="number"
                 className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                value={formData.currentBalance}
-                onChange={(e) => setFormData({ ...formData, currentBalance: parseFloat(e.target.value) || 0 })}
+                value={formData.saldo_atual}
+                onChange={(e) => setFormData({ ...formData, saldo_atual: parseFloat(e.target.value) || 0 })}
                 placeholder="0.00"
               />
             </div>
@@ -739,8 +733,8 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
               <input
                 type="number"
                 className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                value={formData.minimumBalance || ''}
-                onChange={(e) => setFormData({ ...formData, minimumBalance: parseFloat(e.target.value) || undefined })}
+                value={formData.saldo_minimo || ''}
+                onChange={(e) => setFormData({ ...formData, saldo_minimo: parseFloat(e.target.value) || undefined })}
                 placeholder="0.00"
               />
             </div>
@@ -751,43 +745,15 @@ const NovaContaModal: React.FC<NovaContaModalProps> = ({ initialData, onClose, o
               </label>
               <select
                 className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                value={formData.status || 'ACTIVE'}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                value={formData.situacao || 'ATIVO'}
+                onChange={(e) => setFormData({ ...formData, situacao: e.target.value as any })}
               >
-                <option value="ACTIVE">Ativa</option>
-                <option value="INACTIVE">Inativa</option>
-                <option value="BLOCKED">Bloqueada</option>
+                <option value="ATIVO">Ativa</option>
+                <option value="INATIVO">Inativa</option>
+                <option value="BLOQUEADO">Bloqueada</option>
               </select>
             </div>
           </div>
-          
-          {formData.accountType !== 'CASH' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
-                  Agência
-                </label>
-                <input
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                  value={formData.agencyNumber || ''}
-                  onChange={(e) => setFormData({ ...formData, agencyNumber: e.target.value })}
-                  placeholder="0000"
-                />
-              </div>
-              
-              <div>
-                <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">
-                  Conta
-                </label>
-                <input
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none"
-                  value={formData.accountNumber || ''}
-                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                  placeholder="00000-0"
-                />
-              </div>
-            </div>
-          )}
         </div>
         
         {/* Rodapé */}

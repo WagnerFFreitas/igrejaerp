@@ -123,7 +123,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         const currentDate = new Date();
         const currentMonthYear = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
         const existingPeriod = periods.find((p: PayrollPeriod) => 
-          p.year === currentDate.getFullYear() && p.month === currentDate.getMonth() + 1 && p.unitId === currentUnitId
+          p.year === currentDate.getFullYear() && p.month === currentDate.getMonth() + 1 && p.idUnidade === currentUnitId
         );
         
         if (existingPeriod) {
@@ -143,7 +143,9 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
             totalFGTS: 0,
             totalIRRF: 0,
             unitId: currentUnitId,
-            createdBy: 'system'
+            idUnidade: currentUnitId,
+            createdBy: 'system',
+            criadoPor: 'system'
           };
           setCurrentPeriod(newPeriod);
         }
@@ -580,7 +582,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
         totalINSS: 0,
         totalFGTS: 0,
         totalIRRF: 0,
-        unitId: currentUnitId,
+        idUnidade: currentUnitId,
         createdBy: 'system'
       };
       
@@ -689,7 +691,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
               workHours: 220,
               dependents: emp.dependentes_lista || [],
               regime: 'CLT',
-              unitId: emp.unitId,
+              idUnidade: emp.idUnidade,
               cpf: emp.cpf || '',
               pis: emp.pis || '',
               matricula: emp.matricula || '',
@@ -837,7 +839,7 @@ export const ProcessamentoFolha: React.FC<ProcessamentoFolhaProps> = ({ employee
       const input: PayrollInput = {
         employee: {
           id: editingEmployee.id,
-          unitId: editingEmployee.unitId,
+          idUnidade: editingEmployee.idUnidade,
           name: editingEmployee.employeeName,
           salary: editingEmployee.salario_base || 0,
           workHours: 220,

@@ -20,14 +20,14 @@ import AuthService from '../src/services/authService';
  * Props do componente
  */
 interface PatrimonioProps {
-  currentUnitId: string;
+  currentIdUnidade: string;
   user?: any;
 }
 
 /**
  * Componente Principal de Patrimônio
  */
-export const Patrimonio: React.FC<PatrimonioProps> = ({ currentUnitId, user }) => {
+export const Patrimonio: React.FC<PatrimonioProps> = ({ currentIdUnidade, user }) => {
   const canWriteAssets = AuthService.hasPermission(user, 'assets', 'write');
   // Estado principal
   const [activeTab, setActiveTab] = useState<'assets' | 'depreciation' | 'inventory' | 'reports'>('assets');
@@ -49,7 +49,7 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentUnitId, user }) =
    */
   useEffect(() => {
     loadAssets();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   /**
    * Carregar bens da unidade
@@ -57,7 +57,7 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentUnitId, user }) =
   const loadAssets = async () => {
     setLoading(true);
     try {
-      const loadedAssets = await patrimonioService.getAssets(currentUnitId);
+      const loadedAssets = await patrimonioService.getAssets(currentIdUnidade);
       setAssets(loadedAssets);
     } catch (error) {
       console.error('Erro ao carregar bens:', error);
@@ -97,7 +97,7 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentUnitId, user }) =
       } else {
         const fullAssetData = {
           ...assetData,
-          unitId: currentUnitId,
+          idUnidade: currentIdUnidade,
           status: 'ATIVO' as AssetStatus,
           currentValue: assetData.acquisitionValue || 0,
           currentBookValue: assetData.acquisitionValue || 0,
@@ -232,11 +232,11 @@ export const Patrimonio: React.FC<PatrimonioProps> = ({ currentUnitId, user }) =
         )}
         
         {activeTab === 'depreciation' && (
-          <DepreciationTab assets={assets} currentUnitId={currentUnitId} onRefresh={loadAssets} />
+          <DepreciationTab assets={assets} currentIdUnidade={currentIdUnidade} onRefresh={loadAssets} />
         )}
         
         {activeTab === 'inventory' && (
-          <InventoryTab currentUnitId={currentUnitId} assets={assets} />
+          <InventoryTab currentIdUnidade={currentIdUnidade} assets={assets} />
         )}
         
         {activeTab === 'reports' && (
@@ -469,7 +469,7 @@ const AssetsTab: React.FC<AssetsTabProps> = ({
 /**
  * ABA DEPRECIAÇÃO — calcula e salva depreciação mensal de cada bem
  */
-const DepreciationTab: React.FC<{ assets: Asset[]; currentUnitId: string; onRefresh: () => void }> = ({ assets, currentUnitId, onRefresh }) => {
+const DepreciationTab: React.FC<{ assets: Asset[]; currentIdUnidade: string; onRefresh: () => void }> = ({ assets, currentIdUnidade, onRefresh }) => {
   const [processing, setProcessing] = React.useState<string | null>(null);
   const [results, setResults] = React.useState<Record<string, any>>({});
 
@@ -478,7 +478,7 @@ const DepreciationTab: React.FC<{ assets: Asset[]; currentUnitId: string; onRefr
   const depreciate = async (assetId: string) => {
     setProcessing(assetId);
     try {
-      const res = await fetch(`/api/assets/${assetId}/depreciate`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch(`/api/patrimonios/${assetId}/depreciate`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (res.ok) {
         setResults(prev => ({ ...prev, [assetId]: data }));
@@ -561,7 +561,7 @@ const DepreciationTab: React.FC<{ assets: Asset[]; currentUnitId: string; onRefr
 /**
  * ABA INVENTÁRIO — contagem física dos bens
  */
-const InventoryTab: React.FC<{ currentUnitId: string; assets: Asset[] }> = ({ currentUnitId, assets }) => {
+const InventoryTab: React.FC<{ currentIdUnidade: string; assets: Asset[] }> = ({ currentIdUnidade, assets }) => {
   const [counts, setCounts] = React.useState<any[]>([]);
   const [activeCount, setActiveCount] = React.useState<any | null>(null);
   const [items, setItems] = React.useState<any[]>([]);
@@ -569,12 +569,12 @@ const InventoryTab: React.FC<{ currentUnitId: string; assets: Asset[] }> = ({ cu
 
   const loadCounts = async () => {
     try {
-      const res = await fetch(`/api/assets/inventory/counts?unitId=${currentUnitId}`);
+      const res = await fetch(`/api/assets/inventory/counts?idUnidade=${currentIdUnidade}`);
       if (res.ok) setCounts(await res.json());
     } catch {}
   };
 
-  React.useEffect(() => { loadCounts(); }, [currentUnitId]);
+  React.useEffect(() => { loadCounts(); }, [currentIdUnidade]);
 
   const startCount = async () => {
     setLoading(true);
@@ -582,7 +582,7 @@ const InventoryTab: React.FC<{ currentUnitId: string; assets: Asset[] }> = ({ cu
       const res = await fetch('/api/assets/inventory/counts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unitId: currentUnitId, countedBy: 'Usuário' })
+        body: JSON.stringify({ idUnidade: currentIdUnidade, countedBy: 'Usuário' })
       });
       const data = await res.json();
       if (res.ok) { await loadCounts(); alert(`Inventário iniciado com ${data.totalAssets} bens.`); }

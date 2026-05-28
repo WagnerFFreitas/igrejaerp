@@ -49,7 +49,7 @@ export const UserPermissionsPanel: React.FC<UserPermissionsPanelProps> = ({ curr
     email: '',
     password: '',
     role: 'SECRETARY',
-    unitId: currentUser.unitId
+    idUnidade: currentUser.idUnidade
   });
 
   const canManage = currentUser.role === 'ADMIN' || currentUser.role === 'DEVELOPER';
@@ -88,7 +88,7 @@ export const UserPermissionsPanel: React.FC<UserPermissionsPanelProps> = ({ curr
     };
 
     loadData();
-  }, [canManage, currentUser.unitId]);
+  }, [canManage, currentUser.idUnidade]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -107,7 +107,7 @@ export const UserPermissionsPanel: React.FC<UserPermissionsPanelProps> = ({ curr
   };
 
   const handleCreateUser = async () => {
-    if (!createForm.name || !createForm.email || !createForm.password || !createForm.unitId) {
+    if (!createForm.name || !createForm.email || !createForm.password || !createForm.idUnidade) {
       alert('Preencha nome, email, senha e unidade.');
       return;
     }
@@ -122,7 +122,7 @@ export const UserPermissionsPanel: React.FC<UserPermissionsPanelProps> = ({ curr
         email: '',
         password: '',
         role: 'SECRETARY',
-        unitId: currentUser.unitId
+        idUnidade: currentUser.idUnidade
       });
     } catch (error: any) {
       alert(error?.response?.data?.error?.message || 'Erro ao criar usuário.');
@@ -152,7 +152,7 @@ export const UserPermissionsPanel: React.FC<UserPermissionsPanelProps> = ({ curr
     }
   };
 
-  const handleUpdateUser = async (partial: { role?: string; isActive?: boolean; unitId?: string }) => {
+  const handleUpdateUser = async (partial: { role?: string; isActive?: boolean; idUnidade?: string }) => {
     if (!selectedUser) return;
 
     try {
@@ -257,8 +257,8 @@ export const UserPermissionsPanel: React.FC<UserPermissionsPanelProps> = ({ curr
               ))}
             </select>
             <select
-              value={createForm.unitId}
-              onChange={e => setCreateForm(prev => ({ ...prev, unitId: e.target.value }))}
+              value={createForm.idUnidade}
+              onChange={e => setCreateForm(prev => ({ ...prev, idUnidade: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm"
             >
               {units.map(unit => (
@@ -302,8 +302,8 @@ export const UserPermissionsPanel: React.FC<UserPermissionsPanelProps> = ({ curr
                   </select>
 
                   <select
-                    value={selectedUser.unitId}
-                    onChange={e => handleUpdateUser({ unitId: e.target.value })}
+                    value={selectedUser.idUnidade}
+                    onChange={e => handleUpdateUser({ idUnidade: e.target.value })}
                     disabled={selectedUser.role === 'DEVELOPER'}
                     className="px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm"
                   >

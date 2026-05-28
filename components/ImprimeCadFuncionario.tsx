@@ -102,7 +102,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
       const statusColor = e.status === 'ACTIVE' ? '#15803d' : '#b91c1c';
       const statusBg    = e.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2';
       const statusLabel = e.status === 'ACTIVE' ? 'Ativo' : e.status === 'INACTIVE' ? 'Inativo' : e.status === 'PAID' ? 'Pago' : 'Pendente';
-      const avatarUrl   = e.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.employeeName)}&background=1d4ed8&color=fff&bold=true&size=80`;
+      const avatarUrl   = e.avatar;
 
       const depsHtml = e.dependentes_lista && e.dependentes_lista.length > 0 ? `
         <div style="margin-top:6px">
@@ -329,7 +329,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2.5px solid #0f172a', paddingBottom: '12px', marginBottom: '16px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <img
-                    src={e.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.employeeName)}&background=1d4ed8&color=fff&bold=true&size=80`}
+                    src={e.avatar}
                     style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #e2e8f0' }}
                     alt=""
                   />

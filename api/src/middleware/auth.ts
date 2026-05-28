@@ -31,7 +31,7 @@ export interface AuthenticatedRequest extends Request {
     userId: string;
     email: string;
     role: string;
-    unitId: string;
+    idUnidade: string;
   };
 }
 
@@ -52,7 +52,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
       userId: string;
       email: string;
       role: string;
-      unitId: string;
+      idUnidade: string;
     };
 
     req.authUser = decoded;

@@ -24,7 +24,7 @@ import AuthService from '../src/services/authService';
 
 interface RecursosHumanosProps {
   employees: Payroll[];
-  currentUnitId: string;
+  currentIdUnidade: string;
   evaluations: Record<string, any[]>;
   user?: UserAuth;
 }
@@ -56,7 +56,7 @@ interface EmployeeRecord {
  * Define o bloco principal deste arquivo (recursos humanos).
  */
 
-export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, currentUnitId, evaluations, user }) => {
+export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, currentIdUnidade, evaluations, user }) => {
   const canWriteHR = AuthService.hasPermission(user as any, 'hr', 'write');
   const [records, setRecords] = useState<Record<string, EmployeeRecord>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -93,18 +93,18 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
     if (!selectedEmployeeId || !avaliacaoForm.data) return;
 
     const emp = employees.find(e => e.id === selectedEmployeeId);
-    const unitIdMap: Record<string, string> = {
+    const idUnidadeMap: Record<string, string> = {
       'u-sede':  '00000000-0000-0000-0000-000000000001',
       'u-matriz':'00000000-0000-0000-0000-000000000001',
     };
-    const apiUnitId = unitIdMap[currentUnitId] || currentUnitId;
+    const apiIdUnidade = idUnidadeMap[currentIdUnidade] || currentIdUnidade;
 
     try {
       // Converte pontuação 1-5 para escala 0-100
       const score = avaliacaoForm.pontuacao * 20;
       await AvaliacaoService.saveEvaluation({
         id: `tmp-${Date.now()}`,
-        unitId: apiUnitId,
+        idUnidade: apiIdUnidade,
         employeeId: selectedEmployeeId,
         employeeName: emp?.employeeName || '',
         evaluationDate: avaliacaoForm.data,
@@ -140,16 +140,16 @@ export const RecursosHumanos: React.FC<RecursosHumanosProps> = ({ employees, cur
     if (!selectedEmployeeId || !pdiForm.meta) return;
 
     const emp = employees.find(e => e.id === selectedEmployeeId);
-    const unitIdMap: Record<string, string> = {
+    const idUnidadeMap: Record<string, string> = {
       'u-sede':  '00000000-0000-0000-0000-000000000001',
       'u-matriz':'00000000-0000-0000-0000-000000000001',
     };
-    const apiUnitId = unitIdMap[currentUnitId] || currentUnitId;
+    const apiIdUnidade = idUnidadeMap[currentIdUnidade] || currentIdUnidade;
 
     try {
       await AvaliacaoService.saveDevelopmentPlan({
         id: `tmp-${Date.now()}`,
-        unitId: apiUnitId,
+        idUnidade: apiIdUnidade,
         employeeId: selectedEmployeeId,
         employeeName: emp?.employeeName || '',
         meta: pdiForm.meta,

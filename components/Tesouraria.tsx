@@ -36,7 +36,7 @@ import {
 } from '../types';
 
 interface TesourariaProps {
-  currentUnitId: string;
+  currentIdUnidade: string;
   user?: any;
 }
 
@@ -59,7 +59,7 @@ interface TesourariaProps {
  * Define o bloco principal deste arquivo (tesouraria).
  */
 
-export const Tesouraria: React.FC<TesourariaProps> = ({ currentUnitId, user }) => {
+export const Tesouraria: React.FC<TesourariaProps> = ({ currentIdUnidade, user }) => {
   const [activeTab, setActiveTab] = useState<'cashflow' | 'forecast' | 'accounts' | 'investments' | 'loans' | 'alerts' | 'position'>('cashflow');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -103,7 +103,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentUnitId, user }) =
   // Carregar dados iniciais
   useEffect(() => {
     loadAllData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   const loadAllData = async () => {
     setIsLoading(true);
@@ -118,13 +118,13 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentUnitId, user }) =
         alertsData,
         summaryData
       ] = await Promise.all([
-        TreasuryService.getCashFlows(currentUnitId),
-        TreasuryService.getCashFlowForecasts(currentUnitId),
-        TreasuryService.getTreasuryAccounts(currentUnitId),
-        TreasuryService.getInvestments(currentUnitId),
-        TreasuryService.getLoans(currentUnitId),
-        TreasuryService.getTreasuryAlerts(currentUnitId),
-        TreasuryService.getTreasurySummary(currentUnitId)
+        TreasuryService.getCashFlows(currentIdUnidade),
+        TreasuryService.getCashFlowForecasts(currentIdUnidade),
+        TreasuryService.getTreasuryAccounts(currentIdUnidade),
+        TreasuryService.getInvestments(currentIdUnidade),
+        TreasuryService.getLoans(currentIdUnidade),
+        TreasuryService.getTreasuryAlerts(currentIdUnidade),
+        TreasuryService.getTreasurySummary(currentIdUnidade)
       ]);
 
       setCashFlows(cashFlowsData);
@@ -143,7 +143,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentUnitId, user }) =
       setNextPayments(summaryData.proximosVencimentos);
       
       // Gerar posição financeira
-      const position = await TreasuryService.generateFinancialPosition(currentUnitId);
+      const position = await TreasuryService.generateFinancialPosition(currentIdUnidade);
       setFinancialPosition(position);
       
     } catch (error) {
@@ -164,7 +164,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentUnitId, user }) =
         today.toISOString().split('T')[0],
         endDate.toISOString().split('T')[0],
         'MENSAL',
-        currentUnitId
+        currentIdUnidade
       );
       
       setForecasts([...forecasts, forecast]);
@@ -178,7 +178,7 @@ export const Tesouraria: React.FC<TesourariaProps> = ({ currentUnitId, user }) =
   // Gerar alertas automaticamente
   const handleGenerateAlerts = async () => {
     try {
-      const newAlerts = await TreasuryService.generateTreasuryAlerts(currentUnitId);
+      const newAlerts = await TreasuryService.generateTreasuryAlerts(currentIdUnidade);
       setAlerts([...alerts, ...newAlerts]);
       setActiveAlerts(activeAlerts + newAlerts.length);
     } catch (error) {

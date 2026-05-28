@@ -66,13 +66,13 @@ interface LayoutProps {
   setActiveTab: (tab: string) => void;
   user: UserAuth;
   onLogout: () => void;
-  currentUnitId: string;
-  onUnitChange: (unitId: string) => void;
+  currentIdUnidade: string;
+  onUnitChange: (idUnidade: string) => void;
   allowedTabs?: string[];
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
-  children, activeTab, setActiveTab, user, onLogout, currentUnitId, onUnitChange, allowedTabs = []
+  children, activeTab, setActiveTab, user, onLogout, currentIdUnidade, onUnitChange, allowedTabs = []
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -84,7 +84,7 @@ export const Layout: React.FC<LayoutProps> = ({
     dbService.getUnits().then(setUnits).catch(console.error);
   }, []);
 
-  const currentUnit = units.find(u => u.id === currentUnitId);
+  const currentUnit = units.find(u => u.id === currentIdUnidade);
 
   const menuItems = [
     { id: 'dashboard', label: 'Painel Geral', icon: <LayoutDashboard /> },

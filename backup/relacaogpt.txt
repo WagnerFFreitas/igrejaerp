@@ -1,0 +1,151 @@
+Perfeito — agora vou montar um rascunho completo do seu banco, já:
+
+✔ em português
+✔ com dados_pessoais centralizado
+✔ com data_criacao e data_atualizacao em TODAS as tabelas
+✔ com relacionamento correto
+✔ simples (sem excesso de tabelas)
+✔ pronto pra PostgreSQL
+📄 RASCUNHO COMPLETO DO BANCO
+#### 1. Dados Pessoais (Tabela: dados_pessoais) -> [dados_pessoais]
+id_pessoa (uuid, primary key)
+nome (text)
+cpf (varchar) - UNIQUE
+rg (varchar)
+data_nascimento (date)
+sexo (varchar)
+estado_civil (varchar)
+📞 Contato
+email (varchar)
+telefone (varchar)
+celular (varchar)
+whatsapp (boolean)
+🩺 Saúde
+tipo_sanguineo (varchar)
+contato_emergencia (varchar)
+♿ Inclusão
+pcd (boolean)
+tipo_deficiencia (varchar)
+📍 Endereço
+endereco (text)
+numero (varchar)
+bairro (varchar)
+cidade (varchar)
+estado (varchar)
+cep (varchar)
+pais (varchar)
+⚙️ Sistema
+data_criacao (timestamp)
+data_atualizacao (timestamp)
+#### 2. Membros (Tabela: membros) -> [membros]
+id_membro (uuid, primary key)
+id_pessoa (uuid, FK → dados_pessoais.id_pessoa)
+matricula (varchar) - UNIQUE
+id_unidade (uuid)
+id_familia (uuid)
+🙏 Dados eclesiásticos
+data_conversao (date)
+data_batismo (date)
+data_ingresso (date)
+situacao (varchar)
+🧩 Estrutura
+funcao (varchar)
+grupo_pequeno (varchar)
+grupo_celular (varchar)
+💰 Contribuições (resumo)
+dizimista (boolean)
+ofertante (boolean)
+ofertante_regular (boolean)
+participa_campanhas (boolean)
+🧠 Outros
+observacoes (text)
+talentos (text)
+dons_espirituais (varchar)
+escolaridade (varchar)
+🔐 LGPD
+consentimento_lgpd (jsonb)
+🖼️
+foto (varchar)
+⚙️ Sistema
+data_criacao (timestamp)
+data_atualizacao (timestamp)
+#### 3. Funcionários (Tabela: funcionarios) -> [funcionarios]
+id_funcionario (uuid, primary key)
+id_pessoa (uuid, FK → dados_pessoais.id_pessoa)
+matricula (varchar) - UNIQUE
+id_unidade (uuid)
+💼 Dados profissionais
+cargo (varchar)
+departamento (varchar)
+data_admissao (date)
+data_demissao (date)
+salario (numeric)
+tipo_contrato (varchar)
+⚙️ Sistema
+data_criacao (timestamp)
+data_atualizacao (timestamp)
+#### 4. Famílias (Tabela: familias) -> [familias]
+id_familia (uuid, primary key)
+nome_familia (varchar)
+⚙️ Sistema
+data_criacao (timestamp)
+data_atualizacao (timestamp)
+#### 5. Ministérios (Tabela: ministerios) -> [ministerios]
+id_ministerio (uuid, primary key)
+nome (varchar)
+⚙️ Sistema
+data_criacao (timestamp)
+data_atualizacao (timestamp)
+#### 6. Pessoas_Ministérios (Tabela: pessoas_ministerios) -> [pessoas_ministerios]
+
+👉 relacionamento N:N
+
+id (uuid, primary key)
+id_pessoa (uuid, FK → dados_pessoais.id_pessoa)
+id_ministerio (uuid, FK → ministerios.id_ministerio)
+funcao (varchar)
+principal (boolean)
+⚙️ Sistema
+data_criacao (timestamp)
+data_atualizacao (timestamp)
+#### 7. Contribuições (Tabela: contribuicoes) -> [contribuicoes]
+id_contribuicao (uuid, primary key)
+id_membro (uuid, FK → membros.id_membro)
+tipo (varchar) → (dizimo / oferta)
+valor (numeric)
+data_pagamento (date)
+⚙️ Sistema
+data_criacao (timestamp)
+data_atualizacao (timestamp)
+🔗 RELACIONAMENTO FINAL
+dados_pessoais 1 ─── 1 membros
+dados_pessoais 1 ─── 1 funcionarios
+dados_pessoais N ─── N ministerios
+membros 1 ─── N contribuicoes
+membros N ─── 1 familias
+🧠 O QUE VOCÊ TEM AGORA
+
+✔ base única de dados pessoais
+✔ sem duplicação
+✔ tabelas organizadas
+✔ padrão consistente
+✔ pronto para API
+✔ pronto para PostgreSQL
+
+🔥 NÍVEL PROFISSIONAL (PRÓXIMO PASSO)
+
+Se quiser melhorar ainda mais depois:
+
+adicionar usuario_criacao
+adicionar usuario_atualizacao
+triggers automáticas
+índices (CPF, matrícula)
+✔ RESUMO
+
+Você saiu de:
+❌ banco duplicado
+
+Para:
+✔ banco estruturado
+✔ limpo
+✔ escalável

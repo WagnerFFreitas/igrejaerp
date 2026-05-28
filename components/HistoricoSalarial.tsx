@@ -27,7 +27,7 @@ import SalaryHistoryService from '../services/salaryHistoryService';
 
 interface HistoricoSalarialProps {
   employees: Payroll[];
-  currentUnitId: string;
+  currentIdUnidade: string;
   user?: UserAuth;
   selectedEmployee?: Payroll;
 }
@@ -41,7 +41,7 @@ interface HistoricoSalarialProps {
 
 export default function HistoricoSalarial({
   employees,
-  currentUnitId,
+  currentIdUnidade,
   user,
   selectedEmployee
 }: HistoricoSalarialProps) {
@@ -60,8 +60,8 @@ export default function HistoricoSalarial({
       setIsLoading(true);
       try {
         const [history, requests] = await Promise.all([
-          SalaryHistoryService.getSalaryHistory(currentUnitId),
-          SalaryHistoryService.getAdjustmentRequests(currentUnitId)
+          SalaryHistoryService.getSalaryHistory(currentIdUnidade),
+          SalaryHistoryService.getAdjustmentRequests(currentIdUnidade)
         ]);
 
         setSalaryHistory(history);
@@ -74,7 +74,7 @@ export default function HistoricoSalarial({
     };
 
     loadData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   const filteredHistory = salaryHistory.filter(history => {
     const matchesSearch = history.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||

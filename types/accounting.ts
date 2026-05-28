@@ -3,37 +3,19 @@
  * ACCOUNTING.TS
  * ============================================================================
  *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Definições de tipos e interfaces usadas no projeto.
- *
- * ONDE É USADO?
- * -------------
- * Importado em vários locais para garantir tipos consistentes.
- *
- * COMO FUNCIONA?
- * --------------
- * Ajuda o sistema com uma funcionalidade específica.
+ * Tipos contábeis para Módulo de Departamento Pessoal.
+ * Nomenclatura PT-BR alinhada ao schema PostgreSQL.
  */
 
-// Tipos Contábeis para Módulo de Departamento Pessoal
+// ============================================================================
+// ENUMS
+// ============================================================================
 
-/**
- * Tipos de conta no plano de contas
- */
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (accounting).
- */
+export type TipoConta = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+/** @deprecated Use TipoConta */
+export type AccountType = TipoConta;
 
-export type AccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
-
-/**
- * Grupo de contas contábeis
- */
-export type AccountGroup = 
+export type GrupoConta =
   | 'Salários e Ordenados'
   | 'Encargos Sociais e Trabalhistas'
   | 'Benefícios'
@@ -41,152 +23,164 @@ export type AccountGroup =
   | 'Rescisões'
   | 'Contas a Pagar - Folha'
   | 'Contas de Compensação';
+/** @deprecated Use GrupoConta */
+export type AccountGroup = GrupoConta;
 
-/**
- * Conta Contábil do Plano de Contas
- */
-export interface AccountingAccount {
+export type FonteLancamento = 'PAYROLL' | 'MANUAL' | 'ESOCIAL' | 'BANK' | 'PROVISION';
+/** @deprecated Use FonteLancamento */
+export type JournalEntrySource = FonteLancamento;
+
+export type TipoProvisao = 'VACATION' | 'CHRISTMAS_BONUS' | 'FINE_40' | 'NOTICE_PERIOD';
+/** @deprecated Use TipoProvisao */
+export type ProvisionType = TipoProvisao;
+
+export type SituacaoProvisao = 'ACCRUED' | 'USED' | 'REVERSED';
+/** @deprecated Use SituacaoProvisao */
+export type ProvisionStatus = SituacaoProvisao;
+
+export type SituacaoEventoEsocial = 'GENERATED' | 'SENT' | 'ERROR' | 'PROCESSED' | 'CANCELLED';
+/** @deprecated Use SituacaoEventoEsocial */
+export type ESocialEventStatus = SituacaoEventoEsocial;
+
+// ============================================================================
+// CONTA CONTÁBIL
+// ============================================================================
+
+export interface ContaContabil {
   id: string;
-  code: string; // Ex: "3.1.1.01"
-  name: string; // Ex: "Salários CLT"
-  type: AccountType;
-  group: AccountGroup;
-  unitId: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  description?: string;
-  parentCode?: string; // Código da conta pai (para hierarquia)
+  codigo: string;
+  nome: string;
+  tipo: TipoConta;
+  grupo: GrupoConta;
+  idUnidade: string;
+  ativo: boolean;
+  dataCriacao: string;
+  dataAtualizacao: string;
+  descricao?: string;
+  codigoContaPai?: string;
 }
+/** @deprecated Use ContaContabil */
+export type AccountingAccount = ContaContabil;
 
-/**
- * Linha de um lançamento contábil (débito ou crédito)
- */
-export interface JournalEntryLine {
+// ============================================================================
+// LANÇAMENTO CONTÁBIL
+// ============================================================================
+
+export interface LinhaLancamentoContabil {
   id: string;
-  entryId: string;
-  accountId: string;
-  accountCode: string;
-  description: string;
-  debit: number;
-  credit: number;
-  costCenterId?: string;
-  employeeId?: string;
-  projectId?: string;
-  documentNumber?: string;
+  idLancamento: string;
+  idConta: string;
+  codigoConta: string;
+  descricao: string;
+  debito: number;
+  credito: number;
+  idCentroCusto?: string;
+  idFuncionario?: string;
+  idProjeto?: string;
+  numeroDocumento?: string;
 }
+/** @deprecated Use LinhaLancamentoContabil */
+export type JournalEntryLine = LinhaLancamentoContabil;
 
-/**
- * Lançamento Contábil completo (Livro Diário)
- */
-export interface JournalEntry {
+export interface LancamentoDiario {
   id: string;
-  unitId: string;
-  date: string;
-  history: string;
-  documentNumber?: string;
-  entries: JournalEntryLine[];
-  source: JournalEntrySource;
-  createdAt: string;
-  createdBy: string;
-  isPosted: boolean;
-  postedAt?: string;
-  postedBy?: string;
-  totalDebits: number;
-  totalCredits: number;
-  isBalanced: boolean;
+  idUnidade: string;
+  data: string;
+  historico: string;
+  numeroDocumento?: string;
+  linhas: LinhaLancamentoContabil[];
+  origem: FonteLancamento;
+  dataCriacao: string;
+  criadoPor: string;
+  contabilizado: boolean;
+  contabilizadoEm?: string;
+  contabilizadoPor?: string;
+  totalDebitos: number;
+  totalCreditos: number;
+  estaBalanceado: boolean;
 }
+/** @deprecated Use LancamentoDiario */
+export type JournalEntry = LancamentoDiario;
 
-/**
- * Fonte do lançamento contábil
- */
-export type JournalEntrySource = 'PAYROLL' | 'MANUAL' | 'ESOCIAL' | 'BANK' | 'PROVISION';
+// ============================================================================
+// PROVISÃO TRABALHISTA
+// ============================================================================
 
-/**
- * Tipo de provisão trabalhista
- */
-export type ProvisionType = 'VACATION' | 'CHRISTMAS_BONUS' | 'FINE_40' | 'NOTICE_PERIOD';
-
-/**
- * Status da provisão
- */
-export type ProvisionStatus = 'ACCRUED' | 'USED' | 'REVERSED';
-
-/**
- * Provisão Trabalhista (Férias, 13º, Multa FGTS, etc.)
- */
-export interface PayrollProvision {
+export interface ProvisaoTrabalhista {
   id: string;
-  unitId: string;
-  employeeId: string;
-  employeeName: string;
-  type: ProvisionType;
-  month: number;
-  year: number;
-  accruedValue: number;
-  usedValue?: number;
-  balance: number;
-  status: ProvisionStatus;
-  createdAt: string;
-  reversedAt?: string;
-  usedAt?: string;
-  observations?: string;
+  idUnidade: string;
+  idFuncionario: string;
+  nomeFuncionario: string;
+  tipo: TipoProvisao;
+  mes: number;
+  ano: number;
+  valorProvisionado: number;
+  valorUtilizado?: number;
+  saldo: number;
+  situacao: SituacaoProvisao;
+  dataCriacao: string;
+  revertidoEm?: string;
+  utilizadoEm?: string;
+  observacoes?: string;
 }
+/** @deprecated Use ProvisaoTrabalhista */
+export type PayrollProvision = ProvisaoTrabalhista;
 
-/**
- * Evento do eSocial
- */
-export interface ESocialEvent {
+// ============================================================================
+// EVENTO ESOCIAL
+// ============================================================================
+
+export interface EventoEsocial {
   id: string;
-  unitId: string;
-  eventType: string; // Ex: "S-1200", "S-2200"
-  employeeId?: string;
+  idUnidade: string;
+  tipoEvento: string;
+  idFuncionario?: string;
   xml: string;
-  receipt?: string;
-  status: ESocialEventStatus;
-  errorMessage?: string;
-  sentAt?: string;
-  processedAt?: string;
-  protocol?: string;
-  createdAt: string;
-  updatedAt: string;
+  recibo?: string;
+  situacao: SituacaoEventoEsocial;
+  mensagemErro?: string;
+  enviadoEm?: string;
+  processadoEm?: string;
+  protocolo?: string;
+  dataCriacao: string;
+  dataAtualizacao: string;
 }
+/** @deprecated Use EventoEsocial */
+export type ESocialEvent = EventoEsocial;
 
-/**
- * Status do evento eSocial
- */
-export type ESocialEventStatus = 'GENERATED' | 'SENT' | 'ERROR' | 'PROCESSED' | 'CANCELLED';
+// ============================================================================
+// RESULTADO DO PROCESSAMENTO DA FOLHA
+// ============================================================================
 
-/**
- * Resultado do processamento da folha
- */
-export interface PayrollProcessingResult {
-  employeesProcessed: number;
-  totalGrossSalary: number;
-  totalINSS: number;
-  totalIRRF: number;
-  totalFGTS: number;
-  totalEmployerCharges: number;
-  totalNetSalary: number;
-  journalEntryGenerated: boolean;
-  esocialEventsGenerated: boolean;
-  errors: PayrollError[];
+export interface ResultadoProcessamentoFolha {
+  funcionariosProcessados: number;
+  totalSalarioBruto: number;
+  totalInss: number;
+  totalIrrf: number;
+  totalFgts: number;
+  totalEncargosEmpregador: number;
+  totalSalarioLiquido: number;
+  lancamentoContabilGerado: boolean;
+  eventosEsocialGerados: boolean;
+  erros: ErroFolha[];
 }
+/** @deprecated Use ResultadoProcessamentoFolha */
+export type PayrollProcessingResult = ResultadoProcessamentoFolha;
 
-/**
- * Erro no processamento da folha
- */
-export interface PayrollError {
-  employeeId: string;
-  employeeName: string;
-  error: string;
-  field?: string;
-  severity: 'ERROR' | 'WARNING';
+export interface ErroFolha {
+  idFuncionario: string;
+  nomeFuncionario: string;
+  erro: string;
+  campo?: string;
+  gravidade: 'ERROR' | 'WARNING';
 }
+/** @deprecated Use ErroFolha */
+export type PayrollError = ErroFolha;
 
-/**
- * Configuração de impostos e taxas
- */
+// ============================================================================
+// CONFIGURAÇÃO TRIBUTÁRIA (manter em inglês — cálculo matemático puro)
+// ============================================================================
+
 export interface TaxConfiguration {
   inssBrackets: TaxBracket[];
   irrfBrackets: IRRFBracket[];
@@ -200,34 +194,31 @@ export interface TaxConfiguration {
   updated: string;
 }
 
-/**
- * Faixa de INSS
- */
 export interface TaxBracket {
   limit: number;
   rate: number;
 }
 
-/**
- * Faixa de IRRF com parcela a deduzir
- */
 export interface IRRFBracket {
   limit: number;
   rate: number;
   deduction: number;
 }
 
-/**
- * Resumo contábil do mês
- */
-export interface MonthlyAccountingSummary {
-  month: number;
-  year: number;
-  totalSalaries: number;
-  totalCharges: number;
-  totalBenefits: number;
-  totalProvisions: number;
-  totalRescisions: number;
-  journalEntriesCount: number;
-  esocialEventsCount: number;
+// ============================================================================
+// RESUMO CONTÁBIL MENSAL
+// ============================================================================
+
+export interface ResumoContabilMensal {
+  mes: number;
+  ano: number;
+  totalSalarios: number;
+  totalEncargos: number;
+  totalBeneficios: number;
+  totalProvisoes: number;
+  totalRescisoes: number;
+  quantidadeLancamentos: number;
+  quantidadeEventosEsocial: number;
 }
+/** @deprecated Use ResumoContabilMensal */
+export type MonthlyAccountingSummary = ResumoContabilMensal;

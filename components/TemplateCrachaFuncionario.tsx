@@ -34,9 +34,8 @@ interface TemplateCrachaFuncionarioProps {
 
 export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps> = ({ employee, unit, id }) => {
 
-  // Foto real do funcionário — fallback para avatar gerado pelo nome
-  const avatarUrl = employee.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.employeeName || 'F')}&background=003399&color=fff&bold=true&size=200`;
+  // Foto real do funcionário (apenas foto real, sem avatar automático)
+  const avatarUrl = employee.avatar || '';
 
   // Data de admissão formatada com segurança
   const admissaoFormatada = (() => {
@@ -109,10 +108,9 @@ export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps>
             <img 
               src={avatarUrl}
               className="w-full h-full object-cover" 
-              crossOrigin="anonymous"
               alt={employee.employeeName}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.employeeName || 'F')}&background=003399&color=fff&bold=true&size=200`;
+                (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
           </div>
@@ -123,7 +121,6 @@ export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps>
             src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(employee.id)}`}
             alt="QR Code"
             className="w-full h-full"
-            crossOrigin="anonymous"
           />
         </div>
 

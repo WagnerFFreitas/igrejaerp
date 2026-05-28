@@ -38,7 +38,7 @@ import { payrollService } from '../services/payrollService';
  */
 interface FolhaPagamentoProps {
   employees: Employee[];
-  currentUnitId: string;
+  currentIdUnidade: string;
 }
 
 /**
@@ -47,7 +47,7 @@ interface FolhaPagamentoProps {
  */
 export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
   employees,
-  currentUnitId,
+  currentIdUnidade,
 }) => {
   
   /**

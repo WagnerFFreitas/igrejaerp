@@ -1,0 +1,4700 @@
+{
+  "employee_dependents": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_nascimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "parentesco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estudante",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "dependencia_irrf",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "accounts": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_conta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tipo_conta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nome_banco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "agency",
+      "data_type": "text"
+    },
+    {
+      "column_name": "numero_conta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "saldo_atual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "currency",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esta_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "employees": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "text"
+    },
+    {
+      "column_name": "rg",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ctps",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ctps_serie",
+      "data_type": "text"
+    },
+    {
+      "column_name": "pis",
+      "data_type": "text"
+    },
+    {
+      "column_name": "birth_date",
+      "data_type": "date"
+    },
+    {
+      "column_name": "sexo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado_civil",
+      "data_type": "text"
+    },
+    {
+      "column_name": "blood_type",
+      "data_type": "text"
+    },
+    {
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "column_name": "telefone",
+      "data_type": "text"
+    },
+    {
+      "column_name": "celular",
+      "data_type": "text"
+    },
+    {
+      "column_name": "emergency_contact",
+      "data_type": "text"
+    },
+    {
+      "column_name": "naturalidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "escolaridade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "raca_cor",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nome_mae",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nome_pai",
+      "data_type": "text"
+    },
+    {
+      "column_name": "deficiencia",
+      "data_type": "text"
+    },
+    {
+      "column_name": "deficiencia_obs",
+      "data_type": "text"
+    },
+    {
+      "column_name": "avatar",
+      "data_type": "text"
+    },
+    {
+      "column_name": "observacoes_saude",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cep",
+      "data_type": "text"
+    },
+    {
+      "column_name": "logradouro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "numero",
+      "data_type": "text"
+    },
+    {
+      "column_name": "complemento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "bairro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado",
+      "data_type": "text"
+    },
+    {
+      "column_name": "address_country",
+      "data_type": "text"
+    },
+    {
+      "column_name": "matricula",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cargo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "funcao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "departamento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cbo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_admissao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_demissao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "tipo_contrato",
+      "data_type": "text"
+    },
+    {
+      "column_name": "regime_trabalho",
+      "data_type": "text"
+    },
+    {
+      "column_name": "sindicato",
+      "data_type": "text"
+    },
+    {
+      "column_name": "convencao_coletiva",
+      "data_type": "text"
+    },
+    {
+      "column_name": "salario_base",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "tipo_salario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "forma_pagamento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "dia_pagamento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "jornada_trabalho",
+      "data_type": "text"
+    },
+    {
+      "column_name": "escala_trabalho",
+      "data_type": "text"
+    },
+    {
+      "column_name": "horario_entrada",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "horario_saida",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "inicio_intervalo",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "fim_intervalo",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "duracao_intervalo",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "segunda_a_sexta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "sabado",
+      "data_type": "text"
+    },
+    {
+      "column_name": "trabalha_feriados",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "controla_intervalo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "horas_extras_autorizadas",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "tipo_registro_ponto",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tolerancia_ponto",
+      "data_type": "text"
+    },
+    {
+      "column_name": "codigo_horario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "banco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "codigo_banco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "agencia",
+      "data_type": "text"
+    },
+    {
+      "column_name": "conta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tipo_conta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titular",
+      "data_type": "text"
+    },
+    {
+      "column_name": "chave_pix",
+      "data_type": "text"
+    },
+    {
+      "column_name": "vt_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "vt_valor_diario",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vt_qtd_vales_dia",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "vale_transporte_total",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "va_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "va_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "vale_alimentacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vr_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "vr_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "vale_refeicao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "ps_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "ps_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ps_tipo_plano",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ps_carteirinha",
+      "data_type": "text"
+    },
+    {
+      "column_name": "plano_saude_colaborador",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "ps_dependentes_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "plano_saude_dependentes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "po_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "po_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "po_carteirinha",
+      "data_type": "text"
+    },
+    {
+      "column_name": "plano_odontologico",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "auxilio_moradia",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vale_farmacia",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "seguro_vida",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "auxilio_creche",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "auxilio_educacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "gympass_plano",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titulo_eleitor",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titulo_eleitor_zona",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titulo_eleitor_secao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "reservista",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cnh_numero",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cnh_categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cnh_vencimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "aso_data",
+      "data_type": "date"
+    },
+    {
+      "column_name": "esocial_categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_matricula",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_natureza_atividade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_tipo_regime_prev",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_tipo_regime_trab",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_indicativo_admissao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_tipo_jornada",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_descricao_jornada",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_contrato_parcial",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_teletrabalho",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_clausula_asseguratoria",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_sucessao_trab",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_tipo_admissao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_cnpj_anterior",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_matricula_anterior",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_data_admissao_origem",
+      "data_type": "date"
+    },
+    {
+      "column_name": "ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "created_by",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "dados_perfil",
+      "data_type": "jsonb"
+    }
+  ],
+  "member_dependents": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_membro",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_nascimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "parentesco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "categories": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tipo_categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "categoria_pai_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "cor",
+      "data_type": "text"
+    },
+    {
+      "column_name": "icone",
+      "data_type": "text"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esta_ativa",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "units": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_unidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cnpj",
+      "data_type": "text"
+    },
+    {
+      "column_name": "endereco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "bairro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cep",
+      "data_type": "text"
+    },
+    {
+      "column_name": "country",
+      "data_type": "text"
+    },
+    {
+      "column_name": "telefone",
+      "data_type": "text"
+    },
+    {
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "column_name": "website",
+      "data_type": "text"
+    },
+    {
+      "column_name": "pastor_name",
+      "data_type": "text"
+    },
+    {
+      "column_name": "pastor_phone",
+      "data_type": "text"
+    },
+    {
+      "column_name": "sede",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "status",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "endereco_linha1",
+      "data_type": "text"
+    },
+    {
+      "column_name": "endereco_linha2",
+      "data_type": "text"
+    }
+  ],
+  "active_employees": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "text"
+    },
+    {
+      "column_name": "rg",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ctps",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ctps_serie",
+      "data_type": "text"
+    },
+    {
+      "column_name": "pis",
+      "data_type": "text"
+    },
+    {
+      "column_name": "birth_date",
+      "data_type": "date"
+    },
+    {
+      "column_name": "sexo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado_civil",
+      "data_type": "text"
+    },
+    {
+      "column_name": "blood_type",
+      "data_type": "text"
+    },
+    {
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "column_name": "telefone",
+      "data_type": "text"
+    },
+    {
+      "column_name": "celular",
+      "data_type": "text"
+    },
+    {
+      "column_name": "emergency_contact",
+      "data_type": "text"
+    },
+    {
+      "column_name": "naturalidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "escolaridade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "raca_cor",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nome_mae",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nome_pai",
+      "data_type": "text"
+    },
+    {
+      "column_name": "deficiencia",
+      "data_type": "text"
+    },
+    {
+      "column_name": "deficiencia_obs",
+      "data_type": "text"
+    },
+    {
+      "column_name": "avatar",
+      "data_type": "text"
+    },
+    {
+      "column_name": "observacoes_saude",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cep",
+      "data_type": "text"
+    },
+    {
+      "column_name": "logradouro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "numero",
+      "data_type": "text"
+    },
+    {
+      "column_name": "complemento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "bairro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado",
+      "data_type": "text"
+    },
+    {
+      "column_name": "address_country",
+      "data_type": "text"
+    },
+    {
+      "column_name": "matricula",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cargo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "funcao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "departamento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cbo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_admissao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_demissao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "tipo_contrato",
+      "data_type": "text"
+    },
+    {
+      "column_name": "regime_trabalho",
+      "data_type": "text"
+    },
+    {
+      "column_name": "sindicato",
+      "data_type": "text"
+    },
+    {
+      "column_name": "convencao_coletiva",
+      "data_type": "text"
+    },
+    {
+      "column_name": "salario_base",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "tipo_salario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "forma_pagamento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "dia_pagamento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "jornada_trabalho",
+      "data_type": "text"
+    },
+    {
+      "column_name": "escala_trabalho",
+      "data_type": "text"
+    },
+    {
+      "column_name": "horario_entrada",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "horario_saida",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "inicio_intervalo",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "fim_intervalo",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "duracao_intervalo",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "segunda_a_sexta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "sabado",
+      "data_type": "text"
+    },
+    {
+      "column_name": "trabalha_feriados",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "controla_intervalo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "horas_extras_autorizadas",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "tipo_registro_ponto",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tolerancia_ponto",
+      "data_type": "text"
+    },
+    {
+      "column_name": "codigo_horario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "banco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "codigo_banco",
+      "data_type": "text"
+    },
+    {
+      "column_name": "agencia",
+      "data_type": "text"
+    },
+    {
+      "column_name": "conta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tipo_conta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titular",
+      "data_type": "text"
+    },
+    {
+      "column_name": "chave_pix",
+      "data_type": "text"
+    },
+    {
+      "column_name": "vt_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "vt_valor_diario",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vt_qtd_vales_dia",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "vale_transporte_total",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "va_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "va_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "vale_alimentacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vr_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "vr_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "vale_refeicao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "ps_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "ps_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ps_tipo_plano",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ps_carteirinha",
+      "data_type": "text"
+    },
+    {
+      "column_name": "plano_saude_colaborador",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "ps_dependentes_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "plano_saude_dependentes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "po_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "po_operadora",
+      "data_type": "text"
+    },
+    {
+      "column_name": "po_carteirinha",
+      "data_type": "text"
+    },
+    {
+      "column_name": "plano_odontologico",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "auxilio_moradia",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vale_farmacia",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "seguro_vida",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "auxilio_creche",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "auxilio_educacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "gympass_plano",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titulo_eleitor",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titulo_eleitor_zona",
+      "data_type": "text"
+    },
+    {
+      "column_name": "titulo_eleitor_secao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "reservista",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cnh_numero",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cnh_categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cnh_vencimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "aso_data",
+      "data_type": "date"
+    },
+    {
+      "column_name": "esocial_categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_matricula",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_natureza_atividade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_tipo_regime_prev",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_tipo_regime_trab",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_indicativo_admissao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_tipo_jornada",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_descricao_jornada",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_contrato_parcial",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_teletrabalho",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_clausula_asseguratoria",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_sucessao_trab",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "esocial_tipo_admissao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_cnpj_anterior",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_matricula_anterior",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esocial_data_admissao_origem",
+      "data_type": "date"
+    },
+    {
+      "column_name": "is_active",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "created_by",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_name",
+      "data_type": "text"
+    },
+    {
+      "column_name": "current_status",
+      "data_type": "text"
+    }
+  ],
+  "active_members": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "text"
+    },
+    {
+      "column_name": "rg",
+      "data_type": "text"
+    },
+    {
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "column_name": "telefone",
+      "data_type": "text"
+    },
+    {
+      "column_name": "celular",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_nascimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "sexo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado_civil",
+      "data_type": "text"
+    },
+    {
+      "column_name": "logradouro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "bairro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cep",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_conversao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_batismo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_membro",
+      "data_type": "date"
+    },
+    {
+      "column_name": "status_membro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cargo_igreja",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ministerio",
+      "data_type": "text"
+    },
+    {
+      "column_name": "grupo_pequeno",
+      "data_type": "text"
+    },
+    {
+      "column_name": "dizimista",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "ofertante",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "valor_dizimo",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "unit_name",
+      "data_type": "text"
+    }
+  ],
+  "payroll": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "month",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "year",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "data_referencia",
+      "data_type": "date"
+    },
+    {
+      "column_name": "salario_base",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "horas_extras_50",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "horas_extras_100",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "adicional_noturno",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "insalubridade",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "periculosidade",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "comissoes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "gratificacoes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "outros_proventos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "inss",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "irrf",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "fgts",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "pensao_alimenticia",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "adiantamento",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "faltas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "atrasos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "outras_deducoes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_proventos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_deducoes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "salario_liquido",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "inss_patronal",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "fgts_patronal",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "rat",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "terceiros",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_encargos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "status",
+      "data_type": "text"
+    },
+    {
+      "column_name": "processado_por",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "processado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "notes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "system_logs": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "usuario_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "acao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tipo_recurso",
+      "data_type": "text"
+    },
+    {
+      "column_name": "id_recurso",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "valores_anteriores",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "valores_novos",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "endereco_ip",
+      "data_type": "text"
+    },
+    {
+      "column_name": "agente_usuario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "transactions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "valor",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "tipo_transacao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "id_conta",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_transacao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_vencimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_pagamento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "forma_pagamento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "centro_custo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "natureza_operacao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nome_fornecedor",
+      "data_type": "text"
+    },
+    {
+      "column_name": "id_membro",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "conciliado",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "created_by",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "data_competencia",
+      "data_type": "date"
+    },
+    {
+      "column_name": "projeto_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "valor_pago",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_restante",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "parcelado",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "numero_parcela",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "total_parcelas",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "id_transacao_origem",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_conciliacao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "id_externo",
+      "data_type": "character varying"
+    }
+  ],
+  "events": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "titulo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_evento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "hora_evento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_final",
+      "data_type": "date"
+    },
+    {
+      "column_name": "hora_fim",
+      "data_type": "text"
+    },
+    {
+      "column_name": "local_evento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tipo_evento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "maximo_presentes",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "quantidade_presentes",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "publico",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "dependents": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_membro",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_nascimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "parentesco",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "member_contributions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_membro",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "valor",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "data_contribuicao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "financial_accounts": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "saldo_atual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_minimo",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "codigo_banco",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "numero_agencia",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "numero_conta",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "church_events": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "titulo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_evento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "hora_evento",
+      "data_type": "time without time zone"
+    },
+    {
+      "column_name": "local_evento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "quantidade_presentes",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "type",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "recorrente",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "padrao_recorrencia",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "data_fim_recorrencia",
+      "data_type": "date"
+    },
+    {
+      "column_name": "evento_pai_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "evento_gerado",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "volunteer_schedules": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "evento_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "ministerio",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "funcao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "voluntario_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_voluntario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "telefone_voluntario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "email_voluntario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "confirmado",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "quantidade_necessaria",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "quantidade_atribuida",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "asset_depreciations": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "ativo_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "mes_referencia",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "ano_referencia",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "valor_contabil_inicial",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "despesa_depreciacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "depreciacao_acumulada",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_contabil_final",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "conta_debito",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "conta_credito",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "numero_documento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "processado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "asset_transfers": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "ativo_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unidade_origem_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unidade_destino_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_transferencia",
+      "data_type": "date"
+    },
+    {
+      "column_name": "motivo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "responsavel",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "autorizado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "asset_maintenances": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "asset_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_manutencao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "tipo_manutencao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "fornecedor",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "custo",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "numero_documento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "proxima_manutencao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "executado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "inventory_counts": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_contagem",
+      "data_type": "date"
+    },
+    {
+      "column_name": "contagem_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "revisado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "total_ativos",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "total_esperado",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "total_encontrado",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "diferenca_total",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "percentual_conclusao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "iniciado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "concluido",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "inventory_items": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "contagem_estoque_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "ativo_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_ativo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "categoria",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "quantidade_esperada",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "quantidade_contada",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "diferenca",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "condicao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "location",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "cash_movements": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "account_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "valor",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "motivo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "numero_documento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "responsavel",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "autorizado_por",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "inventory_adjustments": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "contagem_estoque_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "asset_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "tipo_ajuste",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "quantidade",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "motivo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "justificativa",
+      "data_type": "text"
+    },
+    {
+      "column_name": "aprovado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "lancamento_contabil",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "chart_of_accounts": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "codigo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "natureza",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "type",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "parent_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "saldo_normal",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "esta_ativo",
+      "data_type": "boolean"
+    }
+  ],
+  "accounting_entries": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "numero_lancamento",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "data_lancamento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "numero_documento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "historico",
+      "data_type": "text"
+    },
+    {
+      "column_name": "complement",
+      "data_type": "text"
+    },
+    {
+      "column_name": "valor_debito",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_credito",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "conta_contrapartida",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "transaction_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "project_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "revisado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "status",
+      "data_type": "character varying"
+    }
+  ],
+  "account_balances": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_conta",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_conta",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "codigo_conta",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nature",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "column_name": "period",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "saldo_inicial",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "debit_period",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "credit_period",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_final",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "quantidade_lancamentos",
+      "data_type": "integer"
+    }
+  ],
+  "audit_logs": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "usuario_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_usuario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "acao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "entidade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "id_entidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_entidade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_acao",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "endereco_ip",
+      "data_type": "inet"
+    },
+    {
+      "column_name": "details",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "success",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "hash",
+      "data_type": "character varying"
+    }
+  ],
+  "cash_closings": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_conta",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_fechamento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "saldo_inicial",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_entradas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_saidas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_esperado",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_real",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "diferenca",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "fechado_por",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "fechado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "payroll_periods": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "mes",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "ano",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_inicio",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_final",
+      "data_type": "date"
+    },
+    {
+      "column_name": "processado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "fechado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "total_funcionarios",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "total_folha",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_inss",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_fgts",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_irrf",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    }
+  ],
+  "tax_configs": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "faixa_inss",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "faixa_irrf",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "taxa_fgts",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "taxa_patronal",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "taxa_rat",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "terceiros_rate",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "va_default",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vr_default",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "entidades_terceiras",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "accounting_configs": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "ano_fiscal",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "mes_inicio",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "mes_fim",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "moeda",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "regime_tributario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "financial_summary": [
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_unidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "total_transacoes",
+      "data_type": "bigint"
+    },
+    {
+      "column_name": "total_receitas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_despesas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_liquido",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "contas_usadas",
+      "data_type": "bigint"
+    }
+  ],
+  "asset_summary_by_unit": [
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_unidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "total_ativos",
+      "data_type": "bigint"
+    },
+    {
+      "column_name": "valor_total_aquisicao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_total_atual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "depreciacao_total",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "ativos_ativos",
+      "data_type": "bigint"
+    }
+  ],
+  "users": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "column_name": "hash_senha",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nome_usuario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "role",
+      "data_type": "text"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_membro",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "esta_ativo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "ultimo_login",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "uuid"
+    }
+  ],
+  "user_permissions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "codigo_modulo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "can_read",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "can_write",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "can_delete",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "can_manage",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "permission_modules": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "codigo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nome_modulo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "categoria",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "role_permissions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "funcao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "recurso",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ler",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "escrever",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "excluir",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "administrador",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "codigo_modulo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "gerenciar",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "app_permission_modules": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "codigo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "name",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "categoria",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "app_user_permissions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "usuario_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "codigo_modulo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "ler",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "escrever",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "excluir",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "gerenciar",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "administrador",
+      "data_type": "boolean"
+    }
+  ],
+  "app_audit_logs": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "usuario_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_usuario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "action",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "entidade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "id_entidade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nome_entidade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_evento",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "ip",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "agente_usuario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "details",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "success",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "mensagem_erro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "hash_anterior",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "hash",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "imutavel",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "app_role_permissions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "role",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "codigo_modulo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "ler",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "escrever",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "excluir",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "gerenciar",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "administrador",
+      "data_type": "boolean"
+    }
+  ],
+  "lgpd_policies": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "versao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "titulo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "conteudo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "esta_ativa",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "obrigatorio",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "lgpd_consent_logs": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_membro",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "politica_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "tipo_consentimento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "granted",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "endereco_ip",
+      "data_type": "inet"
+    },
+    {
+      "column_name": "agente_usuario",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_consentimento",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "treasury_cash_flows": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_movimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "descricao_movimento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "categoria_movimento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "valor_movimento",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "tipo_movimento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "id_conta",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "observacoes_movimento",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "treasury_forecasts": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_inicio",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_final",
+      "data_type": "date"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "saldo_inicial",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "entradas_previstas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saidas_previstas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_final_previsto",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "entradas_realizadas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saidas_realizadas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_final_real",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "precisao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "status",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "detalhes",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "treasury_investments": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "instituicao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_aplicacao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_vencimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "valor_aplicado",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_atual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "rentabilidade_anual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "indexador",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "status",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "rendimentos",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "treasury_loans": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "credor",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_contratacao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_vencimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "valor_original",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_saldo",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "taxa_juros",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "tipo_juros",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "total_parcelas",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "parcelas_pagas",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "status",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "parcelas",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "treasury_alerts": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "tipo_alerta",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "titulo_alerta",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "descricao_alerta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "nivel_gravidade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "id_conta",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "investimento_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "emprestimo_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "valor_alerta",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "data_limite_alerta",
+      "data_type": "date"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "acoes_sugeridas",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "criado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "treasury_financial_positions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data",
+      "data_type": "date"
+    },
+    {
+      "column_name": "ativo_total",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "passivo_total",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "patrimonio_liquido",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "disponibilidades",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "aplicacoes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "contas_receber",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "estoques",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "ativo_fixo",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "fornecedores",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "emprestimos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "outras_contas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "variacao_patrimonial",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "variacao_percentual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "indicadores",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "detalhamento",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "created_by",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "bank_reconciliations": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "conta_bancaria_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_conta_bancaria",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nome_banco",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_inicio",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_final",
+      "data_type": "date"
+    },
+    {
+      "column_name": "saldo_inicial",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_final",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "saldo_conciliado",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "diferenca",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "status",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "percentual_conciliacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_transacoes_banco",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "total_transacoes_sistema",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "transacoes_conciliadas",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "transacoes_nao_conciliadas",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "divergencias",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "conciliado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_conciliacao",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "bank_statement_transactions": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "reconciliation_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "bank_account_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "data_transacao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "valor",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "metodo_pagamento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "status_conciliacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "transacao_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "origem",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "id_externo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "assets": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "text"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "categoria",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_aquisicao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "valor_aquisicao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_atual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "taxa_depreciacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "localizacao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "condicao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "numero_ativo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "vida_util_meses",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "metodo_depreciacao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "valor_contabil_atual",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "depreciacao_acumulada",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "funcionario_responsavel_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nota_fiscal_aquisicao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "numero_serie",
+      "data_type": "text"
+    },
+    {
+      "column_name": "validade_garantia",
+      "data_type": "date"
+    },
+    {
+      "column_name": "notas_manutencao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "cep",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "logradouro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "numero",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "complemento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "bairro",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "cidade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "estado",
+      "data_type": "character varying"
+    }
+  ],
+  "performance_evaluations": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_funcionario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_avaliacao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "tipo_avaliacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nota_geral",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "conceito_geral",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "competencias",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "metas",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "pontos_fortes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "melhorias",
+      "data_type": "text"
+    },
+    {
+      "column_name": "plano_acao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "status",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "avaliado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "aprovado_por",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "pdi_plans": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_funcionario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "meta",
+      "data_type": "text"
+    },
+    {
+      "column_name": "prazo",
+      "data_type": "date"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "created_by",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "employee_leaves": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "unit_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome_funcionario",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_inicio",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_final",
+      "data_type": "date"
+    },
+    {
+      "column_name": "cid10",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nome_medico",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "crm",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "situacao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "url_anexo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "payroll_calculations": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_funcionario",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "mes_competencia",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "salario_bruto",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "salario_base",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "horas_extras",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "adicional_noturno",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "insalubridade",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "comissao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "bonificacoes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "salario_familia",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "outros_proventos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "inss",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "irrf",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "fgts",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "union",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "plano_saude",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "plano_odontologico",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vale_alimentacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "vale_refeicao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "transporte",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "pharmacy",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "life_insurance",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "adiantamento",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "consignado",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "coparticipacao",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "faltas",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "atrasos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "pensao_alimenticia",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "outras_deducoes",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_proventos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "total_descontos",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "salario_liquido",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "custo_empregador",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "base_inss",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "aliquota_inss",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_inss",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "base_irrf",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "aliquota_irrf",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "deducao_irrf",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_irrf",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "base_fgts",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "aliquota_fgts",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "valor_fgts",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "schema_migrations": [
+    {
+      "column_name": "version",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "applied_at",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "dependentes": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "membro_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_nascimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "parentesco",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "contribuicoes_membros": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "membro_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "valor",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "data",
+      "data_type": "date"
+    },
+    {
+      "column_name": "tipo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "descricao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "membros": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "id_unidade",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "nome",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cpf",
+      "data_type": "text"
+    },
+    {
+      "column_name": "rg",
+      "data_type": "text"
+    },
+    {
+      "column_name": "email",
+      "data_type": "text"
+    },
+    {
+      "column_name": "telefone",
+      "data_type": "text"
+    },
+    {
+      "column_name": "whatsapp",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_nascimento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "sexo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado_civil",
+      "data_type": "text"
+    },
+    {
+      "column_name": "logradouro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "bairro",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cidade",
+      "data_type": "text"
+    },
+    {
+      "column_name": "estado",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cep",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_conversao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "data_batismo",
+      "data_type": "text"
+    },
+    {
+      "column_name": "data_membro",
+      "data_type": "date"
+    },
+    {
+      "column_name": "status",
+      "data_type": "text"
+    },
+    {
+      "column_name": "funcao",
+      "data_type": "text"
+    },
+    {
+      "column_name": "ministerio",
+      "data_type": "text"
+    },
+    {
+      "column_name": "grupo_pequeno",
+      "data_type": "text"
+    },
+    {
+      "column_name": "dizimista",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "ofertante",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "valor_dizimo",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "observacoes",
+      "data_type": "text"
+    },
+    {
+      "column_name": "criado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "atualizado",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "dados_perfil",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "matricula",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "profissao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nome_conjuge",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_casamento",
+      "data_type": "date"
+    },
+    {
+      "column_name": "nome_pai",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "nome_mae",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "tipo_sanguineo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "contato_emergencia",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "numero",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "complemento",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "local_conversao",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "igreja_batismo",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "pastor_batizador",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "batismo_espirito_santo",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "igreja_origem",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "curso_discipulado",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "escola_biblica",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "ministerio_principal",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "funcao_ministerio",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "outros_ministerios",
+      "data_type": "ARRAY"
+    },
+    {
+      "column_name": "cargo_eclesiastico",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "data_consagracao",
+      "data_type": "date"
+    },
+    {
+      "column_name": "ofertante_regular",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "participa_campanhas",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "banco",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "agencia_bancaria",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "conta_bancaria",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "chave_pix",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "necessidades_especiais",
+      "data_type": "text"
+    },
+    {
+      "column_name": "talentos",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tags",
+      "data_type": "ARRAY"
+    },
+    {
+      "column_name": "familia_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "avatar",
+      "data_type": "text"
+    },
+    {
+      "column_name": "cell_group",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "dons_espirituais",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "escolaridade",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "is_pcd",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "tipo_deficiencia",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "celular",
+      "data_type": "character varying"
+    },
+    {
+      "column_name": "lgpd_consent",
+      "data_type": "jsonb"
+    }
+  ]
+}

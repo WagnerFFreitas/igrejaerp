@@ -27,13 +27,13 @@ import apiClient from './apiService';
 
 export interface AuditLog {
   id: string;
-  unitId: string;
+  idUnidade: string;
   userId: string;
   userName: string;
   action: string;
-  entity: string;
-  entityId?: string;
-  entityName?: string;
+  entidade: string;
+  entidadeId?: string;
+  entidadeName?: string;
   date: string;
   ip: string;
   userAgent?: string;
@@ -59,15 +59,15 @@ export class AuditService {
     });
   }
 
-  static async logLogin(userId: string, userName: string, unitId: string, success: boolean, errorMessage?: string): Promise<void> {
+  static async logLogin(userId: string, userName: string, idUnidade: string, success: boolean, errorMessage?: string): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'USER_LOGIN',
-      entity: 'User',
-      entityId: userId,
-      entityName: userName,
+      entidade: 'User',
+      entidadeId: userId,
+      entidadeName: userName,
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -76,15 +76,15 @@ export class AuditService {
     });
   }
 
-  static async logLogout(userId: string, userName: string, unitId: string): Promise<void> {
+  static async logLogout(userId: string, userName: string, idUnidade: string): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'USER_LOGOUT',
-      entity: 'User',
-      entityId: userId,
-      entityName: userName,
+      entidade: 'User',
+      entidadeId: userId,
+      entidadeName: userName,
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -92,15 +92,15 @@ export class AuditService {
     });
   }
 
-  static async logMenuAccess(userId: string, userName: string, unitId: string, menuName: string, menuKey?: string): Promise<void> {
+  static async logMenuAccess(userId: string, userName: string, idUnidade: string, menuName: string, menuKey?: string): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'MENU_ACCESS',
-      entity: 'Menu',
-      entityId: menuKey ?? menuName.toLowerCase().replace(/\s+/g, '_'),
-      entityName: menuName,
+      entidade: 'Menu',
+      entidadeId: menuKey ?? menuName.toLowerCase().replace(/\s+/g, '_'),
+      entidadeName: menuName,
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -111,15 +111,15 @@ export class AuditService {
     });
   }
 
-  static async logCreate(userId: string, userName: string, unitId: string, entity: string, entityId: string, entityName: string, details?: any): Promise<void> {
+  static async logCreate(userId: string, userName: string, idUnidade: string, entidade: string, entidadeId: string, entidadeName: string, details?: any): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'CREATE',
-      entity,
-      entityId,
-      entityName,
+      entidade,
+      entidadeId,
+      entidadeName,
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -128,15 +128,15 @@ export class AuditService {
     });
   }
 
-  static async logUpdate(userId: string, userName: string, unitId: string, entity: string, entityId: string, entityName: string, details?: any): Promise<void> {
+  static async logUpdate(userId: string, userName: string, idUnidade: string, entidade: string, entidadeId: string, entidadeName: string, details?: any): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'UPDATE',
-      entity,
-      entityId,
-      entityName,
+      entidade,
+      entidadeId,
+      entidadeName,
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -145,15 +145,15 @@ export class AuditService {
     });
   }
 
-  static async logDelete(userId: string, userName: string, unitId: string, entity: string, entityId: string, entityName: string): Promise<void> {
+  static async logDelete(userId: string, userName: string, idUnidade: string, entidade: string, entidadeId: string, entidadeName: string): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'DELETE',
-      entity,
-      entityId,
-      entityName,
+      entidade,
+      entidadeId,
+      entidadeName,
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -161,13 +161,13 @@ export class AuditService {
     });
   }
 
-  static async logBackup(userId: string, userName: string, unitId: string, success: boolean, itemCount: number, errorMessage?: string): Promise<void> {
+  static async logBackup(userId: string, userName: string, idUnidade: string, success: boolean, itemCount: number, errorMessage?: string): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'SYSTEM_BACKUP',
-      entity: 'System',
+      entidade: 'System',
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -177,13 +177,13 @@ export class AuditService {
     });
   }
 
-  static async logRestore(userId: string, userName: string, unitId: string, success: boolean, itemCount: number, errorMessage?: string): Promise<void> {
+  static async logRestore(userId: string, userName: string, idUnidade: string, success: boolean, itemCount: number, errorMessage?: string): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'SYSTEM_RESTORE',
-      entity: 'System',
+      entidade: 'System',
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -193,13 +193,13 @@ export class AuditService {
     });
   }
 
-  static async logError(userId: string, userName: string, unitId: string, error: Error, context?: string): Promise<void> {
+  static async logError(userId: string, userName: string, idUnidade: string, error: Error, context?: string): Promise<void> {
     await this.saveLog({
-      unitId,
+      idUnidade,
       userId,
       userName,
       action: 'SYSTEM_ERROR',
-      entity: 'System',
+      entidade: 'System',
       date: new Date().toISOString(),
       ip: this.getClientIP(),
       userAgent: navigator.userAgent,
@@ -213,12 +213,12 @@ export class AuditService {
     });
   }
 
-  static async getLogs(unitId?: string, limit?: number): Promise<AuditLog[]> {
-    return apiClient.getAuditLogs({ unitId, limit });
+  static async getLogs(idUnidade?: string, limit?: number): Promise<AuditLog[]> {
+    return apiClient.getAuditLogs({ idUnidade, limit });
   }
 
-  static async getAuditStats(unitId?: string): Promise<any> {
-    const logs = await this.getLogs(unitId);
+  static async getAuditStats(idUnidade?: string): Promise<any> {
+    const logs = await this.getLogs(idUnidade);
 
     return {
       total: logs.length,

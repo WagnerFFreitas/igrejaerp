@@ -34,7 +34,7 @@ import {
 } from '../types';
 
 interface ConciliacaoBancariaProps {
-  currentUnitId: string;
+  currentIdUnidade: string;
   accounts?: BankAccount[];
   user?: any;
 }
@@ -47,7 +47,7 @@ interface ConciliacaoBancariaProps {
  */
 
 export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({ 
-  currentUnitId,
+  currentIdUnidade,
   accounts: propAccounts = [],
   user
 }) => {
@@ -78,8 +78,8 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
       setIsLoading(true);
       try {
         const [loadedReconciliations, loadedAccounts] = await Promise.all([
-          BankReconciliationService.getReconciliations(currentUnitId),
-          accountService.getAccounts(currentUnitId),
+          BankReconciliationService.getReconciliations(currentIdUnidade),
+          accountService.getAccounts(currentIdUnidade),
         ]);
         setReconciliations(loadedReconciliations);
         // Usa contas reais do banco; fallback para props se vier vazio
@@ -91,7 +91,7 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
       }
     };
     loadData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   /**
    * FUNÇÕES
@@ -109,13 +109,13 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
           const result = await BankReconciliationService.importBankStatement(
             selectedAccount,
             file,
-            currentUnitId
+            currentIdUnidade
           );
           
           // Recarregar transações
           const updatedTransactions = await BankReconciliationService.getTransactionsByAccount(
             selectedAccount,
-            currentUnitId
+            currentIdUnidade
           );
           setTransactions(updatedTransactions);
           
@@ -144,11 +144,11 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
         selectedAccount,
         startDate,
         endDate,
-        currentUnitId
+        currentIdUnidade
       );
       
       // Recarregar dados
-      const updatedReconciliations = await BankReconciliationService.getReconciliations(currentUnitId);
+      const updatedReconciliations = await BankReconciliationService.getReconciliations(currentIdUnidade);
       setReconciliations(updatedReconciliations);
       
       alert('Conciliação executada com sucesso!');
@@ -315,7 +315,7 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
                     <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
-                        <span>{fmtDate(reconciliation.dataInicio || (reconciliation as any).data_inicio)} — {fmtDate(reconciliation.dataFim || (reconciliation as any).data_fim)}</span>
+                        <span>{fmtDate(reconciliation.dataInicio || (reconciliation as any).data_inicio)} — {fmtDate(reconciliation.dataFinal || (reconciliation as any).data_final)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <User size={14} />

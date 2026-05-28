@@ -103,7 +103,7 @@ export default function LGPDConsentModal({
         ipAddress: await getClientIP(),
         userAgent: navigator.userAgent,
         policyVersion: currentPolicy?.version || '1.0',
-        unitId: 'default', // Virá do contexto
+        idUnidade: 'default', // Virá do contexto
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };

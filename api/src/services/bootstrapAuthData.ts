@@ -30,13 +30,23 @@ import { ensureAuditTables } from './auditService';
 
 const db = Database.getInstance();
 
-const DEFAULT_UNIT_ID = '00000000-0000-0000-0000-000000000001';
+const ID_UNIDADE_PADRAO = '00000000-0000-0000-0000-000000000001';
+
+const ROLE_TO_PERFIL: Record<string, string> = {
+  DEVELOPER: 'DESENVOLVEDOR',
+  ADMIN: 'ADMIN',
+  SECRETARY: 'SECRETARIO',
+  TREASURER: 'TESOUREIRO',
+  PASTOR: 'PASTOR',
+  RH: 'RH',
+  FINANCEIRO: 'FINANCEIRO',
+  MEMBER: 'MEMBRO',
+};
 
 export async function bootstrapAuthData(): Promise<void> {
   await ensurePermissionTables();
   await ensureAuditTables();
   await ensureMembersExtraFields();
-  await ensureEmployeesSchema();
   await seedPermissionModules();
   await seedRolePermissions();
   await ensureAdminUsers();
@@ -45,29 +55,7 @@ export async function bootstrapAuthData(): Promise<void> {
 async function ensureMembersExtraFields(): Promise<void> {
   await db.query(`
     ALTER TABLE membros
-    ADD COLUMN IF NOT EXISTS profile_data JSONB DEFAULT '{}'::jsonb
-  `);
-}
-
-async function ensureEmployeesSchema(): Promise<void> {
-  await db.query(`
-    ALTER TABLE employees
-    ADD COLUMN IF NOT EXISTS profile_data JSONB DEFAULT '{}'::jsonb
-  `);
-
-  await db.query(`
-    ALTER TABLE employees
-    DROP CONSTRAINT IF EXISTS employees_matricula_check
-  `);
-
-  await db.query(`
-    ALTER TABLE employees
-    ADD CONSTRAINT employees_matricula_check
-    CHECK (
-      matricula IS NULL
-      OR matricula ~ '^[0-9]{4,}$'
-      OR matricula ~ '^F[0-9]{2,}/[0-9]{4}$'
-    )
+    ADD COLUMN IF NOT EXISTS dados_perfil JSONB DEFAULT '{}'::jsonb
   `);
 }
 
@@ -92,19 +80,17 @@ async function ensureAdminUsers(): Promise<void> {
 async function ensureDefaultUnit(): Promise<void> {
   await db.query(
     `
-      INSERT INTO units (id, nome_unidade, cnpj, endereco, cidade, estado, sede, status, criado, atualizado)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, CAST($8 AS unit_status), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT (id) DO NOTHING
+      INSERT INTO unidades (id_unidade, nome, cnpj, logradouro, cidade, estado, situacao, ativo, criado_em, atualizado_em)
+      VALUES ($1, $2, $3, $4, $5, $6, 'ATIVO', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (id_unidade) DO NOTHING
     `,
     [
-      DEFAULT_UNIT_ID,
+      ID_UNIDADE_PADRAO,
       'Igreja ADJPA Sede',
       '00.000.000/0001-00',
       'Endereço não informado',
       'São Paulo',
-      'SP',
-      true,
-      'ACTIVE'
+      'SP'
     ]
   );
 }
@@ -115,17 +101,20 @@ async function upsertSystemUser(params: {
   password: string;
   role: string;
 }): Promise<void> {
+  const perfil = ROLE_TO_PERFIL[params.role] || params.role;
   const existing = await db.query<{
-    id: string;
+    id_usuario: string;
+    id_pessoa: string;
     email: string;
-    role: string;
-    hash_senha: string;
+    perfil: string;
+    senha_hash: string;
     esta_ativo: boolean;
   }>(
     `
-      SELECT id, email, role, hash_senha, esta_ativo
-      FROM users
-      WHERE LOWER(email) = LOWER($1)
+      SELECT u.id_usuario, u.id_pessoa, p.email, u.perfil, u.senha_hash, u.esta_ativo
+      FROM usuarios u
+      JOIN pessoas p ON p.id_pessoa = u.id_pessoa
+      WHERE LOWER(p.email) = LOWER($1) OR LOWER(u.login) = LOWER($1)
       LIMIT 1
     `,
     [params.email]
@@ -134,32 +123,95 @@ async function upsertSystemUser(params: {
   const passwordHash = await bcrypt.hash(params.password, 10);
 
   if (existing.rows.length === 0) {
+    const pessoa = await ensureSystemPerson(params.name, params.email);
+    await ensureSystemEmployee(pessoa.id_pessoa, params.name);
+
     await db.query(
       `
-        INSERT INTO users (nome_usuario, email, hash_senha, role, unit_id, esta_ativo, criado, atualizado)
-        VALUES ($1, $2, $3, $4, $5, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO usuarios (id_pessoa, login, senha_hash, perfil, esta_ativo)
+        VALUES ($1, $2, $3, $4::perfil_usuario, true)
       `,
-      [params.name, params.email, passwordHash, params.role, DEFAULT_UNIT_ID]
+      [pessoa.id_pessoa, params.email.toLowerCase(), passwordHash, perfil]
     );
     return;
   }
 
   const current = existing.rows[0];
-  const samePassword = await bcrypt.compare(params.password, current.hash_senha).catch(() => false);
+  const samePassword = await bcrypt.compare(params.password, current.senha_hash).catch(() => false);
+  await ensureSystemEmployee(current.id_pessoa, params.name);
 
-  if (!samePassword || current.role !== params.role || !current.esta_ativo) {
+  if (!samePassword || current.perfil !== perfil || !current.esta_ativo) {
     await db.query(
       `
-        UPDATE users
-        SET nome_usuario = $2,
-            hash_senha = $3,
-            role = $4,
-            unit_id = $5,
-            esta_ativo = true,
-            atualizado = CURRENT_TIMESTAMP
-        WHERE id = $1
+        UPDATE pessoas
+        SET nome = $2,
+            id_unidade = $3,
+            atualizado_em = CURRENT_TIMESTAMP
+        WHERE id_pessoa = $1
       `,
-      [current.id, params.name, passwordHash, params.role, DEFAULT_UNIT_ID]
+      [current.id_pessoa, params.name, ID_UNIDADE_PADRAO]
+    );
+
+    await db.query(
+      `
+        UPDATE usuarios
+        SET senha_hash = $2,
+            perfil = $3::perfil_usuario,
+            esta_ativo = true,
+            atualizado_em = CURRENT_TIMESTAMP
+        WHERE id_usuario = $1
+      `,
+      [current.id_usuario, passwordHash, perfil]
     );
   }
+}
+
+async function ensureSystemPerson(name: string, email: string): Promise<{ id_pessoa: string }> {
+  const existingPessoa = await db.query<{ id_pessoa: string }>(
+    `SELECT id_pessoa FROM pessoas WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+    [email]
+  );
+
+  if (existingPessoa.rows.length > 0) {
+    await db.query(
+      `UPDATE pessoas
+       SET nome = $2,
+           id_unidade = $3,
+           ativo = true,
+           atualizado_em = CURRENT_TIMESTAMP
+       WHERE id_pessoa = $1`,
+      [existingPessoa.rows[0].id_pessoa, name, ID_UNIDADE_PADRAO]
+    );
+    return existingPessoa.rows[0];
+  }
+
+  const created = await db.query<{ id_pessoa: string }>(
+    `INSERT INTO pessoas (id_unidade, nome, email, ativo)
+     VALUES ($1, $2, $3, true)
+     RETURNING id_pessoa`,
+    [ID_UNIDADE_PADRAO, name, email]
+  );
+
+  return created.rows[0];
+}
+
+async function ensureSystemEmployee(idPessoa: string, name: string): Promise<void> {
+  const existingEmployee = await db.query(
+    `SELECT id_funcionario FROM funcionarios WHERE id_pessoa = $1 LIMIT 1`,
+    [idPessoa]
+  );
+
+  if (existingEmployee.rows.length > 0) {
+    return;
+  }
+
+  const matricula = `SYS-${Date.now().toString().slice(-8)}`;
+  await db.query(
+    `INSERT INTO funcionarios (
+       id_pessoa, id_unidade, matricula, cargo, departamento,
+       data_admissao, regime_trabalho, ativo
+     )
+     VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 'CLT', true)`,
+    [idPessoa, ID_UNIDADE_PADRAO, matricula, name, 'Sistema']
+  );
 }

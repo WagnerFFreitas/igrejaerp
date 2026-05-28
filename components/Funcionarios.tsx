@@ -46,7 +46,7 @@ import AvaliacaoService from '../services/avaliacaoService';
 
 interface FuncionariosProps {
   employees: Payroll[];
-  currentUnitId: string;
+  currentIdUnidade: string;
   setEmployees: React.Dispatch<React.SetStateAction<Payroll[]>>;
   user?: UserAuth;
   evaluations: Record<string, any[]>;
@@ -95,7 +95,7 @@ const SelectField = ({ label, value, onChange, options, icon: Icon }: any) => (
   </div>
 );
 
-export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUnitId, setEmployees, user, evaluations, setEvaluations }) => {
+export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentIdUnidade, setEmployees, user, evaluations, setEvaluations }) => {
   const canWriteEmployees = AuthService.hasPermission(user as any, 'employees', 'write');
   const canWriteHR = AuthService.hasPermission(user as any, 'hr', 'write');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -180,9 +180,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
   useEffect(() => {
     const loadLGPDData = async () => {
-      if (currentUnitId) {
+      if (currentIdUnidade) {
         try {
-          const policy = await LGPDService.getCurrentPolicy(currentUnitId);
+          const policy = await LGPDService.getCurrentPolicy(currentIdUnidade);
           setCurrentPolicy(policy);
         } catch (error) {
           console.error('Erro ao carregar política LGPD:', error);
@@ -191,18 +191,18 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     };
     
     loadLGPDData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   // Carregar dados da Unidade
   useEffect(() => {
     const loadUnitData = async () => {
       try {
-        const unitIdMap: Record<string, string> = {
+        const idUnidadeMap: Record<string, string> = {
           'u-sede': '00000000-0000-0000-0000-000000000001',
           'u-matriz': '00000000-0000-0000-0000-000000000001',
         };
-        const apiUnitId = unitIdMap[currentUnitId] || currentUnitId;
-        const unit = await UnitService.getUnitById(apiUnitId);
+        const apiIdUnidade = idUnidadeMap[currentIdUnidade] || currentIdUnidade;
+        const unit = await UnitService.getUnitById(apiIdUnidade);
         if (unit) {
           setCurrentUnitData(unit);
         }
@@ -210,15 +210,15 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
         console.error('Erro ao carregar unidade:', error);
       }
     };
-    if (currentUnitId) loadUnitData();
-  }, [currentUnitId]);
+    if (currentIdUnidade) loadUnitData();
+  }, [currentIdUnidade]);
 
   // Carregar consentimentos do funcionário selecionado
   useEffect(() => {
     const loadEmployeeConsents = async () => {
       if (editingEmployee?.id) {
         try {
-          const consents = await LGPDService.getUserConsents(editingEmployee.id, currentUnitId);
+          const consents = await LGPDService.getUserConsents(editingEmployee.id, currentIdUnidade);
           setEmployeeConsents(consents);
           
           // Atualizar formData com consentimentos existentes, preservando o anexo se houver
@@ -242,7 +242,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     };
     
     loadEmployeeConsents();
-  }, [editingEmployee?.id, currentUnitId]);
+  }, [editingEmployee?.id, currentIdUnidade]);
 
   // Carregar avaliações do funcionário selecionado
   useEffect(() => {
@@ -337,7 +337,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     departamento: '', cbo: '', data_admissao: '', birthDate: '',
     tipo_contrato: 'CLT', jornada_trabalho: '44h', regime_trabalho: 'PRESENCIAL',
     salario_base: 0, tipo_salario: 'MENSAL', status: 'ACTIVE',
-    unitId: currentUnitId, month: new Date().toISOString().slice(5, 7),
+    idUnidade: currentIdUnidade, month: new Date().toISOString().slice(5, 7),
     year: new Date().getFullYear().toString(),
     he50_qtd: 0, he100_qtd: 0, dsr_ativo: true, adic_noturno_qtd: 0,
     insalubridade_grau: 'NONE', periculosidade_ativo: false,
@@ -480,7 +480,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     const employeeId = editingEmployee?.id || `E${Date.now()}`;
     setUploadingDoc(docType);
     try {
-      const url = await StorageService.uploadEmployeeDocument(currentUnitId, employeeId, docType, file);
+      const url = await StorageService.uploadEmployeeDocument(currentIdUnidade, employeeId, docType, file);
       const field = `doc_${docType}` as any;
       setFormData(prev => ({ ...prev, [field]: url, documentos_upload: url }));
       alert(`Documento "${docType}" enviado com sucesso.`);
@@ -533,16 +533,16 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     try {
       console.log('💾 Salvando avaliação no banco:', avaliacao);
 
-      // Normalizar unitId
-      const unitIdMap: Record<string, string> = {
+      // Normalizar idUnidade
+      const idUnidadeMap: Record<string, string> = {
         'u-sede':  '00000000-0000-0000-0000-000000000001',
         'u-matriz':'00000000-0000-0000-0000-000000000001',
       };
-      const apiUnitId = unitIdMap[currentUnitId] || currentUnitId;
+      const apiIdUnidade = idUnidadeMap[currentIdUnidade] || currentIdUnidade;
 
       const payload = {
         ...avaliacao,
-        unitId: apiUnitId,
+        idUnidade: apiIdUnidade,
         employeeId: editingEmployee?.id,
         employeeName: editingEmployee?.employeeName || formData.employeeName,
         evaluationDate: avaliacao.evaluationDate || new Date().toISOString().split('T')[0],
@@ -590,7 +590,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
 
   const handleGenerateLGPDReport = async () => {
     try {
-      const report = await LGPDService.generateConsentReport(currentUnitId);
+      const report = await LGPDService.generateConsentReport(currentIdUnidade);
       setLgpdReport(report);
       
       // Exportar relatório em JSON
@@ -641,9 +641,9 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
         ...formData,
         id: employeeId,
         matricula: generatedMatricula,
-        unitId: currentUnitId,
-        criadoEm: editingEmployee?.criadoEm || editingEmployee?.createdAt || new Date().toISOString(),
-        atualizadoEm: new Date().toISOString()
+        idUnidade: currentIdUnidade,
+        criado: editingEmployee?.criado || editingEmployee?.createdAt || new Date().toISOString(),
+        atualizado: new Date().toISOString()
       };
 
       console.log("📋 Dados do funcionário preparados:", { 
@@ -682,7 +682,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
           id: savedId,
           matricula: generatedMatricula,
           employeeName: employeeData.employeeName,
-          unitId: currentUnitId,
+          idUnidade: currentIdUnidade,
         } as Payroll;
         setEmployees(prev => [...prev, newEmployee]);
         console.log("✅ Funcionário adicionado na lista global");
@@ -715,7 +715,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
       funcao: emp.funcao || emp.cargo || '',
       data_admissao: emp.data_admissao || (emp as any).admissionDate || '',
       salario_base: emp.salario_base ?? (emp as any).salary ?? 0,
-      unitId: emp.unitId || currentUnitId,
+      idUnidade: emp.idUnidade || currentIdUnidade,
       status: emp.status || 'ACTIVE',
       tipo_contrato: emp.tipo_contrato || 'CLT',
       tipo_salario: (emp as any).tipo_salario || 'MENSAL',
@@ -758,7 +758,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
     setFormData({
       ...getInitialFormData(),
       matricula: generatedMatricula,
-      unitId: currentUnitId,
+      idUnidade: currentIdUnidade,
       vale_alimentacao: taxConfig.defaultVA || 0,
       vale_refeicao: taxConfig.defaultVR || 0,
     });
@@ -1276,7 +1276,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                       <InputField label="Telefone Fixo" value={formData.telefone} onChange={(v:any) => setFormData({...formData, telefone: v})} placeholder="(00) 0000-0000" icon={Phone} />
                       <InputField label="Celular (WhatsApp)" value={formData.celular} onChange={(v:any) => setFormData({...formData, celular: v})} placeholder="(00) 00000-0000" icon={Phone} />
                       <InputField label="Contato de Emergência" value={formData.emergency_contact} onChange={(v:any) => setFormData({...formData, emergency_contact: v})} placeholder="Nome e Telefone" icon={Phone} />
-                      <InputField label="Vínculo com Membro (ID)" value={formData.membro_id} onChange={(v:any) => setFormData({...formData, membro_id: v})} placeholder="ID do Membro (se houver)" icon={Users2} />
+                      <InputField label="Vínculo com Membro (ID)" value={formData.id_membro} onChange={(v:any) => setFormData({...formData, id_membro: v})} placeholder="ID do Membro (se houver)" icon={Users2} />
                       <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                         <div className="flex items-center gap-3 pt-6">
                           <input type="checkbox" checked={formData.is_pcd} onChange={(e) => setFormData({...formData, is_pcd: e.target.checked})} className="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500" />
@@ -1408,7 +1408,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
                     <InputField label="Saldo Atual" value={formData.bh_saldo_atual} onChange={(v:any) => setFormData({...formData, bh_saldo_atual: v})} placeholder="Ex: 08:00" />
                     <InputField label="Período de Apuração" value={formData.bh_periodo_apuracao} onChange={(v:any) => setFormData({...formData, bh_periodo_apuracao: v})} placeholder="Ex: Mensal" />
                     <InputField label="Data Início Acordo" value={formData.bh_data_inicio_acordo} onChange={(v:any) => setFormData({...formData, bh_data_inicio_acordo: v})} type="date" />
-                    <InputField label="Data Fim Acordo" value={formData.bh_data_fim_acordo} onChange={(v:any) => setFormData({...formData, bh_data_fim_acordo: v})} type="date" />
+                    <InputField label="Data Fim Acordo" value={formData.bh_data_final_acordo} onChange={(v:any) => setFormData({...formData, bh_data_final_acordo: v})} type="date" />
                     <InputField label="Limite de Saldo" value={formData.bh_limite_saldo} onChange={(v:any) => setFormData({...formData, bh_limite_saldo: v})} placeholder="Ex: 40h" />
                     <InputField label="Período de Compensação" value={formData.bh_periodo_compensacao} onChange={(v:any) => setFormData({...formData, bh_periodo_compensacao: v})} placeholder="Ex: 6 meses" />
                     <InputField label="Multiplicador HE Dia" value={formData.bh_multiplicador_diurna} onChange={(v:any) => setFormData({...formData, bh_multiplicador_diurna: v})} placeholder="Ex: 1.5" />
@@ -1885,7 +1885,7 @@ export const Funcionarios: React.FC<FuncionariosProps> = ({ employees, currentUn
               {activeTab === 'historico_salarial' && (
                 <HistoricoSalarial 
                   employees={employees}
-                  currentUnitId={currentUnitId}
+                  currentIdUnidade={currentIdUnidade}
                   user={user}
                   selectedEmployee={editingEmployee || undefined}
                 />

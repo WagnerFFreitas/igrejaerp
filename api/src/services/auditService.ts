@@ -29,7 +29,7 @@ const db = Database.getInstance();
 
 export interface AuditLogRecord {
   id: string;
-  unitId: string;
+  idUnidade: string;
   userId: string;
   userName: string;
   action: string;
@@ -54,18 +54,18 @@ export async function ensureAuditTables(): Promise<void> {
   await db.query(`
     CREATE TABLE IF NOT EXISTS app_audit_logs (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      unit_id UUID,
+      id_unidade UUID,
       usuario_id UUID,
       nome_usuario VARCHAR(255) NOT NULL,
-      action VARCHAR(100) NOT NULL,
+      acao VARCHAR(100) NOT NULL,
       entidade VARCHAR(100) NOT NULL,
-      entidade_id VARCHAR(255),
+      id_entidade VARCHAR(255),
       nome_entidade VARCHAR(255),
       data_evento TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       ip VARCHAR(100) NOT NULL,
       agente_usuario TEXT,
-      details JSONB,
-      success BOOLEAN NOT NULL DEFAULT TRUE,
+      detalhes JSONB,
+      sucesso BOOLEAN NOT NULL DEFAULT TRUE,
       mensagem_erro TEXT,
       hash_anterior VARCHAR(255),
       hash VARCHAR(255) NOT NULL,
@@ -74,19 +74,58 @@ export async function ensureAuditTables(): Promise<void> {
     )
   `);
 
+  const columnsToRename = [
+    ['entidade_id', 'id_entidade'],
+    ['action', 'acao'],
+    ['details', 'detalhes'],
+    ['success', 'sucesso'],
+    ['created_at', 'criado'],
+  ];
+
+  for (const [oldName, newName] of columnsToRename) {
+    if (await auditColumnExists(oldName)) {
+      await db.query(`ALTER TABLE app_audit_logs RENAME COLUMN ${oldName} TO ${newName}`);
+    }
+  }
+
+  await db.query(`
+    ALTER TABLE app_audit_logs
+    ADD COLUMN IF NOT EXISTS hash_anterior VARCHAR(255)
+  `);
+
+  await db.query(`
+    ALTER TABLE app_audit_logs
+    ADD COLUMN IF NOT EXISTS hash VARCHAR(255)
+  `);
+
+  await db.query(`
+    ALTER TABLE app_audit_logs
+    ADD COLUMN IF NOT EXISTS nome_entidade VARCHAR(255)
+  `);
+
+  await db.query(`
+    ALTER TABLE app_audit_logs
+    ADD COLUMN IF NOT EXISTS agente_usuario TEXT
+  `);
+
+  await db.query(`
+    ALTER TABLE app_audit_logs
+    ADD COLUMN IF NOT EXISTS mensagem_erro TEXT
+  `);
+
   await db.query(`
     CREATE INDEX IF NOT EXISTS idx_app_audit_logs_data_evento
     ON app_audit_logs (data_evento DESC)
   `);
 
   await db.query(`
-    CREATE INDEX IF NOT EXISTS idx_app_audit_logs_unit_id
-    ON app_audit_logs (unit_id)
+    CREATE INDEX IF NOT EXISTS idx_app_audit_logs_id_unidade
+    ON app_audit_logs (id_unidade)
   `);
 
   await db.query(`
-    CREATE INDEX IF NOT EXISTS idx_app_audit_logs_action
-    ON app_audit_logs (action)
+    CREATE INDEX IF NOT EXISTS idx_app_audit_logs_acao
+    ON app_audit_logs (acao)
   `);
 
   await db.query(`
@@ -121,6 +160,23 @@ export async function ensureAuditTables(): Promise<void> {
   `);
 }
 
+async function auditColumnExists(columnName: string): Promise<boolean> {
+  const result = await db.query<{ exists: boolean }>(
+    `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'app_audit_logs'
+          AND column_name = $1
+      ) AS exists
+    `,
+    [columnName]
+  );
+
+  return result.rows[0]?.exists ?? false;
+}
+
 export function generateAuditHash(payload: Record<string, unknown>): string {
   const str = JSON.stringify(payload);
   let hash = 0;
@@ -145,7 +201,7 @@ export async function getLastAuditHash(): Promise<string | null> {
 export async function createAuditLog(log: Omit<AuditLogRecord, 'id' | 'hash' | 'previousHash' | 'immutable' | 'createdAt'>): Promise<AuditLogRecord> {
   const previousHash = await getLastAuditHash();
   const basePayload = {
-    unitId: log.unitId,
+    idUnidade: log.idUnidade,
     userId: log.userId,
     userName: log.userName,
     action: log.action,
@@ -165,35 +221,35 @@ export async function createAuditLog(log: Omit<AuditLogRecord, 'id' | 'hash' | '
 
   const result = await db.query<{
     id: string;
-    unit_id: string | null;
+    id_unidade: string | null;
     usuario_id: string | null;
     nome_usuario: string;
-    action: string;
+    acao: string;
     entidade: string;
-    entidade_id: string | null;
+    id_entidade: string | null;
     nome_entidade: string | null;
     data_evento: string;
     ip: string;
-    user_agent: string | null;
-    details: any;
-    success: boolean;
-    error_message: string | null;
-    previous_hash: string | null;
+    agente_usuario: string | null;
+    detalhes: any;
+    sucesso: boolean;
+    mensagem_erro: string | null;
+    hash_anterior: string | null;
     hash: string;
-    immutable: boolean;
-    created_at: string;
+    imutavel: boolean;
+    criado: string;
   }>(
     `
       INSERT INTO app_audit_logs (
-        unit_id, usuario_id, nome_usuario, action, entidade, entidade_id, nome_entidade,
-        data_evento, ip, user_agent, details, success, error_message,
-        previous_hash, hash, immutable
+        id_unidade, usuario_id, nome_usuario, acao, entidade, id_entidade, nome_entidade,
+        data_evento, ip, agente_usuario, detalhes, sucesso, mensagem_erro,
+        hash_anterior, hash, imutavel
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14, $15, true)
       RETURNING *
     `,
     [
-      log.unitId || null,
+      log.idUnidade || null,
       log.userId || null,
       log.userName,
       log.action,
@@ -215,7 +271,7 @@ export async function createAuditLog(log: Omit<AuditLogRecord, 'id' | 'hash' | '
 }
 
 export async function listAuditLogs(params: {
-  unitId?: string;
+  idUnidade?: string;
   action?: string;
   entidade?: string;
   limit?: number;
@@ -223,14 +279,14 @@ export async function listAuditLogs(params: {
   const conditions: string[] = [];
   const values: any[] = [];
 
-  if (params.unitId) {
-    values.push(params.unitId);
-    conditions.push(`unit_id = $${values.length}`);
+  if (params.idUnidade) {
+    values.push(params.idUnidade);
+    conditions.push(`id_unidade = $${values.length}`);
   }
 
   if (params.action) {
     values.push(params.action);
-    conditions.push(`action = $${values.length}`);
+    conditions.push(`acao = $${values.length}`);
   }
 
   if (params.entidade) {
@@ -258,22 +314,22 @@ ORDER BY data_evento DESC, criado DESC
 function mapAuditRow(row: any): AuditLogRecord {
   return {
     id: row.id,
-    unitId: row.unit_id,
+    idUnidade: row.id_unidade,
     userId: row.usuario_id,
     userName: row.nome_usuario,
-    action: row.action,
+    action: row.acao || row.action,
     entidade: row.entidade,
-    entidadeId: row.entidade_id,
+    entidadeId: row.id_entidade,
     entidadeName: row.nome_entidade,
     date: row.data_evento,
     ip: row.ip,
-    userAgent: row.user_agent,
-    details: row.details,
-    success: row.success,
-    errorMessage: row.error_message,
-    previousHash: row.previous_hash,
+    userAgent: row.agente_usuario,
+    details: row.detalhes ?? row.details,
+    success: row.sucesso ?? row.success,
+    errorMessage: row.mensagem_erro,
+    previousHash: row.hash_anterior,
     hash: row.hash,
-    immutable: row.immutable,
-    createdAt: row.criado,
+    immutable: row.imutavel,
+    createdAt: row.criado || row.created_at,
   };
 }

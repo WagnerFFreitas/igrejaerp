@@ -430,7 +430,7 @@ export const Auditoria: React.FC = () => {
                             </span>
                             <span className="flex items-center gap-1">
                               <User size={12} />
-                              {log.unitId}
+                              {log.idUnidade}
                             </span>
                             <span className="flex items-center gap-1">
                               <ShieldCheck size={12} />

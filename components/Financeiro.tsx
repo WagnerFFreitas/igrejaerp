@@ -30,20 +30,20 @@ import {
   Link as LinkIcon, Paperclip, CheckCircle2, AlertCircle, Layers,
   Briefcase, History, CheckCircle, Tag, MoreHorizontal
 } from 'lucide-react';
-import { Transaction, FinancialAccount, UserAuth, Member } from '../types';
+import { Transacao, FinancialAccount, Usuario, Membro } from '../types';
 import { COST_CENTERS, OPERATION_NATURES, CHURCH_PROJECTS } from '../constants';
 import { dbService } from '../services/databaseService';
 import { useAudit } from '../src/hooks/useAudit';
 import AuthService from '../src/services/authService';
 
 interface FinanceiroProps {
-  transactions: Transaction[];
-  currentUnitId: string;
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+  transactions: Transacao[];
+  currentIdUnidade: string;
+  setTransactions: React.Dispatch<React.SetStateAction<Transacao[]>>;
   accounts: FinancialAccount[];
   setAccounts: React.Dispatch<React.SetStateAction<FinancialAccount[]>>;
-  user?: UserAuth;
-  members: Member[];
+  user?: Usuario;
+  members: Membro[];
 }
 
 /**
@@ -53,7 +53,7 @@ interface FinanceiroProps {
  * Define o bloco principal deste arquivo (financeiro).
  */
 
-export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUnitId, setTransactions, accounts, setAccounts, user, members }) => {
+export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentIdUnidade, setTransactions, accounts, setAccounts, user, members }) => {
   const canWriteFinance = AuthService.hasPermission(user as any, 'finance', 'write');
   const [activeTab, setActiveTab] = useState<'tesouraria' | 'conciliacao' | 'contas'>('tesouraria');
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,25 +65,37 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
   // Hook de auditoria
   const { logAction } = useAudit(user);
 
-  const [formData, setFormData] = useState<Partial<Transaction>>({
-    descricao: '', valor: 0, dataTransacao: new Date().toISOString().split('T')[0], tipoTransacao: 'INCOME', categoria: 'Dizimo', naturezaOperacao: 'nat6', centroCusto: 'cc1', projetoId: '', contaId: accounts[0]?.id || '', situacao: 'PAGO', unidadeId: currentUnitId, formaPagamento: 'PIX', membroId: '',
-    ehParcelado: false,
-    totalParcelas: 1,
-    numeroParcela: undefined,
-    paiId: undefined,
+  const [formData, setFormData] = useState<Partial<Transacao>>({
+    descricao: '', 
+    valor: 0, 
+    data_transacao: new Date().toISOString().split('T')[0], 
+    tipo: 'ENTRADA', 
+    categoria: 'Dizimo', 
+    natureza_operacao: 'nat6', 
+    id_centro_custo: 'cc1', 
+    id_projeto: '', 
+    id_conta: accounts[0]?.id || accounts[0]?.id_conta || '', 
+    situacao: 'REALIZADO', 
+    id_unidade: currentIdUnidade, 
+    forma_pagamento: 'PIX', 
+    id_membro: '',
+    parcelado: false,
+    total_parcelas: 1,
+    numero_parcela: undefined,
+    id_transacao_origem: undefined,
   });
 
   const totals = useMemo(() => transactions.reduce((acc, curr) => {
-    if (curr.situacao === 'PAGO' || curr.status === 'PAID') {
-      if (curr.tipoTransacao === 'INCOME' || curr.tipoTransacao === 'RECEITA' || curr.type === 'INCOME') acc.income += curr.valor || curr.amount || 0;
-      else acc.expense += curr.valor || curr.amount || 0;
-    } else if (curr.situacao === 'PENDENTE' || curr.status === 'PENDING') acc.payable += curr.valor || curr.amount || 0;
+    if (curr.situacao === 'REALIZADO') {
+      if (curr.tipo === 'ENTRADA') acc.income += curr.valor || 0;
+      else acc.expense += curr.valor || 0;
+    } else if (curr.situacao === 'PENDENTE') acc.payable += curr.valor || 0;
     return acc;
   }, { income: 0, expense: 0, payable: 0 }), [transactions]);
 
   const filtered = transactions.filter(t =>
-    (t.descricao || t.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a, b) => new Date(a.dataTransacao || a.date || '').getTime() - new Date(b.dataTransacao || b.date || '').getTime());
+    (t.descricao || '').toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => new Date(a.data_transacao || '').getTime() - new Date(b.data_transacao || '').getTime());
 
   const handleSave = async () => {
     if (!canWriteFinance) {
@@ -100,31 +112,31 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
 
     setIsSaving(true);
 
-    let finalDescription = formData.descricao || formData.description;
-    if ((formData.categoria === 'Dizimo' || formData.category === 'Dizimo') && (formData.membroId || formData.memberId)) {
-      const member = members.find(m => m.id === (formData.membroId || formData.memberId));
+    let finalDescription = formData.descricao;
+    if (formData.categoria === 'Dizimo' && formData.id_membro) {
+      const member = members.find(m => (m.id_membro === formData.id_membro));
       if (member && (!finalDescription || finalDescription === 'Dízimo')) {
-        finalDescription = `Dízimo: ${member.nome || member.name}`;
+        finalDescription = `Dízimo: ${member.nome}`;
       }
     }
 
     try {
-      if (formData.ehParcelado && formData.totalParcelas && formData.totalParcelas > 1) {
+      if (formData.parcelado && formData.total_parcelas && formData.total_parcelas > 1) {
         await gerarParcelas(formData);
 
         if (editingId) {
           await logAction('UPDATE', 'Transaction', editingId, finalDescription, {
-            action: `${user?.nome || user?.name || 'Usuário'} alterou a transação parcelada: ${finalDescription}`,
+            action: `${user?.nome || 'Usuário'} alterou a transação parcelada: ${finalDescription}`,
             tipo: 'INSTALLMENT_TRANSACTION',
-            totalParcelas: formData.totalParcelas,
-            valor: formData.valor || formData.amount
+            total_parcelas: formData.total_parcelas,
+            valor: formData.valor
           });
         } else {
-          await logAction('CREATE', 'Transaction', formData.id, finalDescription, {
-            action: `${user?.nome || user?.name || 'Usuário'} registrou nova transação parcelada: ${finalDescription}`,
+          await logAction('CREATE', 'Transaction', formData.id_transacao, finalDescription, {
+            action: `${user?.nome || 'Usuário'} registrou nova transação parcelada: ${finalDescription}`,
             tipo: 'INSTALLMENT_TRANSACTION',
-            totalParcelas: formData.totalParcelas,
-            valor: formData.valor || formData.amount
+            total_parcelas: formData.total_parcelas,
+            valor: formData.valor
           });
         }
 
@@ -137,17 +149,15 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
       const transactionData = {
         ...formData,
         descricao: finalDescription,
-        id: editingId || `T${Date.now()}`,
-        criadoEm: editingId ? (formData.criadoEm || formData.createdAt) : new Date().toISOString(),
-        atualizadoEm: new Date().toISOString(),
-        unidadeId: currentUnitId
-      } as Transaction;
+        id_transacao: editingId || `T${Date.now()}`,
+        id_unidade: currentIdUnidade
+      } as Transacao;
 
       console.log("📋 Dados da transação preparados:", {
-        id: transactionData.id,
+        id_transacao: transactionData.id_transacao,
         descricao: transactionData.descricao,
         valor: transactionData.valor,
-        tipoTransacao: transactionData.tipoTransacao
+        tipo: transactionData.tipo
       });
 
       // Salvar no IndexedDB através do databaseService
@@ -155,26 +165,26 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
 
       if (editingId) {
         await logAction('UPDATE', 'Transaction', editingId, finalDescription, {
-          action: `${user?.nome || user?.name || 'Usuário'} alterou a transação: ${finalDescription}`,
+          action: `${user?.nome || 'Usuário'} alterou a transação: ${finalDescription}`,
           tipo: 'SINGLE_TRANSACTION',
-          valor: transactionData.valor || transactionData.amount,
-          categoria: transactionData.categoria || transactionData.category
+          valor: transactionData.valor,
+          categoria: transactionData.categoria
         });
       } else {
         await logAction('CREATE', 'Transaction', savedId, finalDescription, {
-          action: `${user?.nome || user?.name || 'Usuário'} registrou nova transação: ${finalDescription}`,
+          action: `${user?.nome || 'Usuário'} registrou nova transação: ${finalDescription}`,
           tipo: 'SINGLE_TRANSACTION',
-          valor: transactionData.valor || transactionData.amount,
-          categoria: transactionData.categoria || transactionData.category
+          valor: transactionData.valor,
+          categoria: transactionData.categoria
         });
       }
 
       // Atualizar o estado local
       if (editingId) {
-        setTransactions(prev => prev.map(t => t.id === editingId ? { ...transactionData, id: savedId } : t));
+        setTransactions(prev => prev.map(t => t.id_transacao === editingId ? { ...transactionData, id_transacao: savedId } : t));
         console.log("✅ Transação atualizada na lista global");
       } else {
-        setTransactions(prev => [{ ...transactionData, id: savedId }, ...prev]);
+        setTransactions(prev => [{ ...transactionData, id_transacao: savedId }, ...prev]);
         console.log("✅ Nova transação adicionada à lista global");
       }
 
@@ -191,7 +201,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
     }
   };
 
-  const openModal = (t?: Transaction) => {
+  const openModal = (t?: Transacao) => {
     if (!canWriteFinance) {
       alert('Você não tem permissão para editar lançamentos financeiros.');
       return;
@@ -205,17 +215,26 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
     };
 
     if (t) {
-      setEditingId(t.id);
-      setFormData({ ...t, dataTransacao: toDateStr(t.dataTransacao || t.date) });
+      setEditingId(t.id_transacao);
+      setFormData({ ...t, data_transacao: toDateStr(t.data_transacao) });
     } else {
       setEditingId(null);
       setFormData({
-        descricao: '', valor: 0, dataTransacao: new Date().toISOString().split('T')[0],
-        tipoTransacao: 'INCOME', categoria: 'Dizimo', naturezaOperacao: 'nat6', centroCusto: 'cc1',
-        projetoId: '', contaId: accounts[0]?.id || '', situacao: 'PAGO',
-        unidadeId: currentUnitId, formaPagamento: 'PIX', membroId: '',
-        ehParcelado: false,
-        totalParcelas: 1,
+        descricao: '', 
+        valor: 0, 
+        data_transacao: new Date().toISOString().split('T')[0],
+        tipo: 'ENTRADA', 
+        categoria: 'Dizimo', 
+        natureza_operacao: 'nat6', 
+        id_centro_custo: 'cc1',
+        id_projeto: '', 
+        id_conta: accounts[0]?.id || accounts[0]?.id_conta || '', 
+        situacao: 'REALIZADO',
+        id_unidade: currentIdUnidade, 
+        forma_pagamento: 'PIX', 
+        id_membro: '',
+        parcelado: false,
+        total_parcelas: 1,
       });
     }
     setIsModalOpen(true);
@@ -227,14 +246,14 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
    * Cria automaticamente N transações (uma para cada parcela)
    * e registra em Contas a Pagar
    */
-  const gerarParcelas = async (transactionData: Partial<Transaction>) => {
+  const gerarParcelas = async (transactionData: Partial<Transacao>) => {
     console.log("🚀 Iniciando geração de parcelas...");
     
-    const numeroParcelas = transactionData.installmentCount || 1;
-    const valorTotal = transactionData.amount || 0;
+    const numeroParcelas = transactionData.total_parcelas || 1;
+    const valorTotal = transactionData.valor || 0;
     const taxa = (transactionData as any).jurosPercentual || 0;
-    const dataBase = new Date(transactionData.dueDate || transactionData.date || new Date());
-    const parcelas: Transaction[] = [];
+    const dataBase = new Date(transactionData.data_transacao || new Date());
+    const parcelas: Transacao[] = [];
 
     // Calcular valor da parcela (com ou sem juros — fórmula Price)
     let valorParcela: number;
@@ -255,37 +274,31 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
           ? parseFloat(valorParcela.toFixed(2))
           : (i === numeroParcelas ? valorTotal - (parseFloat(valorParcela.toFixed(2)) * (numeroParcelas - 1)) : parseFloat(valorParcela.toFixed(2)));
 
-        const parcela: Transaction = {
+        const parcela: Transacao = {
           ...transactionData,
-          id: `tmp-${Date.now()}-${i}`,
-          description: `${transactionData.description} (${i}/${numeroParcelas})`,
-          amount: amountParcela,
-          dueDate: vencimentoParcela.toISOString().split('T')[0],
-          date: vencimentoParcela.toISOString().split('T')[0],
-          status: 'PENDING',
-          type: transactionData.type || 'EXPENSE',
-          category: transactionData.category || 'OUTROS',
-          costCenter: transactionData.costCenter || 'cc1',
-          accountId: transactionData.accountId || accounts[0]?.id || null,
-          operationNature: transactionData.operationNature || 'nat6',
-          isInstallment: true,
-          installmentNumber: i,
-          totalInstallments: numeroParcelas,
-          parentId: undefined,
-          notes: taxa > 0
-            ? `Parcela ${i}/${numeroParcelas} — Taxa ${taxa}% a.m. — Total: R$ ${(valorParcela * numeroParcelas).toFixed(2)}`
-            : `Parcela ${i}/${numeroParcelas} — Valor original: R$ ${valorTotal.toFixed(2)}`,
-          createdAt: new Date().toISOString(),
-          competencyDate: transactionData.competencyDate || new Date().toISOString().split('T')[0],
-          unitId: currentUnitId,
-        };
+          id_transacao: `tmp-${Date.now()}-${i}`,
+          descricao: `${transactionData.descricao} (${i}/${numeroParcelas})`,
+          valor: amountParcela,
+          data_transacao: vencimentoParcela.toISOString().split('T')[0],
+          situacao: 'PENDENTE',
+          tipo: transactionData.tipo || 'SAIDA',
+          categoria: transactionData.categoria || 'OUTROS',
+          id_centro_custo: transactionData.id_centro_custo || 'cc1',
+          id_conta: transactionData.id_conta || accounts[0]?.id || accounts[0]?.id_conta || null,
+          natureza_operacao: transactionData.natureza_operacao || 'nat6',
+          parcelado: true,
+          numero_parcela: i,
+          total_parcelas: numeroParcelas,
+          id_transacao_origem: undefined,
+          data_criacao: new Date().toISOString(),
+          id_unidade: currentIdUnidade,
+        } as Transacao;
         
-        if (i === 1) parcela.parentId = undefined;  // primeira parcela sem parent
-        else parcela.parentId = parcelas[0].id;       // demais apontam para o ID real do banco
+        if (i > 1) parcela.id_transacao_origem = parcelas[0].id_transacao;
         
         console.log(`💾 Salvando parcela ${i}/${numeroParcelas} — R$ ${amountParcela.toFixed(2)}...`);
         const savedId = await dbService.saveTransaction(parcela);
-        parcela.id = savedId;
+        parcela.id_transacao = savedId;
         parcelas.push(parcela);
       }
       
@@ -385,37 +398,37 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-[11px]">
                   {filtered.map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50/50 transition-all">
+                    <tr key={t.id_transacao} className="hover:bg-slate-50/50 transition-all">
                       <td className="px-4 py-2.5">
-                        <p className="font-bold text-slate-900 leading-none">{new Date(t.date).toLocaleDateString('pt-BR')}</p>
-                        <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 tracking-tighter">ID: {t.id.slice(0,5).toUpperCase()}</p>
+                        <p className="font-bold text-slate-900 leading-none">{new Date(t.data_transacao).toLocaleDateString('pt-BR')}</p>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 tracking-tighter">ID: {t.id_transacao.slice(0,5).toUpperCase()}</p>
                       </td>
                       <td className="px-4 py-2.5">
-                        <p className="font-bold text-slate-700 leading-none mb-0.5">{t.description}</p>
+                        <p className="font-bold text-slate-700 leading-none mb-0.5">{t.descricao}</p>
                         <p className="text-[9px] text-slate-400 font-medium uppercase">
-                          {t.category === 'Dizimo' && t.memberId ? (
+                          {t.categoria === 'Dizimo' && t.id_membro ? (
                             <span className="flex items-center gap-1 text-indigo-600 font-black">
-                              <User size={10}/> {members.find(m => m.id === t.memberId)?.name || 'Membro'}
+                              <User size={10}/> {members.find(m => m.id_membro === t.id_membro)?.nome || 'Membro'}
                             </span>
                           ) : (
-                            t.providerName || 'ADJPA Matriz'
+                            t.id_unidade ? 'ADJPA Matriz' : 'Externo'
                           )}
                         </p>
                       </td>
                       <td className="px-6 py-2.5">
                         <p className="text-[9px] font-black text-indigo-600 uppercase tracking-tight leading-none">
-                          {OPERATION_NATURES.find(n => n.id === t.operationNature)?.name || 'OUTROS'}
+                          {OPERATION_NATURES.find(n => n.id === t.natureza_operacao)?.name || 'OUTROS'}
                         </p>
                         <p className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">
-                          {COST_CENTERS.find(c => c.id === t.costCenter)?.name || 'Geral'}
+                          {COST_CENTERS.find(c => c.id === t.id_centro_custo)?.name || 'Geral'}
                         </p>
                       </td>
-                      <td className={`px-6 py-2.5 text-right font-black ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      <td className={`px-6 py-2.5 text-right font-black ${t.tipo === 'ENTRADA' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        R$ {t.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-2.5 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${t.status === 'PAID' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                          {t.status === 'PAID' ? 'Liquidado' : 'Em Aberto'}
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${t.situacao === 'REALIZADO' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {t.situacao === 'REALIZADO' ? 'Liquidado' : 'Em Aberto'}
                         </span>
                       </td>
                       <td className="px-6 py-2.5 text-right text-slate-400">
@@ -445,28 +458,28 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                        <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Descrição do Lançamento / Histórico</label>
-                       <input className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Ex: Dízimo do mês, Pagamento de Luz..." />
+                       <input className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all" value={formData.descricao} onChange={e => setFormData({...formData, descricao: e.target.value})} placeholder="Ex: Dízimo do mês, Pagamento de Luz..." />
                     </div>
                     <div>
                       <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Valor Bruto (R$)</label>
-                      <input type="number" className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-black text-xs text-indigo-700" value={formData.amount === 0 ? '' : formData.amount} onChange={e => setFormData({...formData, amount: e.target.value === '' ? 0 : Number(e.target.value)})} />
+                      <input type="number" className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-black text-xs text-indigo-700" value={formData.valor === 0 ? '' : formData.valor} onChange={e => setFormData({...formData, valor: e.target.value === '' ? 0 : Number(e.target.value)})} />
                     </div>
                     <div>
                       <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Data de Lançamento</label>
-                      <input type="date" className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                      <input type="date" className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs" value={formData.data_transacao} onChange={e => setFormData({...formData, data_transacao: e.target.value})} />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Tipo de Fluxo</label>
-                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})}>
-                        <option value="INCOME">Receita / Arrecadação (+)</option>
-                        <option value="EXPENSE">Despesa / Pagamento (-)</option>
+                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.tipo} onChange={e => setFormData({...formData, tipo: e.target.value as any})}>
+                        <option value="ENTRADA">Receita / Arrecadação (+)</option>
+                        <option value="SAIDA">Despesa / Pagamento (-)</option>
                       </select>
                     </div>
                     <div>
                       <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Categoria</label>
-                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} >
+                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.categoria} onChange={e => setFormData({...formData, categoria: e.target.value})} >
                         <option value="Dizimo">Dízimo</option>
                         <option value="OFFERING">Oferta</option>
                         <option value="CAMPAIGN">Campanha</option>
@@ -478,29 +491,29 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                     </div>
                     <div>
                       <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Centro de Custo</label>
-                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.costCenter} onChange={e => setFormData({...formData, costCenter: e.target.value})} >
+                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.id_centro_custo} onChange={e => setFormData({...formData, id_centro_custo: e.target.value})} >
                         {COST_CENTERS.map(cc => <option key={cc.id} value={cc.id}>{cc.name}</option>)}
                       </select>
                     </div>
                   </div>
 
                   {/* OPÇÃO DE PARCELAMENTO (só para DESPESAS) */}
-                  {formData.type === 'EXPENSE' && (
+                  {formData.tipo === 'SAIDA' && (
                     <div className="p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 animate-in slide-in-from-top-2">
                       <div className="flex items-center gap-2 mb-4">
                         <CreditCard size={18} className="text-indigo-600" />
                         <label className="text-[10px] font-black uppercase text-indigo-700 flex items-center gap-2">
                           <input 
                             type="checkbox" 
-                            checked={formData.isInstallment} 
-                            onChange={e => setFormData({...formData, isInstallment: e.target.checked, installmentCount: e.target.checked ? 2 : 1, jurosPercentual: 0} as any)}
+                            checked={formData.parcelado} 
+                            onChange={e => setFormData({...formData, parcelado: e.target.checked, total_parcelas: e.target.checked ? 2 : 1, jurosPercentual: 0} as any)}
                             className="w-4 h-4 accent-indigo-600"
                           />
                           Pagamento Parcelado
                         </label>
                       </div>
                       
-                      {formData.isInstallment && (
+                      {formData.parcelado && (
                         <div className="space-y-4 ml-6">
                           {/* Tipo de parcelamento */}
                           <div className="flex gap-3">
@@ -533,8 +546,8 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                               <label className="text-[9px] font-black uppercase text-indigo-600 block mb-1">Quantidade de Parcelas</label>
                               <select 
                                 className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                                value={formData.installmentCount}
-                                onChange={e => setFormData({...formData, installmentCount: Number(e.target.value)})}
+                                value={formData.total_parcelas}
+                                onChange={e => setFormData({...formData, total_parcelas: Number(e.target.value)})}
                               >
                                 {[2,3,4,5,6,7,8,9,10,11,12].map(n => <option key={n} value={n}>{n}x</option>)}
                               </select>
@@ -560,8 +573,8 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
 
                           {/* Resumo do parcelamento */}
                           {(() => {
-                            const n = formData.installmentCount || 2;
-                            const total = formData.amount || 0;
+                            const n = formData.total_parcelas || 2;
+                            const total = formData.valor || 0;
                             const taxa = (formData as any).jurosPercentual || 0;
                             let valorParcela: number;
                             let totalComJuros: number;
@@ -604,21 +617,21 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                       )}
                       
                       <p className="text-[8px] font-medium text-indigo-600 mt-3 ml-6">
-                        ℹ️ Serão geradas {formData.installmentCount} contas a pagar com vencimento mensal.
+                        ℹ️ Serão geradas {formData.total_parcelas} contas a pagar com vencimento mensal.
                       </p>
                     </div>
                   )}
 
-                  {formData.type === 'INCOME' && formData.category === 'Dizimo' && (
+                  {formData.tipo === 'ENTRADA' && formData.categoria === 'Dizimo' && (
                     <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 animate-in slide-in-from-top-2">
                        <label className="text-[10px] font-black uppercase block mb-2 text-emerald-700 flex items-center gap-2"><User size={14}/> Selecionar Membro (Dizimista)</label>
                        <select 
                         className="w-full px-4 py-2 bg-white border border-emerald-200 rounded-2xl font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500" 
-                        value={formData.memberId || ''} 
-                        onChange={e => setFormData({...formData, memberId: e.target.value})}
+                        value={formData.id_membro || ''} 
+                        onChange={e => setFormData({...formData, id_membro: e.target.value})}
                        >
                          <option value="">-- Selecione o Membro --</option>
-                         {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.ecclesiasticalPosition || 'Membro'})</option>)}
+                         {members.map(m => <option key={m.id_membro} value={m.id_membro}>{m.nome} ({m.situacao || 'Ativo'})</option>)}
                        </select>
                     </div>
                   )}
@@ -626,13 +639,13 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Conta / Caixa Ativo</label>
-                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.accountId} onChange={e => setFormData({...formData, accountId: e.target.value})} >
-                        {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                      <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.id_conta} onChange={e => setFormData({...formData, id_conta: e.target.value})} >
+                        {accounts.map(acc => <option key={acc.id_conta || acc.id} value={acc.id_conta || acc.id}>{acc.nome || acc.name}</option>)}
                       </select>
                     </div>
                     <div>
                        <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Natureza da Operação (FISCAL)</label>
-                       <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.operationNature} onChange={e => setFormData({...formData, operationNature: e.target.value})} >
+                       <select className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none" value={formData.natureza_operacao} onChange={e => setFormData({...formData, natureza_operacao: e.target.value})} >
                         {OPERATION_NATURES.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
                        </select>
                      </div>
@@ -641,7 +654,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                   <div className="grid grid-cols-1 gap-4">
                      <div>
                        <label className="text-[10px] font-black uppercase block mb-1 text-slate-400">Fornecedor / Favorecido</label>
-                       <input className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs" value={formData.providerName} onChange={e => setFormData({...formData, providerName: e.target.value})} placeholder="Ex: CPFL, Sabesp, Nome Fornecedor..." />
+                       <input className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs" value={formData.nome_fornecedor} onChange={e => setFormData({...formData, nome_fornecedor: e.target.value})} placeholder="Ex: CPFL, Sabesp, Nome Fornecedor..." />
                      </div>
                   </div>
                   <div className="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 flex items-center justify-between">
@@ -652,10 +665,10 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
                         <p className="text-xs font-bold text-slate-700 mt-1">Sincronização imediata via reconciliação bancária.</p>
                       </div>
                     </div>
-                    <select className="px-4 py-1.5 bg-white border border-indigo-200 rounded-xl font-black text-[10px] uppercase outline-none shadow-sm" value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value as any})}>
+                    <select className="px-4 py-1.5 bg-white border border-indigo-200 rounded-xl font-black text-[10px] uppercase outline-none shadow-sm" value={formData.forma_pagamento} onChange={e => setFormData({...formData, forma_pagamento: e.target.value as any})}>
                       <option value="PIX">PIX</option>
-                      <option value="CASH">Dinheiro</option>
-                      <option value="CREDIT_CARD">Cartão Corporativo</option>
+                      <option value="DINHEIRO">Dinheiro</option>
+                      <option value="CARTAO_CREDITO">Cartão Corporativo</option>
                     </select>
                   </div>
                 </div>
@@ -702,7 +715,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
 
       {activeTab === 'contas' && (
         <ContasBancarias 
-          currentUnitId={currentUnitId}
+          currentIdUnidade={currentIdUnidade}
           onTransactionAdded={() => {
             // Recarregar transações se necessário
             console.log('Transação adicionada via ContasBancarias');
@@ -712,7 +725,7 @@ export const Financeiro: React.FC<FinanceiroProps> = ({ transactions, currentUni
 
       {activeTab === 'conciliacao' && (
         <ConciliacaoBancaria 
-          currentUnitId={currentUnitId}
+          currentIdUnidade={currentIdUnidade}
           user={user}
         />
       )}

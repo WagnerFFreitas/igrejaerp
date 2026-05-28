@@ -46,7 +46,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const isPersistedId = (id?: string) => Boolean(id && UUID_REGEX.test(id));
 
 /**
- * Constrói profile_data contendo APENAS campos extras (não duplica colunas da tabela)
+ * Constrói dados_perfil contendo APENAS campos extras (não duplica colunas da tabela)
  * Campos que já existem em colunas separadas são lidos diretamente da tabela.
  */
 const buildMemberProfileData = (member: any) => ({
@@ -67,7 +67,7 @@ const buildMemberProfileData = (member: any) => ({
 });
 
 /**
- * Constrói profile_data para funcionários (compatibilidade com sistema legado)
+ * Constrói dados_perfil para funcionários (compatibilidade com sistema legado)
  * Nota: Idealmente muitos desses campos deveriam ter colunas dedicadas
  */
 const buildEmployeeProfileData = (employee: any) => ({
@@ -133,108 +133,101 @@ const buildEmployeeProfileData = (employee: any) => ({
  * Remove lógica de compatibilidade legada - usa apenas campos atuais
  * COMPATIBILIDADE: aceita tanto 'celular' quanto 'whatsapp'
  */
-const mapMemberFromApi = (member: any) => {
-  const profileData = member.profile_data || {};
+const mapMemberFromApi = (member: any): Membro => {
+  const profileData = member.dados_perfil || {};
 
   return {
     // Identificadores
-    id: member.id || '',
-    unidadeId: member.unidade_id || member.unit_id || '',
+    id_membro: member.id_membro || member.id || '',
+    id_unidade: member.id_unidade || '',
+    id_pessoa: member.id_pessoa || '',
     
     // Dados pessoais
     matricula: member.matricula || '',
-    nome: member.nome || member.name || '',
+    nome: member.nome || '',
     cpf: member.cpf || '',
     rg: member.rg || '',
     email: member.email || '',
-    telefone: member.telefone || member.phone || '',
+    telefone: member.telefone || '',
+    celular: member.celular || member.whatsapp || '', 
     whatsapp: member.whatsapp || member.celular || '', 
-    profissao: member.profissao || member.profession || '',
-    funcao: member.funcao || member.role || 'MEMBER',
-    status: member.status || 'ACTIVE',
+    profissao: member.profissao || '',
+    funcao: member.funcao || 'MEMBER',
+    situacao: member.situacao || member.status || 'ACTIVE',
     
     // Filiação
-    nomePai: member.nome_pai || member.father_name || '',
-    nomeMae: member.nome_mae || member.mother_name || '',
+    nome_pai: member.nome_pai || '',
+    nome_mae: member.nome_mae || '',
     
     // Saúde e emergência
-    tipoSanguineo: member.tipo_sanguineo || member.blood_type || '',
-    contatoEmergencia: member.contato_emergencia || member.emergency_contact || '',
+    tipo_sanguineo: member.tipo_sanguineo || '',
+    contato_emergencia: member.contato_emergencia || '',
+    necessidades_especiais: member.necessidades_especiais || '',
     
     // Vida cristã
-    dataConversao: member.data_conversao || member.conversion_date || '',
-    localConversao: member.local_conversao || member.conversion_place || '',
-    dataBatismo: member.data_batismo || member.baptism_date || '',
-    igrejaBatismo: member.igreja_batismo || member.baptism_church || '',
-    pastorBatizador: member.pastor_batizador || member.pastorBatizador || member.baptizing_pastor || '',
-    batismoEspiritoSanto: (member.batismo_espirito_santo ?? member.holy_spirit_baptism) ? 'SIM' : 'NAO',
+    data_conversao: member.data_conversao || '',
+    local_conversao: member.local_conversao || '',
+    data_batismo: member.data_batismo || '',
+    igreja_batismo: member.igreja_batismo || '',
+    pastor_batizador: member.pastor_batizador || '',
+    batismo_espirito_santo: member.batismo_espirito_santo === true || member.batismo_espirito_santo === 'SIM' ? 'SIM' : 'NAO',
     
     // Formação e status
-    dataMembro: member.data_membro || member.membership_date || '',
-    igrejaOrigem: member.igreja_origem || member.church_of_origin || '',
-    cursoDiscipulado: member.curso_discipulado || member.discipleship_course || 'NAO_INICIADO',
-    escolaBiblica: member.escola_biblica || member.biblical_school || 'INATIVO',
+    data_ingresso: member.data_ingresso || member.data_membro || '',
+    igreja_origem: member.igreja_origem || '',
+    curso_discipulado: member.curso_discipulado || 'NAO_INICIADO',
+    escola_biblica: member.escola_biblica || 'INATIVO',
     
     // Ministérios
-    ministerioPrincipal: member.ministerio_principal || member.main_ministry || '',
-    funcaoMinisterio: member.funcao_ministerio || member.ministry_role || '',
-    outrosMinisterios: Array.isArray(member.outros_ministerios || member.other_ministries) ? (member.outros_ministerios || member.other_ministries) : [],
-    cargoEclesiastico: member.cargo_eclesiastico || member.ecclesiastical_position || '',
-    dataConsagracao: member.data_consagracao || member.consecration_date || '',
+    ministerio_principal: member.ministerio_principal || '',
+    funcao_ministerio: member.funcao_ministerio || '',
+    outros_ministerios: Array.isArray(member.outros_ministerios) ? member.outros_ministerios : [],
+    cargo_eclesiastico: member.cargo_eclesiastico || '',
+    data_consagracao: member.data_consagracao || '',
+    talentos: member.talentos || '',
+    dons_espirituais: member.dons_espirituais || '',
+    cell_group: member.cell_group || '',
     
     // Financeiro
-    ehDizimista: Boolean(member.dizimista ?? member.is_tithable),
-    ehOfertanteRegular: Boolean(member.ofertante_regular ?? member.is_regular_giver),
-    participaCampanhas: Boolean(member.participa_campanhas ?? member.participates_campaigns),
+    dizimista: Boolean(member.dizimista),
+    ofertante: Boolean(member.ofertante),
+    eh_ofertante_regular: Boolean(member.eh_ofertante_regular),
+    participa_campanhas: Boolean(member.participa_campanhas),
     
     // Dados bancários
-    banco: member.banco || member.bank || '',
-    agenciaBancaria: member.agencia_bancaria || member.bank_agency || '',
-    contaBancaria: member.conta_bancaria || member.bank_account || '',
-    chavePix: member.chave_pix || member.pix_key || '',
+    banco: member.banco || '',
+    agencia_bancaria: member.agencia_bancaria || '',
+    conta_bancaria: member.conta_bancaria || '',
+    chave_pix: member.chave_pix || '',
     
     // Dados pessoais complementares
-    dataNascimento: member.data_nascimento || member.birth_date || '',
-    sexo: member.sexo || member.gender || 'M',
-    estadoCivil: member.estado_civil || member.marital_status || 'SINGLE',
-    nomeConjuge: member.nome_conjuge || member.spouse_name || '',
-    dataCasamento: member.data_casamento || member.marriage_date || '',
+    data_nascimento: member.data_nascimento || '',
+    sexo: member.sexo || 'M',
+    estado_civil: member.estado_civil || 'SINGLE',
+    nome_conjuge: member.nome_conjuge || '',
+    data_casamento: member.data_casamento || '',
     
-    // Endereço
-    endereco: {
-      cep: member.cep || member.zip_code || '',
-      logradouro: member.logradouro || member.street || '',
-      numero: member.numero || member.number || '',
-      complemento: member.complemento || member.complement || '',
-      bairro: member.bairro || member.neighborhood || '',
-      cidade: member.cidade || member.city || '',
-      estado: member.estado || member.state || '',
-    },
+    // Endereço (achatado conforme Membro interface)
+    cep: member.cep || '',
+    endereco: member.endereco || member.logradouro || '',
+    numero: member.numero || '',
+    complemento: member.complemento || '',
+    bairro: member.bairro || '',
+    cidade: member.cidade || '',
+    estado: member.estado || '',
     
     // Metadados
-    observacoes: member.observacoes || member.observations || '',
-    necessidadesEspeciais: member.necessidades_especiais || member.special_needs || '',
-    talentos: member.talentos || member.talents || '',
+    observacoes: member.observacoes || '',
     tags: Array.isArray(member.tags) ? member.tags : [],
-    familiaId: member.familia_id || member.family_id || '',
+    id_familia: member.id_familia || member.familia_id || '',
     avatar: member.avatar || '',
     
-    // De profile_data (campos extras antigos que ainda não migraram e compatibilidade)
-    contribuicoes: profileData.contribuicoes || [],
-    dependentes: profileData.dependentes || [],
-    email_pessoal: profileData.email_pessoal || '',
-    celular: member.celular || profileData.celular || '',
-    escolaridade: member.escolaridade || profileData.escolaridade || '',
-    is_pcd: member.is_pcd ?? profileData.is_pcd ?? false,
-    tipo_deficiencia: member.tipo_deficiencia || profileData.tipo_deficiencia || '',
-    donsEspirituais: member.dons_espirituais || profileData.donsEspirituais || profileData.spiritualGifts || '',
-    cellGroup: member.cell_group || profileData.cellGroup || '',
+    // De dados_perfil (campos extras antigos que ainda não migraram e compatibilidade)
+    contribuicoes: member.contribuicoes || profileData.contribuicoes || [],
+    dependentes: member.dependentes || profileData.dependentes || [],
     
     // LGPD
-    lgpdConsent: member.lgpd_consent || profileData.lgpdConsent || {},
-    
-    // Para compatibilidade com componentes
-    profile_data: profileData
+    lgpd_consent: member.lgpd_consent || profileData.lgpdConsent || {},
   };
 };
 
@@ -251,108 +244,98 @@ const mapUnitFromApi = (unit: any) => ({
 });
 
 /**
- * Mapeia dados do frontend (camelCase) para formato backend (snake_case)
- * Simplificado: sem duplicação em profile_data
- * COMPATIBILIDADE: mapeia 'whatsapp' para 'celular' 
+ * Mapeia dados do frontend (snake_case) para formato backend (snake_case)
+ * O frontend já usa a interface Membro (snake_case).
  */
 const mapMemberToApi = (member: any) => {
-  const payload = {
-    ...(isPersistedId(member.id) ? { id: member.id } : {}),
-    unidade_id:        normalizeUnitId(member.unidadeId || member.unitId || member.unit_id),
-    nome:              member.nome || member.name,
-    cpf:               member.cpf,
-    rg:                member.rg || null,
-    email:             member.email || null,
-    telefone:          member.telefone || member.phone || null,
-    whatsapp:          member.whatsapp || member.celular || null, 
-    funcao:            member.funcao || member.role || 'MEMBER',
-    status:            member.status || 'ACTIVE',
-    
-    // Filiação
-    nome_pai:          member.nomePai || member.fatherName || member.father_name || null,
-    nome_mae:          member.nomeMae || member.motherName || member.mother_name || null,
-    
-    // Saúde e emergência
-    tipo_sanguineo:    member.tipoSanguineo || member.bloodType || member.blood_type || null,
-    contato_emergencia: member.contatoEmergencia || member.emergencyContact || member.emergency_contact || null,
-    
-    // Vida cristã
-    data_conversao:    member.dataConversao || member.conversionDate || member.conversion_date || null,
-    local_conversao:   member.localConversao || member.conversionPlace || member.local_conversao || null,
-    data_batismo:      member.dataBatismo || member.baptismDate || member.baptism_date || null,
-    igreja_batismo:    member.igrejaBatismo || member.baptismChurch || member.igreja_batismo || null,
-    pastor_batizador:  member.pastorBatizador || member.baptizingPastor || member.pastor_batizador || null,
-    batismo_espirito_santo: (member.batismoEspiritoSanto || member.holySpiritBaptism || member.batismo_espirito_santo) === 'SIM',
+  // O frontend já está usando snake_case (Membro interface), 
+  // então o mapeamento é quase uma identidade, mas garantimos que campos nulos sejam tratados.
   
-    // Formação
-    data_membro:       member.dataMembro || member.membershipDate || member.data_membro || null,
-    igreja_origem:     member.igrejaOrigem || member.churchOfOrigin || member.igreja_origem || null,
-    curso_discipulado: member.cursoDiscipulado || member.discipleshipCourse || member.curso_discipulado || null,
-    escola_biblica:    member.escolaBiblica || member.biblicalSchool || member.escola_biblica || null,
-  
+  const payload: any = {
+    id_membro: member.id_membro || member.id,
+    id_unidade: normalizeUnitId(member.id_unidade || member.unidadeId),
+    id_pessoa: member.id_pessoa,
+    
+    matricula: member.matricula,
+    nome: member.nome,
+    cpf: member.cpf,
+    rg: member.rg || null,
+    email: member.email || null,
+    telefone: member.telefone || null,
+    celular: member.celular || member.whatsapp || null,
+    whatsapp: member.whatsapp || member.celular || null,
+    
+    data_nascimento: member.data_nascimento || null,
+    sexo: member.sexo || 'M',
+    estado_civil: member.estado_civil || 'SINGLE',
+    
+    situacao: member.situacao || member.status || 'ACTIVE',
+    funcao: member.funcao || 'MEMBER',
+    
+    // Vida Cristã
+    data_conversao: member.data_conversao || null,
+    local_conversao: member.local_conversao || null,
+    data_batismo: member.data_batismo || null,
+    igreja_batismo: member.igreja_batismo || null,
+    pastor_batizador: member.pastor_batizador || null,
+    batismo_espirito_santo: member.batismo_espirito_santo === 'SIM',
+    data_ingresso: member.data_ingresso || null,
+    igreja_origem: member.igreja_origem || null,
+    curso_discipulado: member.curso_discipulado || 'NAO_INICIADO',
+    escola_biblica: member.escola_biblica || 'INATIVO',
+    
     // Ministérios
-    ministerio_principal: member.ministerioPrincipal || member.mainMinistry || member.ministerio_principal || null,
-    funcao_ministerio:  member.funcaoMinisterio || member.ministryRole || member.funcao_ministerio || null,
-    outros_ministerios: Array.isArray(member.outrosMinisterios || member.other_ministries || member.outros_ministerios) ? (member.outrosMinisterios || member.other_ministries || member.outros_ministerios) : null,
-    cargo_eclesiastico: member.cargoEclesiastico || member.ecclesiasticalPosition || member.cargo_eclesiastico || null,
-    data_consagracao:   member.dataConsagracao || member.consecrationDate || member.data_consagracao || null,
-  
+    ministerio_principal: member.ministerio_principal || null,
+    funcao_ministerio: member.funcao_ministerio || null,
+    outros_ministerios: member.outros_ministerios || null,
+    cargo_eclesiastico: member.cargo_eclesiastico || null,
+    data_consagracao: member.data_consagracao || null,
+    talentos: member.talentos || null,
+    dons_espirituais: member.dons_espirituais || null,
+    cell_group: member.cell_group || null,
+    
     // Financeiro
-    dizimista:         member.ehDizimista ?? member.isTithable ?? member.dizimista ?? false,
-    ofertante_regular:  member.ehOfertanteRegular ?? member.isRegularGiver ?? member.ofertante_regular ?? false,
-    participa_campanhas: member.participaCampanhas ?? member.participatesCampaigns ?? false,
-  
+    dizimista: Boolean(member.dizimista),
+    ofertante: Boolean(member.ofertante),
+    eh_ofertante_regular: Boolean(member.eh_ofertante_regular),
+    participa_campanhas: Boolean(member.participa_campanhas),
+    
     // Dados bancários
-    banco:              member.banco || member.bank || null,
-    agencia_bancaria:   member.agenciaBancaria || member.bankAgency || member.agencia_bancaria || null,
-    conta_bancaria:     member.contaBancaria || member.bankAccount || member.conta_bancaria || null,
-    chave_pix:          member.chavePix || member.pixKey || member.chave_pix || null,
-  
-    // Endereço (decomposto)
-    cep:                member.endereco?.cep || member.address?.cep || member.address?.zipCode || member.zip_code || null,
-    logradouro:         member.endereco?.logradouro || member.address?.logradouro || member.address?.street || member.street || null,
-    numero:             member.endereco?.numero || member.address?.numero || member.address?.number || member.number || null,
-    complemento:        member.endereco?.complemento || member.address?.complemento || member.address?.complement || member.complement || null,
-    bairro:             member.endereco?.bairro || member.address?.bairro || member.address?.neighborhood || member.neighborhood || null,
-    cidade:             member.endereco?.cidade || member.address?.cidade || member.address?.city || member.city || null,
-    estado:             member.endereco?.estado || member.address?.estado || member.address?.state || member.state || null,
-  
-    // Dados pessoais
-    data_nascimento:    member.dataNascimento || member.birthDate || member.birth_date || null,
-    sexo:               member.sexo || member.gender || 'M',
-    estado_civil:       member.estadoCivil || member.maritalStatus || member.marital_status || 'SINGLE',
-    nome_conjuge:       member.nomeConjuge || member.spouseName || member.spouse_name || null,
-    data_casamento:     member.dataCasamento || member.marriageDate || member.marriage_date || null,
-  
+    banco: member.banco || null,
+    agencia_bancaria: member.agencia_bancaria || null,
+    conta_bancaria: member.conta_bancaria || null,
+    chave_pix: member.chave_pix || null,
+    
+    // Família
+    nome_pai: member.nome_pai || null,
+    nome_mae: member.nome_mae || null,
+    nome_conjuge: member.nome_conjuge || null,
+    data_casamento: member.data_casamento || null,
+    tipo_sanguineo: member.tipo_sanguineo || null,
+    contato_emergencia: member.contato_emergencia || null,
+    necessidades_especiais: member.necessidades_especiais || null,
+    id_familia: member.id_familia || member.familia_id || null,
+    
+    // Endereço
+    cep: member.cep || null,
+    endereco: member.endereco || null,
+    numero: member.numero || null,
+    complemento: member.complemento || null,
+    bairro: member.bairro || null,
+    cidade: member.cidade || null,
+    estado: member.estado || null,
+    
     // Metadados
-    observacoes:        member.observacoes || member.observations || null,
-    necessidades_especiais: member.necessidadesEspeciais || member.specialNeeds || member.special_needs || null,
-    talentos:           member.talentos || member.talents || null,
-    tags:               Array.isArray(member.tags) ? member.tags : null,
-    familia_id:         member.familiaId || member.familyId || member.family_id || null,
-    avatar:             member.avatar || null,
-    cell_group:         member.cellGroup || member.cell_group || null,
-  
-    // Novos campos migrados da versão 006
-    dons_espirituais:   member.donsEspirituais || member.dons_espirituais || null,
-    escolaridade:       (member as any).escolaridade || null,
-    is_pcd:             (member as any).is_pcd ?? false,
-    tipo_deficiencia:   (member as any).tipo_deficiencia || null,
-    celular:            (member as any).celular || null,
-    lgpd_consent:       member.lgpdConsent || member.lgpd_consent || {},
-  
-    // Profile data: APENAS campos extras (não duplica)
-    profile_data: {
-      contribuicoes: Array.isArray(member.contribuicoes) ? member.contribuicoes : [],
-      dependentes: Array.isArray(member.dependentes) ? member.dependentes.map((d: any) => ({
-        id: d.id,
-        nome: d.nome,
-        dataNascimento: d.dataNascimento,
-        parentesco: d.parentesco,
-        cpf: d.cpf
-      })) : [],
-      email_pessoal: (member as any).email_pessoal || ''
-    }
+    observacoes: member.observacoes || null,
+    tags: member.tags || null,
+    avatar: member.avatar || null,
+    
+    // LGPD
+    lgpd_consent: member.lgpd_consent || {},
+    
+    // Campos legados para compatibilidade do backend (se necessário)
+    contribuicoes: member.contribuicoes || [],
+    dependentes: member.dependentes || [],
   };
   
   return payload;
@@ -477,26 +460,26 @@ const mapEmployeeToApi = (employee: any) => ({
   address_state: employee.address?.state || employee.estado || '',
   address_country: employee.address?.country || 'Brasil',
   avatar: employee.avatar || null,
-  profile_data: buildEmployeeProfileData(employee),
+  dados_perfil: buildEmployeeProfileData(employee),
   is_active: employee.is_active ?? employee.status !== 'INACTIVE'
 });
 
 const mapTransactionToApi = (transaction: any) => ({
-  id: transaction.id,
-  unit_id: normalizeUnitId(transaction.unit_id || transaction.unitId),
+  id: transaction.id_transacao || transaction.id,
+  unit_id: normalizeUnitId(transaction.id_unidade || transaction.unit_id || transaction.unitId),
   descricao: transaction.descricao || transaction.description,
   valor: transaction.valor ?? transaction.amount ?? 0,
-  tipo_transacao: transaction.tipo_transacao || transaction.type || 'EXPENSE',
-  situacao: transaction.situacao || transaction.status || 'PENDING',
+  tipo_transacao: transaction.tipo || transaction.tipo_transacao || transaction.type || 'SAIDA',
+  situacao: transaction.situacao || transaction.status || 'PENDENTE',
   data_transacao: transaction.data_transacao || transaction.date || new Date().toISOString().split('T')[0],
   data_competencia: transaction.data_competencia || transaction.competencyDate || new Date().toISOString().split('T')[0],
   categoria: transaction.categoria || transaction.category || 'OUTROS',
-  conta_id: transaction.conta_id || transaction.accountId || null,
-  membro_id: transaction.membro_id || transaction.memberId || null,
+  id_conta: transaction.id_conta || transaction.conta_id || transaction.accountId || null,
+  id_membro: transaction.id_membro || transaction.membro_id || transaction.memberId || null,
   forma_pagamento: transaction.forma_pagamento || transaction.paymentMethod || null,
   natureza_operacao: transaction.natureza_operacao || transaction.operationNature || null,
-  centro_custo: transaction.centro_custo || transaction.costCenter || null,
-  projeto_id: transaction.projeto_id || transaction.projectId || null,
+  centro_custo: transaction.id_centro_custo || transaction.centro_custo || transaction.costCenter || null,
+  projeto_id: transaction.id_projeto || transaction.projeto_id || transaction.projectId || null,
   nome_fornecedor: transaction.nome_fornecedor || transaction.providerName || null,
   data_vencimento: transaction.data_vencimento || transaction.dueDate || null,
   valor_pago: transaction.valor_pago ?? transaction.paidAmount ?? null,
@@ -504,7 +487,7 @@ const mapTransactionToApi = (transaction: any) => ({
   parcelado: transaction.parcelado ?? transaction.isInstallment ?? false,
   numero_parcela: transaction.numero_parcela ?? transaction.installmentNumber ?? null,
   total_parcelas: transaction.total_parcelas ?? transaction.totalInstallments ?? null,
-  pai_id: transaction.pai_id || transaction.parentId || null,
+  id_transacao_origem: transaction.id_transacao_origem || transaction.pai_id || transaction.parentId || null,
   conciliado: transaction.conciliado ?? transaction.isConciliated ?? false,
   data_conciliacao: transaction.data_conciliacao || transaction.conciliationDate || null,
   observacoes: transaction.observacoes || transaction.notes || null,

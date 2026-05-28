@@ -3,42 +3,26 @@
  * LGPDCONTROLLER.TS
  * ============================================================================
  *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Controller que processa requisições relacionadas a lgpd controller.
- *
- * ONDE É USADO?
- * -------------
- * Usado pelo servidor backend para processar requisições.
- *
- * COMO FUNCIONA?
- * --------------
- * Executa lógica de backend e responde a chamadas externas.
+ * Controller para LGPD alinhado ao schema PostgreSQL em português.
+ * Tabelas: politicas_lgpd, logs_consentimento_lgpd
  */
 
 import { Request, Response } from 'express';
 import Database from '../database';
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (lgpd controller).
- */
-
 export class LGPDController {
   static async getCurrentPolicy(req: Request, res: Response) {
-    const { unitId } = req.query;
+    const { idUnidade } = req.query;
     const db = Database.getInstance();
     try {
       const result = await db.query(
-        'SELECT * FROM lgpd_policies WHERE unit_id = $1 AND esta_ativa = true ORDER BY criado DESC LIMIT 1',
-        [unitId]
+        'SELECT * FROM politicas_lgpd WHERE id_unidade = $1 AND esta_ativa = true ORDER BY criado DESC LIMIT 1',
+        [idUnidade]
       );
       if (result.rows.length === 0) {
         // Fallback para política padrão se não houver nenhuma ativa
         const fallback = await db.query(
-          'SELECT * FROM lgpd_policies WHERE esta_ativa = true ORDER BY criado DESC LIMIT 1'
+          'SELECT * FROM politicas_lgpd WHERE esta_ativa = true ORDER BY criado DESC LIMIT 1'
         );
         const row = fallback.rows[0];
         if (!row) return res.json(null);
@@ -51,8 +35,8 @@ export class LGPDController {
       const row = result.rows[0];
       res.json({
         ...row,
-isActive: row.esta_ativa,
-          effectiveDate: row.criado,
+        isActive: row.esta_ativa,
+        effectiveDate: row.criado,
       });
     } catch (error: any) {
       console.error('Erro ao buscar política LGPD:', error);
@@ -65,11 +49,11 @@ isActive: row.esta_ativa,
     const db = Database.getInstance();
     try {
       const result = await db.query(
-        `SELECT c.*, p.version as policy_version, p.title as policy_title 
-         FROM lgpd_consent_logs c
-         JOIN lgpd_policies p ON c.policy_id = p.id
-         WHERE c.member_id = $1
-         ORDER BY c.consent_date DESC`,
+        `SELECT c.*, p.versao AS policy_version, p.titulo AS policy_title
+         FROM logs_consentimento_lgpd c
+         JOIN politicas_lgpd p ON c.id_politica = p.id
+         WHERE c.id_membro = $1
+         ORDER BY c.data_consentimento DESC`,
         [memberId]
       );
       res.json({ consents: result.rows });
@@ -84,7 +68,7 @@ isActive: row.esta_ativa,
     const db = Database.getInstance();
     try {
       const result = await db.query(
-        `INSERT INTO lgpd_consent_logs (member_id, employee_id, policy_id, consent_type, granted, ip_address, user_agent)
+        `INSERT INTO logs_consentimento_lgpd (id_membro, id_funcionario, id_politica, tipo_consentimento, concedido, ip_address, user_agent)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
         [memberId, employeeId, policyId, consentType, granted, req.ip, req.headers['user-agent']]
@@ -92,6 +76,27 @@ isActive: row.esta_ativa,
       res.status(201).json(result.rows[0]);
     } catch (error: any) {
       console.error('Erro ao salvar consentimento:', error);
+      res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
+    }
+  }
+
+  static async savePolicy(req: Request, res: Response) {
+    const { idUnidade, titulo, conteudo, versao, dataVigencia } = req.body;
+    const db = Database.getInstance();
+    try {
+      const result = await db.query(
+        `INSERT INTO politicas_lgpd (id_unidade, titulo, conteudo, versao, data_vigencia, esta_ativa)
+         VALUES ($1, $2, $3, $4, $5, true)
+         RETURNING *`,
+        [idUnidade, titulo, conteudo, versao, dataVigencia]
+      );
+      res.status(201).json({
+        ...result.rows[0],
+        isActive: result.rows[0].esta_ativa,
+        effectiveDate: result.rows[0].criado,
+      });
+    } catch (error: any) {
+      console.error('Erro ao salvar política LGPD:', error);
       res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
     }
   }

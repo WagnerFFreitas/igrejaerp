@@ -17,7 +17,7 @@
  */
 
 import { dbService } from '../../services/databaseService';
-import { Member, Payroll } from '../../types';
+import { Membro, Payroll } from '../../types';
 
 /**
  * BLOCO PRINCIPAL
@@ -27,78 +27,76 @@ import { Member, Payroll } from '../../types';
  */
 
 export const DataInitializer = {
-  async initializeData(unitId: string) {
+  async initializeData(idUnidade: string) {
     try {
-      const members = await dbService.getMembers(unitId);
-      const employees = await dbService.getEmployees(unitId);
+      const members = await dbService.getMembers(idUnidade);
+      const employees = await dbService.getEmployees(idUnidade);
 
       if (members.length === 0) {
         console.log('🚀 Inicializando dados de membros...');
         const membersToCreate: any[] = [
           {
-            unitId,
-            name: 'Carlos Alberto Silva',
+            id_unidade: idUnidade,
+            nome: 'Carlos Alberto Silva',
             cpf: '123.456.789-01',
             rg: 'MG-12.345.678',
             email: 'carlos.alberto@email.com',
-            phone: '(31) 98765-4321',
+            telefone: '(31) 98765-4321',
+            celular: '(31) 98765-4321',
             whatsapp: '(31) 98765-4321',
-            profession: 'Engenheiro',
-            role: 'LEADER',
-            status: 'ACTIVE',
+            profissao: 'Engenheiro',
+            funcao: 'LEADER',
+            situacao: 'ACTIVE',
             matricula: 'M01/2026',
-            fatherName: 'José Silva',
-            motherName: 'Maria Silva',
-            bloodType: 'O+',
-            emergencyContact: '(31) 91234-5678',
-            churchOfOrigin: 'Igreja Batista Central',
-            mainMinistry: 'Conselho',
-            ministryRole: 'Presidente',
-            ecclesiasticalPosition: 'Pastor',
-            birthDate: '1975-05-20',
-            gender: 'M',
-            maritalStatus: 'MARRIED',
-            address: {
-              zipCode: '30123-456',
-              street: 'Avenida Principal',
-              number: '1000',
-              neighborhood: 'Centro',
-              city: 'Belo Horizonte',
-              state: 'MG'
-            },
+            nome_pai: 'José Silva',
+            nome_mae: 'Maria Silva',
+            tipo_sanguineo: 'O+',
+            contato_emergencia: '(31) 91234-5678',
+            igreja_origem: 'Igreja Batista Central',
+            ministerio_principal: 'Conselho',
+            funcao_ministerio: 'Presidente',
+            cargo_eclesiastico: 'Pastor',
+            data_nascimento: '1975-05-20',
+            sexo: 'M',
+            estado_civil: 'MARRIED',
+            cep: '30123-456',
+            endereco: 'Avenida Principal',
+            numero: '1000',
+            bairro: 'Centro',
+            cidade: 'Belo Horizonte',
+            estado: 'MG',
             avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos'
           },
           {
-            unitId,
-            name: 'Ana Paula Oliveira',
+            id_unidade: idUnidade,
+            nome: 'Ana Paula Oliveira',
             cpf: '234.567.890-12',
             rg: 'SP-23.456.789',
             email: 'ana.paula@email.com',
-            phone: '(11) 91234-5678',
+            telefone: '(11) 91234-5678',
+            celular: '(11) 91234-5678',
             whatsapp: '(11) 91234-5678',
-            profession: 'Advogada',
-            role: 'STAFF',
-            status: 'ACTIVE',
+            profissao: 'Advogada',
+            funcao: 'STAFF',
+            situacao: 'ACTIVE',
             matricula: 'M02/2026',
-            fatherName: 'Pedro Oliveira',
-            motherName: 'Lucia Oliveira',
-            bloodType: 'A+',
-            emergencyContact: '(11) 98765-4321',
-            churchOfOrigin: 'Igreja Assembleia de Deus',
-            mainMinistry: 'Secretaria',
-            ministryRole: 'Secretária',
-            ecclesiasticalPosition: 'Membro',
-            birthDate: '1988-10-12',
-            gender: 'F',
-            maritalStatus: 'SINGLE',
-            address: {
-              zipCode: '01001-000',
-              street: 'Praça da Sé',
-              number: '1',
-              neighborhood: 'Sé',
-              city: 'São Paulo',
-              state: 'SP'
-            },
+            nome_pai: 'Pedro Oliveira',
+            nome_mae: 'Lucia Oliveira',
+            tipo_sanguineo: 'A+',
+            contato_emergencia: '(11) 98765-4321',
+            igreja_origem: 'Igreja Assembleia de Deus',
+            ministerio_principal: 'Secretaria',
+            funcao_ministerio: 'Secretária',
+            cargo_eclesiastico: 'Membro',
+            data_nascimento: '1988-10-12',
+            sexo: 'F',
+            estado_civil: 'SINGLE',
+            cep: '01001-000',
+            endereco: 'Praça da Sé',
+            numero: '1',
+            bairro: 'Sé',
+            cidade: 'São Paulo',
+            estado: 'SP',
             avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana'
           }
         ];
@@ -112,36 +110,25 @@ export const DataInitializer = {
           
           // Garantir matrícula
           if (!updatedMember.matricula) {
-            const year = updatedMember.membershipDate ? new Date(updatedMember.membershipDate).getFullYear() : 2026;
+            const year = updatedMember.data_ingresso ? new Date(updatedMember.data_ingresso).getFullYear() : 2026;
             const index = members.indexOf(member) + 1;
             updatedMember.matricula = `M${index.toString().padStart(2, '0')}/${year}`;
             needsUpdate = true;
           }
 
           // Garantir status válido
-          if (!updatedMember.status || !['ACTIVE', 'INACTIVE', 'PENDING'].includes(updatedMember.status)) {
-            updatedMember.status = 'ACTIVE';
+          if (!updatedMember.situacao || !['ACTIVE', 'INACTIVE', 'PENDING'].includes(updatedMember.situacao)) {
+            updatedMember.situacao = 'ACTIVE';
             needsUpdate = true;
           }
 
-          const fields = Object.keys(updatedMember) as (keyof Member)[];
+          const fields = Object.keys(updatedMember) as (keyof Membro)[];
           for (const field of fields) {
             const value = updatedMember[field];
             if (value === 'N/A' || value === '' || value === null || value === undefined) {
               const realisticValue = this.getRealisticValue(field as string);
               if (realisticValue !== 'Informação Realista') {
                 (updatedMember as any)[field] = realisticValue;
-                needsUpdate = true;
-              }
-            }
-          }
-
-          if (updatedMember.address && typeof updatedMember.address === 'object') {
-            const addrFields = Object.keys(updatedMember.address) as (keyof typeof updatedMember.address)[];
-            for (const f of addrFields) {
-              const val = updatedMember.address[f];
-              if (val === 'N/A' || val === '' || val === null || val === undefined) {
-                (updatedMember.address as any)[f] = this.getRealisticValue(f as string);
                 needsUpdate = true;
               }
             }
@@ -157,7 +144,7 @@ export const DataInitializer = {
         console.log('🚀 Inicializando dados de funcionários...');
         const employeesToCreate: any[] = [
           {
-            unitId,
+            idUnidade,
             matricula: 'F01/2026',
             employeeName: 'Carlos Alberto Silva',
             cpf: '123.456.789-01',
@@ -363,7 +350,7 @@ export const DataInitializer = {
       celular: '(31) 99999-8888',
       emergencyContact: 'Maria Alves - (31) 98888-7777',
       emergency_contact: 'Maria Alves - (31) 98888-7777',
-      vinculo_membro_id: 'M001',
+      vinculo_id_membro: 'M001',
       is_pcd: false,
       observacoes_saude: 'Nenhuma observação relevante',
       
@@ -403,7 +390,7 @@ export const DataInitializer = {
       bh_saldo_atual: '00:00',
       bh_periodo_apuracao: 'Mensal',
       bh_data_inicio_acordo: '2024-01-01',
-      bh_data_fim_acordo: '2024-12-31',
+      bh_data_final_acordo: '2024-12-31',
       bh_limite_saldo: '40:00',
       bh_periodo_compensacao: '6 meses',
       bh_multiplicador_diurna: '1.5',

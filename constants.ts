@@ -1,31 +1,15 @@
-/**
- * ============================================================================
- * CONSTANTS.TS
- * ============================================================================
- *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Arquivo relacionado a constants.
- *
- * ONDE É USADO?
- * -------------
- * Parte do projeto usada em runtime ou build.
- *
- * COMO FUNCIONA?
- * --------------
- * Ajuda o sistema com uma funcionalidade específica.
- */
+/**********************************************************************
+*                            CONSTANTS.TS                             *
+***********************************************************************
+* Arquivo relacionado as constants.                                   *
+* Parte do projeto usa runtime ou build.                              *
+* Ajuda o sistema com uma funcionalidade específica.                  *
+***********************************************************************/
 
-// Constants temporários para compatibilidade durante migração
+// Constants temporárias para compatibilidade durante migração
 // TODO: Implementar chamadas à API REST
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (constants).
- */
-
+// O bloco abaixo e o principal ao qual define os arquivos (constants).
 export const dbService = {
   getMembers: async (unitId: string) => [],
   getTransactions: async (unitId: string) => [],

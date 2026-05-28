@@ -17,58 +17,17 @@
  */
 
 import apiClient from './apiService';
-
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (employee service).
- */
-
-export interface Employee {
-  id: string;
-  unitId: string;
-  employeeName: string;
-  cpf: string;
-  email: string;
-  phone: string;
-  cargo: string;
-  department: string;
-  salary: number;
-  admissionDate: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
-  created_at: string;
-  updated_at: string;
-  // Campos adicionais para o componente Funcionarios
-  matricula?: string;
-  tipo_contrato?: string;
-  avatar?: string | null;
-}
-
-export interface Transaction {
-  id: string;
-  unitId: string;
-  description: string;
-  amount: number;
-  type: 'INCOME' | 'EXPENSE';
-  status: 'PAID' | 'PENDING';
-  date: string;
-  category: string;
-  accountId?: string;
-  memberId?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Funcionario, Transacao } from '../../types';
 
 export class EmployeeService {
   static async getEmployees(params?: {
-    unitId?: string;
-    status?: string;
+    id_unidade?: string;
+    situacao?: string;
     page?: number;
     limit?: number;
-  }): Promise<{employees: Employee[], pagination: any}> {
+  }): Promise<{employees: Funcionario[], pagination: any}> {
     try {
-      const response = await apiClient.get<Employee[]>('/employees', params);
+      const response = await apiClient.get<Funcionario[]>('/employees', params);
       
       return {
         employees: Array.isArray(response) ? response : [],
@@ -79,18 +38,34 @@ export class EmployeeService {
       throw new Error('Não foi possível carregar os dados dos funcionários');
     }
   }
+
+  static async getEmployeeById(id: string): Promise<Funcionario> {
+    return await apiClient.get(`/employees/${id}`);
+  }
+
+  static async createEmployee(dados: Partial<Funcionario>): Promise<Funcionario> {
+    return await apiClient.post('/employees', dados);
+  }
+
+  static async updateEmployee(id: string, dados: Partial<Funcionario>): Promise<Funcionario> {
+    return await apiClient.put(`/employees/${id}`, dados);
+  }
+
+  static async deleteEmployee(id: string): Promise<void> {
+    return await apiClient.delete(`/employees/${id}`);
+  }
 }
 
 export class TransactionService {
   static async getTransactions(params?: {
-    unitId?: string;
-    type?: string;
-    status?: string;
+    id_unidade?: string;
+    tipo?: string;
+    situacao?: string;
     page?: number;
     limit?: number;
-  }): Promise<{transactions: Transaction[], pagination: any}> {
+  }): Promise<{transactions: Transacao[], pagination: any}> {
     try {
-      const response = await apiClient.get<Transaction[]>('/transactions', params);
+      const response = await apiClient.get<Transacao[]>('/transactions', params);
       
       return {
         transactions: Array.isArray(response) ? response : [],
@@ -100,6 +75,18 @@ export class TransactionService {
       console.error('Erro ao buscar transações:', error);
       throw new Error('Não foi possível carregar os dados das transações');
     }
+  }
+
+  static async createTransaction(dados: Partial<Transacao>): Promise<Transacao> {
+    return await apiClient.post('/transactions', dados);
+  }
+
+  static async updateTransaction(id: string, dados: Partial<Transacao>): Promise<Transacao> {
+    return await apiClient.put(`/transactions/${id}`, dados);
+  }
+
+  static async deleteTransaction(id: string): Promise<void> {
+    return await apiClient.delete(`/transactions/${id}`);
   }
 }
 

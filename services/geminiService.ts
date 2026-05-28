@@ -68,12 +68,18 @@ export class GeminiService {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-1.5-flash',
-        contents: prompt,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
       this.retryCount = 0; // Reset retry count on success
       return response.text || "Sem insights disponíveis no momento.";
     } catch (error: any) {
-      if (error?.message?.includes('429') || error?.status === 429) {
+      // Tratar erro 400 especificamente
+      const errorStr = String(error?.message || error?.status || '');
+      if (errorStr.includes('400') || error?.status === 400) {
+        console.error('❌ Gemini API Erro 400 (requisição malformada):', errorStr);
+        return "ERRO_400: Configuração da API inválida. Verifique a GEMINI_API_KEY.";
+      }
+      if (errorStr.includes('429') || error?.status === 429) {
         this.quotaBlockedUntil = Date.now() + this.QUOTA_BLOCK_DURATION;
         console.warn("⚠️ Gemini API: Quota excedida (429). Bloqueado por 1 minuto.");
         
@@ -105,7 +111,10 @@ export class GeminiService {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-1.5-flash',
-        contents: `Escreva um curto devocional ou mensagem pastoral sobre o tema: ${topic}. Seja encorajador e bíblico.`,
+        contents: [{
+          role: 'user',
+          parts: [{ text: `Escreva um curto devocional ou mensagem pastoral sobre o tema: ${topic}. Seja encorajador e bíblico.` }]
+        }],
       });
       return response.text || "Não foi possível gerar a mensagem pastoral.";
     } catch (error: any) {
@@ -162,13 +171,21 @@ export class GeminiService {
 
       const response = await ai.models.generateContent({
         model: 'gemini-1.5-flash',
-        contents: prompt,
+        contents: [{
+          role: 'user',
+          parts: [{ text: prompt }]
+        }],
       });
       
       return response.text || "Não foi possível gerar o conteúdo.";
-    } catch (error) {
+    } catch (error: any) {
+      const errorStr = String(error?.message || error?.status || '');
+      if (errorStr.includes('400') || error?.status === 400) {
+        console.error('❌ Gemini API Erro 400:', errorStr);
+        return "ERRO_400: Configuração da API inválida.";
+      }
       console.error("Gemini Error:", error);
-      return "⚠️ **Erro ao gerar conteúdo específico**\n\nVerifique sua conexão e a configuração da API_KEY.\n\nTente novamente em alguns minutos.";
+      return "⚠️ **Erro ao gerar conteúdo específico**\n\nVerifique sua conexão e a configuração da API_KEY.";
     }
   }
 

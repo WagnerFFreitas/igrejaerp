@@ -25,7 +25,7 @@ import { Payroll, UserAuth } from '../types';
 
 interface AvaliacaoDashboardWidgetProps {
   employees: Payroll[];
-  currentUnitId: string;
+  currentIdUnidade: string;
   user?: UserAuth;
 }
 
@@ -52,7 +52,7 @@ interface EmployeeRanking {
 
 export default function AvaliacaoDashboardWidget({
   employees,
-  currentUnitId,
+  currentIdUnidade,
   user
 }: AvaliacaoDashboardWidgetProps) {
   const [rankings, setRankings] = useState<EmployeeRanking[]>([]);
@@ -86,7 +86,7 @@ export default function AvaliacaoDashboardWidget({
     };
 
     loadRankings();
-  }, [currentUnitId, employees]);
+  }, [currentIdUnidade, employees]);
 
   const filteredRankings = rankings.filter(ranking => {
     const matchesSearch = ranking.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

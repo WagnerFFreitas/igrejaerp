@@ -33,7 +33,7 @@ export class StorageService {
     return { url };
   }
   
-  static async uploadProfilePhoto(_unitId: string, _entityId: string, file: File) {
+  static async uploadProfilePhoto(_idUnidade: string, _entityId: string, file: File) {
     return this.fileToDataUrl(file);
   }
 
@@ -46,10 +46,10 @@ export class StorageService {
 
   /**
    * Converte documento para base64 e retorna data URL
-   * Os documentos são salvos em profile_data do funcionário
+   * Os documentos são salvos em dados_perfil do funcionário
    */
   static async uploadEmployeeDocument(
-    _unitId: string,
+    _idUnidade: string,
     _employeeId: string,
     _docType: string,
     file: File
@@ -61,7 +61,7 @@ export class StorageService {
    * Converte documento de membro para base64
    */
   static async uploadMemberDocument(
-    _unitId: string,
+    _idUnidade: string,
     _memberId: string,
     _docType: string,
     file: File

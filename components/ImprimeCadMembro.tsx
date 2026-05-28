@@ -18,12 +18,12 @@
 
 import React, { useState } from 'react';
 import { Printer, X } from 'lucide-react';
-import { Member } from '../types';
+import { Membro } from '../types';
 
 interface ImprimeCadMembroProps {
-  members: Member[];
+  members: Membro[];
   onClose: () => void;
-  preSelected?: Member[];
+  preSelected?: Membro[];
 }
 
 /**
@@ -56,7 +56,7 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
   const [step, setStep] = useState<'range' | 'preview'>(preSelected && preSelected.length > 0 ? 'preview' : 'range');
   const [rangeStart, setRangeStart] = useState(firstMat);
   const [rangeEnd, setRangeEnd] = useState(lastMat);
-  const [membersToPrint, setMembersToPrint] = useState<Member[]>(preSelected && preSelected.length > 0 ? preSelected : []);
+  const [membersToPrint, setMembersToPrint] = useState<Membro[]>(preSelected && preSelected.length > 0 ? preSelected : []);
 
   const parseNum = (mat: string) => {
     // Aceita "M01", "M01/2026", "M1", etc.
@@ -100,10 +100,10 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
       </div>`;
 
     const pages = membersToPrint.map(m => {
-      const statusColor = m.status === 'ACTIVE' ? '#15803d' : '#b91c1c';
-      const statusBg   = m.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2';
-      const statusLabel = m.status === 'ACTIVE' ? 'Ativo' : m.status === 'PENDING' ? 'Pendente' : 'Inativo';
-      const avatarUrl = m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.nome)}&background=3730a3&color=fff&bold=true&size=80`;
+      const statusColor = m.situacao === 'ACTIVE' ? '#15803d' : '#b91c1c';
+      const statusBg   = m.situacao === 'ACTIVE' ? '#dcfce7' : '#fee2e2';
+      const statusLabel = m.situacao === 'ACTIVE' ? 'Ativo' : m.situacao === 'PENDING' ? 'Pendente' : 'Inativo';
+      const avatarUrl = m.avatar;
 
       const dependentsHtml = m.dependentes && m.dependentes.length > 0 ? `
         <div style="margin-top:6px">
@@ -118,7 +118,7 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
               <img src="${avatarUrl}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2.5px solid #e2e8f0" />
               <div>
                 <div style="font-size:20px;font-weight:800;color:#0f172a;line-height:1.2">${m.nome}</div>
-                <div style="font-size:12px;color:#475569;margin-top:4px">${m.cargoEclesiastico || 'Membro'}${m.ministerioPrincipal ? ' · ' + m.ministerioPrincipal : ''}</div>
+                <div style="font-size:12px;color:#475569;margin-top:4px">${m.cargo_eclesiastico || 'Membro'}${m.ministerio_principal ? ' · ' + m.ministerio_principal : ''}</div>
               </div>
             </div>
             <div style="text-align:right">
@@ -133,7 +133,7 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
               ${section('Dados Pessoais')}
               ${field('CPF', m.cpf)}
               ${field('RG', m.rg)}
-              ${field('Nascimento', fmtDate(m.dataNascimento))}
+              ${field('Nascimento', fmtDate(m.data_nascimento))}
               ${field('Sexo', m.sexo === 'M' ? 'Masculino' : m.sexo === 'F' ? 'Feminino' : undefined)}
               ${field('Profissão', m.profissao)}
               ${field('Telefone', m.telefone)}
@@ -142,39 +142,39 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
             </div>
             <div>
               ${section('Família')}
-              ${field('Estado Civil', maritalMap[m.estadoCivil || ''] || undefined)}
-              ${field('Cônjuge', m.nomeConjuge)}
-              ${field('Data Casamento', m.dataCasamento ? fmtDate(m.dataCasamento) : undefined)}
-              ${field('Nome do Pai', m.nomePai)}
-              ${field('Nome da Mãe', m.nomeMae)}
+              ${field('Estado Civil', maritalMap[m.estado_civil || ''] || undefined)}
+              ${field('Cônjuge', m.nome_conjuge)}
+              ${field('Data Casamento', m.data_casamento ? fmtDate(m.data_casamento) : undefined)}
+              ${field('Nome do Pai', m.nome_pai)}
+              ${field('Nome da Mãe', m.nome_mae)}
               ${dependentsHtml}
             </div>
             <div>
               ${section('Endereço')}
-              ${field('Logradouro', m.endereco?.logradouro ? `${m.endereco.logradouro}${m.endereco.numero ? ', ' + m.endereco.numero : ''}${m.endereco.complemento ? ' — ' + m.endereco.complemento : ''}` : undefined)}
-              ${field('Bairro', m.endereco?.bairro)}
-              ${field('Cidade / UF', m.endereco?.cidade ? `${m.endereco.cidade}${m.endereco.estado ? ' / ' + m.endereco.estado : ''}` : undefined)}
-              ${field('CEP', m.endereco?.cep)}
+              ${field('Logradouro', m.endereco ? `${m.endereco}${m.numero ? ', ' + m.numero : ''}${m.complemento ? ' — ' + m.complemento : ''}` : undefined)}
+              ${field('Bairro', m.bairro)}
+              ${field('Cidade / UF', m.cidade ? `${m.cidade}${m.estado ? ' / ' + m.estado : ''}` : undefined)}
+              ${field('CEP', m.cep)}
               <div style="margin-top:20px">
                 ${section('Informações de Saúde')}
-                ${field('Tipo Sanguíneo', m.tipoSanguineo)}
-                ${field('Contato de Emergência', m.contatoEmergencia)}
-                ${field('Necessidades Especiais', m.necessidadesEspeciais)}
+                ${field('Tipo Sanguíneo', m.tipo_sanguineo)}
+                ${field('Contato de Emergência', m.contato_emergencia)}
+                ${field('Necessidades Especiais', m.necessidades_especiais)}
               </div>
             </div>
             <div>
               ${section('Vida Cristã')}
-              ${field('Membro desde', fmtDate(m.dataMembro))}
-              ${field('Igreja de Origem', m.igrejaOrigem)}
-              ${field('Data de Conversão', fmtDate(m.dataConversao))}
-              ${field('Local de Conversão', m.localConversao)}
-              ${field('Data de Batismo', fmtDate(m.dataBatismo))}
-              ${field('Igreja do Batismo', m.igrejaBatismo)}
-              ${field('Pastor que Batizou', m.pastorBatizador)}
-              ${field('Batismo no Espírito Santo', m.batismoEspiritoSanto === 'SIM' ? 'Sim' : 'Não')}
-              ${field('Curso de Discipulado', discipleMap[m.cursoDiscipulado || ''] || undefined)}
-              ${field('Escola Bíblica', biblicalMap[m.escolaBiblica || ''] || undefined)}
-              ${field('Célula / Grupo', m.cellGroup)}
+              ${field('Membro desde', fmtDate(m.data_ingresso))}
+              ${field('Igreja de Origem', m.igreja_origem)}
+              ${field('Data de Conversão', fmtDate(m.data_conversao))}
+              ${field('Local de Conversão', m.local_conversao)}
+              ${field('Data de Batismo', fmtDate(m.data_batismo))}
+              ${field('Igreja do Batismo', m.igreja_batismo)}
+              ${field('Pastor que Batizou', m.pastor_batizador)}
+              ${field('Batismo no Espírito Santo', m.batismo_espirito_santo === 'SIM' ? 'Sim' : 'Não')}
+              ${field('Curso de Discipulado', discipleMap[m.curso_discipulado || ''] || undefined)}
+              ${field('Escola Bíblica', biblicalMap[m.escola_biblica || ''] || undefined)}
+              ${field('Célula / Grupo', m.cell_group)}
             </div>
           </div>
 
@@ -309,7 +309,7 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
         {/* Preview */}
         <div className="flex-1 overflow-y-auto bg-slate-200 custom-scrollbar p-6">
           {membersToPrint.map(m => (
-            <div key={m.id} style={{
+            <div key={m.id_membro} style={{
               width: '277mm', minHeight: '190mm', background: 'white', margin: '0 auto 24px',
               padding: '14mm 16mm 10mm', fontFamily: "'Segoe UI', Arial, sans-serif",
               boxSizing: 'border-box', display: 'flex', flexDirection: 'column',
@@ -319,21 +319,21 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2.5px solid #1e293b', paddingBottom: '12px', marginBottom: '16px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <img
-                    src={m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.nome)}&background=3730a3&color=fff&bold=true&size=80`}
+                    src={m.avatar}
                     style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #e2e8f0' }}
                     alt=""
                   />
                   <div>
                     <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>{m.nome}</div>
                     <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-                      {m.cargoEclesiastico || 'Membro'}{m.ministerioPrincipal ? ` · ${m.ministerioPrincipal}` : ''}
+                      {m.cargo_eclesiastico || 'Membro'}{m.ministerio_principal ? ` · ${m.ministerio_principal}` : ''}
                     </div>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#3730a3' }}>{m.matricula || '—'}</div>
-                  <div style={{ display: 'inline-block', marginTop: '5px', padding: '3px 12px', borderRadius: '5px', fontSize: '10px', fontWeight: 700, background: m.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2', color: m.status === 'ACTIVE' ? '#15803d' : '#b91c1c' }}>
-                    {m.status === 'ACTIVE' ? 'Ativo' : m.status === 'PENDING' ? 'Pendente' : 'Inativo'}
+                  <div style={{ display: 'inline-block', marginTop: '5px', padding: '3px 12px', borderRadius: '5px', fontSize: '10px', fontWeight: 700, background: m.situacao === 'ACTIVE' ? '#dcfce7' : '#fee2e2', color: m.situacao === 'ACTIVE' ? '#15803d' : '#b91c1c' }}>
+                    {m.situacao === 'ACTIVE' ? 'Ativo' : m.situacao === 'PENDING' ? 'Pendente' : 'Inativo'}
                   </div>
                   <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '5px' }}>Emitido em {new Date().toLocaleDateString('pt-BR')}</div>
                 </div>
@@ -345,7 +345,7 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
                   <SectionTitle title="Dados Pessoais" />
                   <Field label="CPF" value={m.cpf} />
                   <Field label="RG" value={m.rg} />
-                  <Field label="Nascimento" value={fmtDate(m.dataNascimento)} />
+                  <Field label="Nascimento" value={fmtDate(m.data_nascimento)} />
                   <Field label="Sexo" value={m.sexo === 'M' ? 'Masculino' : m.sexo === 'F' ? 'Feminino' : '—'} />
                   <Field label="Profissão" value={m.profissao} />
                   <Field label="Telefone" value={m.telefone} />
@@ -354,11 +354,11 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
                 </div>
                 <div>
                   <SectionTitle title="Família" />
-                  <Field label="Estado Civil" value={maritalMap[m.estadoCivil || ''] || '—'} />
-                  <Field label="Cônjuge" value={m.nomeConjuge} />
-                  <Field label="Data Casamento" value={m.dataCasamento ? fmtDate(m.dataCasamento) : undefined} />
-                  <Field label="Nome do Pai" value={m.nomePai} />
-                  <Field label="Nome da Mãe" value={m.nomeMae} />
+                  <Field label="Estado Civil" value={maritalMap[m.estado_civil || ''] || '—'} />
+                  <Field label="Cônjuge" value={m.nome_conjuge} />
+                  <Field label="Data Casamento" value={m.data_casamento ? fmtDate(m.data_casamento) : undefined} />
+                  <Field label="Nome do Pai" value={m.nome_pai} />
+                  <Field label="Nome da Mãe" value={m.nome_mae} />
                   {m.dependentes && m.dependentes.length > 0 && (
                     <div style={{ marginTop: '6px' }}>
                       <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '5px' }}>Dependentes</span>
@@ -372,30 +372,30 @@ export const ImprimeCadMembro: React.FC<ImprimeCadMembroProps> = ({ members, onC
                 </div>
                 <div>
                   <SectionTitle title="Endereço" />
-                  <Field label="Logradouro" value={m.endereco?.logradouro ? `${m.endereco.logradouro}${m.endereco.numero ? ', ' + m.endereco.numero : ''}${m.endereco.complemento ? ' — ' + m.endereco.complemento : ''}` : undefined} />
-                  <Field label="Bairro" value={m.endereco?.bairro} />
-                  <Field label="Cidade / UF" value={m.endereco?.cidade ? `${m.endereco.cidade}${m.endereco.estado ? ' / ' + m.endereco.estado : ''}` : undefined} />
-                  <Field label="CEP" value={m.endereco?.cep} />
+                  <Field label="Logradouro" value={m.endereco ? `${m.endereco}${m.numero ? ', ' + m.numero : ''}${m.complemento ? ' — ' + m.complemento : ''}` : undefined} />
+                  <Field label="Bairro" value={m.bairro} />
+                  <Field label="Cidade / UF" value={m.cidade ? `${m.cidade}${m.estado ? ' / ' + m.estado : ''}` : undefined} />
+                  <Field label="CEP" value={m.cep} />
                   <div style={{ marginTop: '20px' }}>
                     <SectionTitle title="Informações de Saúde" />
-                    <Field label="Tipo Sanguíneo" value={m.tipoSanguineo} />
-                    <Field label="Contato de Emergência" value={m.contatoEmergencia} />
-                    <Field label="Necessidades Especiais" value={m.necessidadesEspeciais} />
+                    <Field label="Tipo Sanguíneo" value={m.tipo_sanguineo} />
+                    <Field label="Contato de Emergência" value={m.contato_emergencia} />
+                    <Field label="Necessidades Especiais" value={m.necessidades_especiais} />
                   </div>
                 </div>
                 <div>
                   <SectionTitle title="Vida Cristã" />
-                  <Field label="Membro desde" value={fmtDate(m.dataMembro)} />
-                  <Field label="Igreja de Origem" value={m.igrejaOrigem} />
-                  <Field label="Data de Conversão" value={fmtDate(m.dataConversao)} />
-                  <Field label="Local de Conversão" value={m.localConversao} />
-                  <Field label="Data de Batismo" value={fmtDate(m.dataBatismo)} />
-                  <Field label="Igreja do Batismo" value={m.igrejaBatismo} />
-                  <Field label="Pastor que Batizou" value={m.pastorBatizador} />
-                  <Field label="Batismo no Espírito Santo" value={m.batismoEspiritoSanto === 'SIM' ? 'Sim' : 'Não'} />
-                  <Field label="Curso de Discipulado" value={discipleMap[m.cursoDiscipulado || ''] || '—'} />
-                  <Field label="Escola Bíblica" value={biblicalMap[m.escolaBiblica || ''] || '—'} />
-                  <Field label="Célula / Grupo" value={m.cellGroup} />
+                  <Field label="Membro desde" value={fmtDate(m.data_ingresso)} />
+                  <Field label="Igreja de Origem" value={m.igreja_origem} />
+                  <Field label="Data de Conversão" value={fmtDate(m.data_conversao)} />
+                  <Field label="Local de Conversão" value={m.local_conversao} />
+                  <Field label="Data de Batismo" value={fmtDate(m.data_batismo)} />
+                  <Field label="Igreja do Batismo" value={m.igreja_batismo} />
+                  <Field label="Pastor que Batizou" value={m.pastor_batizador} />
+                  <Field label="Batismo no Espírito Santo" value={m.batismo_espirito_santo === 'SIM' ? 'Sim' : 'Não'} />
+                  <Field label="Curso de Discipulado" value={discipleMap[m.curso_discipulado || ''] || '—'} />
+                  <Field label="Escola Bíblica" value={biblicalMap[m.escola_biblica || ''] || '—'} />
+                  <Field label="Célula / Grupo" value={m.cell_group} />
                 </div>
               </div>
 

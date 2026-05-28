@@ -17,34 +17,40 @@
  */
 
 import React from 'react';
-import { Member, Unit } from '../types';
+import { Loader2 } from 'lucide-react';
+import { Membro, Unit } from '../types';
 
 interface TemplateCarteiraMembroProps {
-  member: Member;
+  member: Membro;
   unit?: Unit | null;
   id?: string;
 }
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (template carteira membro).
- */
+// BLOCO PRINCIPAL Define o bloco principal deste arquivo (template carteira membro).
 
 export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ member, unit, id }) => {
+  // Se a unidade não estiver carregada, mostrar mensagem de carregamento
+  if (!unit) {
+    return (
+      <div className="flex items-center justify-center p-8 bg-slate-50 rounded-xl">
+        <Loader2 size={24} className="animate-spin text-indigo-600 mr-2" />
+        <span className="text-sm font-bold text-slate-600">Carregando dados da instituição...</span>
+      </div>
+    );
+  }
+  
   // Lógica para formatar a matrícula como 0001/ANO
   const getMatriculaDisplay = () => {
     if (member.matricula) return member.matricula;
     
-    const numPart = member.id.replace(/\D/g, '').padStart(4, '0') || '0001';
-    const yearPart = member.dataMembro 
-      ? new Date(member.dataMembro).getFullYear() 
+    const numPart = member.id_membro.replace(/\D/g, '').padStart(4, '0') || '0001';
+    const yearPart = member.data_ingresso 
+      ? new Date(member.data_ingresso).getFullYear() 
       : new Date().getFullYear();
     return `${numPart}/${yearPart}`;
   };
 
-  const avatarUrl = member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.nome || 'M')}&background=003399&color=fff&bold=true`;
+  const avatarUrl = member.avatar;
 
   return (
     <div 
@@ -73,7 +79,6 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
           className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none z-10" 
           style={{ filter: 'sepia(1) hue-rotate(40deg) saturate(5) brightness(1.1)' }}
           alt=""
-          crossOrigin="anonymous"
           onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
         />
 
@@ -91,7 +96,6 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
               src="img/logo.png" 
               className="w-full h-full object-contain" 
               alt="Logo ADJPA" 
-              crossOrigin="anonymous"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
@@ -101,20 +105,20 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
           {/* TEXTOS SUPERIORES */}
           <div className="flex-1 flex flex-col min-w-0" style={{ marginTop: '-1.4mm' }}>
               <p className="text-[7.4px] font-black text-[#003399] leading-normal uppercase tracking-tighter whitespace-nowrap overflow-visible" style={{ margin: 0 }}>
-              {unit?.nome || 'CARREGANDO...'}
+              {unit?.nome || unit?.name || 'CARREGANDO...'}
               </p>
               <div className="flex flex-col -mt-[0.1mm]">
                 <p className="text-[5.4px] font-bold text-slate-500 uppercase leading-none mt-[0.8mm]" style={{ margin: 0 }}>
-                  {unit?.enderecoLinha1 || 'AV. BRASIL, 1234'}
+                  {unit?.enderecoLinha1 || unit?.endereco || 'AV. BRASIL, 1234'}
                 </p>
                 <p className="text-[5.4px] font-bold text-slate-500 uppercase leading-none mt-[0.8mm]" style={{ margin: 0 }}>
-                  {unit?.enderecoLinha2 || (unit?.cidade && unit?.estado ? `${unit.cidade}/${unit.estado}` : '')}
+                  {unit?.enderecoLinha2 || (unit?.cidade || unit?.city) && (unit?.estado || unit?.state) ? `${(unit.cidade || unit.city)}/${(unit.estado || unit.state)}` : ''}
                 </p>
                 <p className="text-[5.4px] font-bold text-slate-500 uppercase leading-none mt-[0.8mm]" style={{ margin: 0 }}>
                   {`CNPJ ${unit?.cnpj || '00.000.000/0000-01'}`}
                 </p>
                 <p className="text-[5.4px] font-black text-[#003399] uppercase leading-none mt-[0.8mm]" style={{ margin: 0 }}>
-                  {`TEL.: ${unit?.telefone || '(21) 0000-0000'}`}
+                  {`TEL.: ${unit?.telefone || unit?.phone || '(21) 0000-0000'}`}
                 </p>
               </div>
             </div>
@@ -128,10 +132,9 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
           <img 
             src={avatarUrl} 
             className="w-full h-full object-cover rounded-[0.4rem]" 
-            crossOrigin="anonymous" 
             alt={member.nome}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.nome || 'M')}&background=003399&color=fff&bold=true`;
+              (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
         </div>
@@ -145,7 +148,7 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
             {member.nome}
           </h4>
           <p className="text-[8.2px] font-bold text-[#003399] uppercase leading-none" style={{ marginTop: '0.3mm' }}>
-            {member.cargoEclesiastico || 'Membro'}
+            {member.cargo_eclesiastico || 'Membro'}
           </p>
         </div>
 
@@ -169,9 +172,8 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
             style={{ width: '9mm', height: '9mm' }}
           >
             <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(member.id)}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(member.id_membro)}`}
               alt="QR"
-              crossOrigin="anonymous"
               className="w-full h-full"
             />
           </div>
@@ -199,7 +201,6 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
           className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none z-10" 
           style={{ filter: 'sepia(1) hue-rotate(40deg) saturate(5) brightness(1.1)' }}
           alt=""
-          crossOrigin="anonymous"
           onError={(e) => (e.target as HTMLElement).style.display = 'none'}
         />
 
@@ -211,7 +212,7 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
             </div>
             <div className="flex-1 pb-0.5">
               <p className="text-[5px] font-black text-slate-400 uppercase leading-none mb-0.5">Nascimento</p>
-              <p className="text-[7px] font-black text-slate-800 leading-none">{member.dataNascimento ? new Date(member.dataNascimento).toLocaleDateString('pt-BR') : '---'}</p>
+              <p className="text-[7px] font-black text-slate-800 leading-none">{member.data_nascimento ? new Date(member.data_nascimento).toLocaleDateString('pt-BR') : '---'}</p>
             </div>
           </div>
 
@@ -230,10 +231,10 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
             <p className="text-[5px] font-black text-slate-400 uppercase leading-none mb-1.5">Filiação</p>
             <div className="flex flex-col gap-0.5">
               <p className="text-[5px] font-bold text-slate-800 uppercase leading-none">
-                {member.nomePai || '---'}
+                {member.nome_pai || '---'}
               </p>
               <p className="text-[5px] font-bold text-slate-800 uppercase leading-none mt-0.5">
-                {member.nomeMae || '---'}
+                {member.nome_mae || '---'}
               </p>
             </div>
           </div>
@@ -246,14 +247,14 @@ export const TemplateCarteiraMembro: React.FC<TemplateCarteiraMembroProps> = ({ 
               style={{ height: '8.5mm' }}
              >
                <p className="text-[4px] font-black text-rose-500 uppercase leading-none mb-1">Tipo Sang.</p>
-               <p className="text-[8.5px] font-black text-rose-700 leading-none">{member.tipoSanguineo || 'A+'}</p>
+               <p className="text-[8.5px] font-black text-rose-700 leading-none">{member.tipo_sanguineo || 'A+'}</p>
              </div>
              
              <div className="h-6 w-px bg-rose-200 mx-1" />
              
              <div>
                 <p className="text-[4.5px] font-black text-rose-500 uppercase leading-none">Emergência</p>
-                <p className="text-[6.5px] font-black text-rose-700 mt-1">{member.contatoEmergencia || member.telefone || '(21) 00000-0000'}</p>
+                <p className="text-[6.5px] font-black text-rose-700 mt-1">{member.contato_emergencia || member.telefone || '(21) 00000-0000'}</p>
              </div>
           </div>
         </div>

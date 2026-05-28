@@ -33,17 +33,17 @@ router.use(requireAuth);
 
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
-    const { role, unitId: authUnitId } = req.authUser!;
-    const requestedUnitId = typeof req.query.unitId === 'string' ? req.query.unitId : undefined;
+    const { role, idUnidade: authIdUnidade } = req.authUser!;
+    const requestedIdUnidade = typeof req.query.idUnidade === 'string' ? req.query.idUnidade : undefined;
     const action = typeof req.query.action === 'string' ? req.query.action : undefined;
     const entidade = typeof req.query.entidade === 'string' ? req.query.entidade : undefined;
     const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : undefined;
 
-    const unitId = role === 'DEVELOPER' || role === 'ADMIN'
-      ? requestedUnitId
-      : authUnitId;
+    const idUnidade = role === 'DEVELOPER' || role === 'ADMIN'
+      ? requestedIdUnidade
+      : authIdUnidade;
 
-    const logs = await listAuditLogs({ unitId, action, entidade, limit });
+    const logs = await listAuditLogs({ idUnidade, action, entidade, limit });
     res.json(logs);
   } catch (error: any) {
     console.error('Erro ao listar logs de auditoria:', error);
@@ -55,7 +55,7 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
   try {
     const authUser = req.authUser!;
     const {
-      unitId,
+      idUnidade,
       userId,
       userName,
       action,
@@ -79,12 +79,12 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
       });
     }
 
-    const resolvedUnitId = authUser.role === 'DEVELOPER'
-      ? (unitId || authUser.unitId)
-      : authUser.unitId;
+    const resolvedIdUnidade = authUser.role === 'DEVELOPER'
+      ? (idUnidade || authUser.idUnidade)
+      : authUser.idUnidade;
 
     const log = await createAuditLog({
-      unitId: resolvedUnitId,
+      idUnidade: resolvedIdUnidade,
       userId: userId || authUser.userId,
       userName: userName || authUser.email,
       action,

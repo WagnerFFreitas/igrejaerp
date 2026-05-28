@@ -17,43 +17,29 @@
  */
 
 import apiClient from './apiService';
+import { Unidade } from '../../types';
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (unit service).
- */
-
-export interface Unit {
-  id: string;
-  nome: string;
-  name?: string;
-  cnpj: string;
-  enderecoLinha1?: string;
-  enderecoLinha2?: string;
-  cidade?: string;
-  estado?: string;
-  email?: string;
-  telefone?: string;
-  phone?: string;
-  sede: boolean;
-  isHeadquarter?: boolean;
-  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING';
-  criadoEm?: string;
-  atualizadoEm?: string;
-}
 export class UnitService {
-  static async getUnits(): Promise<Unit[]> {
-    const response = await apiClient.get('/units');
-    return (response as any) || [];
+  static async getUnits(): Promise<Unidade[]> {
+    const response = await apiClient.get<Unidade[]>('/units');
+    return Array.isArray(response) ? response : [];
   }
 
-  static async getUnitById(id: string): Promise<Unit> {
-    return apiClient.get(`/units/${id}`);
+  static async getUnitById(id: string): Promise<Unidade> {
+    return await apiClient.get(`/units/${id}`);
   }
 
-  static async updateUnit(id: string, data: Partial<Unit>): Promise<Unit> {
-    return apiClient.put(`/units/${id}`, data);
+  static async updateUnit(id: string, dados: Partial<Unidade>): Promise<Unidade> {
+    return await apiClient.put(`/units/${id}`, dados);
+  }
+
+  static async createUnit(dados: Partial<Unidade>): Promise<Unidade> {
+    return await apiClient.post('/units', dados);
+  }
+
+  static async deleteUnit(id: string): Promise<void> {
+    return await apiClient.delete(`/units/${id}`);
   }
 }
+
+export default UnitService;

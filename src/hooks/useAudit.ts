@@ -33,19 +33,19 @@ export const useAudit = (currentUser: UserAuth | null) => {
     try {
       switch (action) {
         case 'CREATE':
-          await AuditService.logCreate(currentUser.id, currentUser.name, currentUser.unitId, entity, entityId!, entityName!, details);
+          await AuditService.logCreate(currentUser.id, currentUser.name, currentUser.idUnidade, entity, entityId!, entityName!, details);
           break;
         case 'UPDATE':
-          await AuditService.logUpdate(currentUser.id, currentUser.name, currentUser.unitId, entity, entityId!, entityName!, details);
+          await AuditService.logUpdate(currentUser.id, currentUser.name, currentUser.idUnidade, entity, entityId!, entityName!, details);
           break;
         case 'DELETE':
-          await AuditService.logDelete(currentUser.id, currentUser.name, currentUser.unitId, entity, entityId!, entityName!);
+          await AuditService.logDelete(currentUser.id, currentUser.name, currentUser.idUnidade, entity, entityId!, entityName!);
           break;
         case 'BACKUP':
-          await AuditService.logBackup(currentUser.id, currentUser.name, currentUser.unitId, details?.success, details?.itemCount, details?.errorMessage);
+          await AuditService.logBackup(currentUser.id, currentUser.name, currentUser.idUnidade, details?.success, details?.itemCount, details?.errorMessage);
           break;
         case 'RESTORE':
-          await AuditService.logRestore(currentUser.id, currentUser.name, currentUser.unitId, details?.success, details?.itemCount, details?.errorMessage);
+          await AuditService.logRestore(currentUser.id, currentUser.name, currentUser.idUnidade, details?.success, details?.itemCount, details?.errorMessage);
           break;
         default:
           console.log(`🔍 Ação não mapeada: ${action}`);
@@ -59,7 +59,7 @@ export const useAudit = (currentUser: UserAuth | null) => {
     if (!currentUser) return;
 
     try {
-      await AuditService.logError(currentUser.id, currentUser.name, currentUser.unitId, error, context);
+      await AuditService.logError(currentUser.id, currentUser.name, currentUser.idUnidade, error, context);
     } catch (auditError) {
       console.error('❌ Erro ao registrar erro de auditoria:', auditError);
     }
@@ -72,7 +72,7 @@ export const useAudit = (currentUser: UserAuth | null) => {
       await AuditService.logMenuAccess(
         currentUser.id,
         currentUser.name,
-        currentUser.unitId,
+        currentUser.idUnidade,
         menuName
       );
     } catch (error) {

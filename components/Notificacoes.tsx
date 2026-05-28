@@ -35,7 +35,7 @@ import {
 } from '../types/communication';
 
 interface NotificacoesProps {
-  currentUnitId: string;
+  currentIdUnidade: string;
   user?: any;
 }
 
@@ -52,7 +52,7 @@ interface NotificacoesProps {
  * Define o bloco principal deste arquivo (notificacoes).
  */
 
-export const Notificacoes: React.FC<NotificacoesProps> = ({ currentUnitId, user }) => {
+export const Notificacoes: React.FC<NotificacoesProps> = ({ currentIdUnidade, user }) => {
   const [activeTab, setActiveTab] = useState<'campaigns' | 'sms' | 'templates' | 'groups' | 'stats'>('campaigns');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -88,14 +88,14 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentUnitId, user 
   // Carregar dados iniciais
   useEffect(() => {
     loadAllData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   // Carregar estatísticas quando o período mudar
   useEffect(() => {
     if (activeTab === 'stats') {
       loadStats();
     }
-  }, [statsPeriod, currentUnitId]);
+  }, [statsPeriod, currentIdUnidade]);
 
   const loadAllData = async () => {
     setIsLoading(true);
@@ -107,10 +107,10 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentUnitId, user 
         templatesData,
         groupsData
       ] = await Promise.all([
-        CommunicationService.getEmailCampaigns(currentUnitId),
-        CommunicationService.getSMSMessages(currentUnitId),
-        CommunicationService.getTemplates(currentUnitId),
-        CommunicationService.getGroups(currentUnitId)
+        CommunicationService.getEmailCampaigns(currentIdUnidade),
+        CommunicationService.getSMSMessages(currentIdUnidade),
+        CommunicationService.getTemplates(currentIdUnidade),
+        CommunicationService.getGroups(currentIdUnidade)
       ]);
 
       setCampaigns(campaignsData);
@@ -127,7 +127,7 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentUnitId, user 
 
   const loadStats = async () => {
     try {
-      const statsData = await CommunicationService.generateStats(currentUnitId, statsPeriod);
+      const statsData = await CommunicationService.generateStats(currentIdUnidade, statsPeriod);
       setStats(statsData);
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
@@ -137,7 +137,7 @@ export const Notificacoes: React.FC<NotificacoesProps> = ({ currentUnitId, user 
   // Enviar campanha
   const handleSendCampaign = async (campaignId: string) => {
     try {
-      await CommunicationService.sendEmailCampaign(campaignId, currentUnitId);
+      await CommunicationService.sendEmailCampaign(campaignId, currentIdUnidade);
       await loadAllData();
       alert('Campanha enviada com sucesso!');
     } catch (error) {

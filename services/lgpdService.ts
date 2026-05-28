@@ -45,8 +45,23 @@ export default class LGPDService {
     return this.getConsents(memberId);
   }
   
-  static async getCurrentPolicy(unitId: string) {
-    return apiClient.get('/lgpd/policy', { unitId }) as any;
+  static async getCurrentPolicy(unitId?: string) {
+    // Normalizar unitId (converter u-sede para UUID se necessário)
+    let normalizedUnitId = unitId;
+    if (!unitId || unitId === 'undefined') {
+      console.warn('⚠️ LGPDService.getCurrentPolicy: unitId inválido, usando padrão');
+      return { version: '1.0', title: 'Política Padrão', isActive: true };
+    }
+    
+    // Mapear aliases para UUIDs
+    const UNIT_ALIASES: Record<string, string> = {
+      'u-sede': '00000000-0000-0000-0000-000000000001',
+      'u-matriz': '00000000-0000-0000-0000-000000000001',
+    };
+    
+    const idToUse = UNIT_ALIASES[normalizedUnitId] || normalizedUnitId;
+    
+    return apiClient.get('/lgpd/policy', { unitId: idToUse }) as any;
   }
 
   static async saveConsent(data: {

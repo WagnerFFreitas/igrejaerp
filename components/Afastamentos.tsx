@@ -28,7 +28,7 @@ import AuthService from '../src/services/authService';
 interface AfastamentosProps {
   leaves: EmployeeLeave[];
   setLeaves: (leaves: EmployeeLeave[]) => void;
-  currentUnitId: string;
+  currentIdUnidade: string;
   employees: Payroll[];
   user?: any;
 }
@@ -40,7 +40,7 @@ interface AfastamentosProps {
  * Define o bloco principal deste arquivo (afastamentos).
  */
 
-export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, currentUnitId, employees, user }) => {
+export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, currentIdUnidade, employees, user }) => {
   const canWriteLeaves = AuthService.hasPermission(user, 'leaves', 'write');
   const canDeleteLeaves = AuthService.hasPermission(user, 'leaves', 'delete');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,7 +72,7 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
       const employee = employees.find(e => e.id === formData.employeeId);
       const newLeave: EmployeeLeave = {
         id: formData.id || crypto.randomUUID(),
-        unitId: currentUnitId,
+        idUnidade: currentIdUnidade,
         employeeId: formData.employeeId!,
         employeeName: employee?.employeeName || 'Desconhecido',
         type: formData.type as LeaveType,
@@ -216,7 +216,7 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
 
   const getFilteredLeaves = () => {
     return leaves.filter(l => {
-      const matchesUnit = l.unitId === currentUnitId;
+      const matchesUnit = l.idUnidade === currentIdUnidade;
       const matchesSearch = !searchTerm || 
         l.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         l.type.toLowerCase().includes(searchTerm.toLowerCase()) ||

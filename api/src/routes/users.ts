@@ -32,6 +32,68 @@ import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
 const router = Router();
 const db = Database.getInstance();
 
+const PERFIL_TO_ROLE: Record<string, string> = {
+  DESENVOLVEDOR: 'DEVELOPER',
+  ADMIN: 'ADMIN',
+  SECRETARIO: 'SECRETARY',
+  TESOUREIRO: 'TREASURER',
+  PASTOR: 'PASTOR',
+  RH: 'RH',
+  FINANCEIRO: 'FINANCEIRO',
+  MEMBRO: 'MEMBER',
+};
+
+const ROLE_TO_PERFIL: Record<string, string> = {
+  DEVELOPER: 'DESENVOLVEDOR',
+  ADMIN: 'ADMIN',
+  SECRETARY: 'SECRETARIO',
+  TREASURER: 'TESOUREIRO',
+  PASTOR: 'PASTOR',
+  RH: 'RH',
+  FINANCEIRO: 'FINANCEIRO',
+  MEMBER: 'MEMBRO',
+};
+
+function normalizePerfil(roleOrPerfil: string): string {
+  const value = String(roleOrPerfil || 'MEMBRO').toUpperCase();
+  return ROLE_TO_PERFIL[value] || value;
+}
+
+function mapUserRow(user: any) {
+  const role = PERFIL_TO_ROLE[user.perfil] || user.perfil;
+  return {
+    ...user,
+    id: user.id_usuario,
+    idUnidade: user.id_unidade,
+    nome_usuario: user.nome_usuario,
+    email: user.email || user.login,
+    role,
+    perfil: user.perfil,
+    username: user.login || user.email?.split('@')[0],
+    usernome_usuario: user.login || user.email?.split('@')[0],
+    status: user.esta_ativo ? 'ACTIVE' : 'INACTIVE',
+  };
+}
+
+const USER_SELECT = `
+  SELECT
+    u.id_usuario,
+    u.id_pessoa,
+    u.login,
+    u.perfil,
+    u.esta_ativo,
+    u.ultimo_login,
+    u.criado_em AS criado,
+    u.atualizado_em AS atualizado,
+    p.nome AS nome_usuario,
+    p.email,
+    p.id_unidade,
+    un.nome AS unit_nome_usuario
+  FROM usuarios u
+  JOIN pessoas p ON p.id_pessoa = u.id_pessoa
+  LEFT JOIN unidades un ON un.id_unidade = p.id_unidade
+`;
+
 router.use(requireAuth);
 
 async function ensureCanManageUsers(req: AuthenticatedRequest, res: any): Promise<boolean> {
@@ -65,29 +127,19 @@ router.get('/', async (req, res) => {
 
     const result = await db.query(`
       SELECT
-        u.id,
-        u.nome_usuario,
-        u.email,
-        u.role,
-        u.unit_id,
-        u.esta_ativo,
-        u.ultimo_login,
-u.criado, 
-        u.atualizado,
-        un.nome_usuario AS unit_nome_usuario
-      FROM users u
-      LEFT JOIN units un ON un.id = u.unit_id
-      ORDER BY u.nome_usuario
+        *
+      FROM (${USER_SELECT}) usuarios_mapeados
+      ORDER BY nome_usuario
     `);
 
     const users = await Promise.all(
-      result.rows.map(async (user: any) => ({
-        ...user,
-        unitId: user.unit_id,
-        usernome_usuario: user.email?.split('@')[0] || user.nome_usuario,
-        status: user.esta_ativo ? 'ACTIVE' : 'INACTIVE',
-        permissions: await getEffectivePermissions(user.id, user.role)
-      }))
+      result.rows.map(async (user: any) => {
+        const mapped = mapUserRow(user);
+        return {
+          ...mapped,
+          permissions: await getEffectivePermissions(mapped.id, mapped.role)
+        };
+      })
     );
 
     res.json(users);
@@ -107,13 +159,14 @@ router.get('/:id/permissions', async (req, res) => {
     if (!(await ensureCanManageUsers(req as AuthenticatedRequest, res))) return;
 
     const { id } = req.params;
-    const userResult = await db.query('SELECT id, role FROM users WHERE id = $1 LIMIT 1', [id]);
+    const userResult = await db.query('SELECT id_usuario, perfil FROM usuarios WHERE id_usuario = $1 LIMIT 1', [id]);
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: { message: 'Usuário não encontrado', status: 404 } });
     }
 
-    const permissions = await getEffectivePermissions(id, userResult.rows[0].role);
+    const role = PERFIL_TO_ROLE[userResult.rows[0].perfil] || userResult.rows[0].perfil;
+    const permissions = await getEffectivePermissions(id, role);
     res.json(permissions);
   } catch (error: any) {
     console.error('Erro ao buscar permissões do usuário:', error);
@@ -136,18 +189,19 @@ router.put('/:id/permissions', async (req, res) => {
       }>;
     };
 
-    const userResult = await db.query('SELECT id, role FROM users WHERE id = $1 LIMIT 1', [id]);
+    const userResult = await db.query('SELECT id_usuario, perfil FROM usuarios WHERE id_usuario = $1 LIMIT 1', [id]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: { message: 'Usuário não encontrado', status: 404 } });
     }
 
-    if (userResult.rows[0].role === 'DEVELOPER') {
+    const role = PERFIL_TO_ROLE[userResult.rows[0].perfil] || userResult.rows[0].perfil;
+    if (role === 'DEVELOPER') {
       return res.status(400).json({ error: { message: 'Usuário desenvolvedor é irrestrito e não pode ser limitado', status: 400 } });
     }
 
     await replaceUserPermissions(id, permissions || []);
 
-    res.json(await getEffectivePermissions(id, userResult.rows[0].role));
+    res.json(await getEffectivePermissions(id, role));
   } catch (error: any) {
     console.error('Erro ao atualizar permissões do usuário:', error);
     res.status(500).json({ error: { message: 'Erro interno', status: 500, details: error.message } });
@@ -158,34 +212,44 @@ router.post('/', async (req, res) => {
   try {
     if (!(await ensureCanManageUsers(req as AuthenticatedRequest, res))) return;
 
-    const { nome_usuario, email, password, role, unitId, isActive = true } = req.body;
+    const { nome_usuario, email, password, role, perfil, idUnidade, isActive = true } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
+    const login = normalizedEmail;
+    const dbPerfil = normalizePerfil(perfil || role);
 
-    if (!nome_usuario || !normalizedEmail || !password || !role || !unitId) {
+    if (!nome_usuario || !normalizedEmail || !password || !dbPerfil || !idUnidade) {
       return res.status(400).json({ error: { message: 'Nome, email, senha, perfil e unidade são obrigatórios', status: 400 } });
     }
 
-    const existing = await db.query('SELECT id FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
+    const existing = await db.query(
+      `SELECT u.id_usuario
+       FROM usuarios u
+       JOIN pessoas p ON p.id_pessoa = u.id_pessoa
+       WHERE LOWER(p.email) = $1 OR LOWER(u.login) = $1`,
+      [normalizedEmail]
+    );
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: { message: 'Email já cadastrado', status: 409 } });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const result = await db.query(
-      `
-        INSERT INTO users (nome_usuario, email, hash_senha, role, unit_id, esta_ativo, criado, atualizado)
-        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING id, nome_usuario, email, role, unit_id, esta_ativo, criado, atualizado
-      `,
-      [nome_usuario, normalizedEmail, passwordHash, role, unitId, isActive]
+    const pessoaResult = await db.query(
+      `INSERT INTO pessoas (id_unidade, nome, email, ativo)
+       VALUES ($1, $2, $3, true)
+       RETURNING id_pessoa`,
+      [idUnidade, nome_usuario, normalizedEmail]
+    );
+    const insertResult = await db.query(
+      `INSERT INTO usuarios (id_pessoa, login, senha_hash, perfil, esta_ativo)
+       VALUES ($1, $2, $3, $4::perfil_usuario, $5)
+       RETURNING id_usuario`,
+      [pessoaResult.rows[0].id_pessoa, login, passwordHash, dbPerfil, isActive]
     );
 
-    const user = result.rows[0];
+    const userResult = await db.query(`${USER_SELECT} WHERE u.id_usuario = $1`, [insertResult.rows[0].id_usuario]);
+    const user = mapUserRow(userResult.rows[0]);
     res.status(201).json({
       ...user,
-      unitId: user.unit_id,
-      usernome_usuario: user.email.split('@')[0],
-      status: user.esta_ativo ? 'ACTIVE' : 'INACTIVE',
       permissions: await getEffectivePermissions(user.id, user.role)
     });
   } catch (error: any) {
@@ -199,32 +263,40 @@ router.put('/:id', async (req, res) => {
     if (!(await ensureCanManageUsers(req as AuthenticatedRequest, res))) return;
 
     const { id } = req.params;
-    const { nome_usuario, role, unitId, isActive } = req.body;
+    const { nome_usuario, role, perfil, idUnidade, isActive } = req.body;
+    const dbPerfil = role || perfil ? normalizePerfil(perfil || role) : null;
 
     const result = await db.query(
       `
-        UPDATE users
-        SET nome_usuario = COALESCE($2, nome_usuario),
-            role = COALESCE($3, role),
-            unit_id = COALESCE($4, unit_id),
-            esta_ativo = COALESCE($5, esta_ativo),
-            atualizado = CURRENT_TIMESTAMP
-        WHERE id = $1
-        RETURNING id, nome_usuario, email, role, unit_id, esta_ativo, criado, atualizado
+        UPDATE pessoas p
+        SET nome = COALESCE($2, p.nome),
+            id_unidade = COALESCE($4, p.id_unidade),
+            atualizado_em = CURRENT_TIMESTAMP
+        FROM usuarios u
+        WHERE u.id_pessoa = p.id_pessoa
+          AND u.id_usuario = $1
+        RETURNING u.id_usuario
       `,
-      [id, nome_usuario || null, role || null, unitId || null, typeof isActive === 'boolean' ? isActive : null]
+      [id, nome_usuario || null, null, idUnidade || null]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: { message: 'Usuário não encontrado', status: 404 } });
     }
 
-    const user = result.rows[0];
+    await db.query(
+      `UPDATE usuarios
+       SET perfil = COALESCE($2::perfil_usuario, perfil),
+           esta_ativo = COALESCE($3, esta_ativo),
+           atualizado_em = CURRENT_TIMESTAMP
+       WHERE id_usuario = $1`,
+      [id, dbPerfil, typeof isActive === 'boolean' ? isActive : null]
+    );
+
+    const userResult = await db.query(`${USER_SELECT} WHERE u.id_usuario = $1`, [id]);
+    const user = mapUserRow(userResult.rows[0]);
     res.json({
       ...user,
-      unitId: user.unit_id,
-      usernome_usuario: user.email.split('@')[0],
-      status: user.esta_ativo ? 'ACTIVE' : 'INACTIVE',
       permissions: await getEffectivePermissions(user.id, user.role)
     });
   } catch (error: any) {

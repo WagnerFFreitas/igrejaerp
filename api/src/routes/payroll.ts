@@ -1,55 +1,31 @@
 /**
- * ============================================================================
- * PAYROLL.TS
- * ============================================================================
- *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Rotas de API para payroll.
- *
- * ONDE É USADO?
- * -------------
- * Usado pelo servidor backend para processar requisições.
- *
- * COMO FUNCIONA?
- * --------------
- * Executa lógica de backend e responde a chamadas externas.
+ * PAYROLL.TS — Alinhado ao schema PT-BR
+ * Tabelas: periodos_folha, folha_pagamento, calculos_folha
+ * Referência: funcionarios (não employees)
  */
 
 import { Router, Request, Response } from 'express';
 import Database from '../database';
 import { randomUUID } from 'crypto';
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (payroll).
- */
-
 const router = Router();
 const db = Database.getInstance();
 
-/**
- * =====================================================
- * ROTAS DE FOLHA DE PAGAMENTO (PAYROLL)
- * =====================================================
- */
+// ─── PERÍODOS DE FOLHA ────────────────────────────────────────────────────────
 
-// 1. LISTAR PERÍODOS DE FOLHA
+// GET /payroll/periods
 router.get('/periods', async (req: Request, res: Response) => {
   try {
-    const { unitId } = req.query;
-    let query = 'SELECT * FROM payroll_periods WHERE 1=1';
+    const { idUnidade } = req.query;
+    let query = 'SELECT * FROM periodos_folha WHERE 1=1';
     const params: any[] = [];
-    
-    if (unitId) {
-      query += ' AND unit_id = $1';
-      params.push(unitId);
+
+    if (idUnidade) {
+      query += ' AND id_unidade = $1';
+      params.push(idUnidade);
     }
-    
-    query += ' ORDER BY year DESC, month DESC';
-    
+    query += ' ORDER BY ano DESC, mes DESC';
+
     const result = await db.query(query, params);
     res.json(result.rows);
   } catch (error: any) {
@@ -58,20 +34,27 @@ router.get('/periods', async (req: Request, res: Response) => {
   }
 });
 
-// 2. CRIAR/ABRIR NOVO PERÍODO DE FOLHA
+// POST /payroll/periods
 router.post('/periods', async (req: Request, res: Response) => {
   try {
-    const { unit_id, month, year, start_date, end_date, criado_por, notes } = req.body;
-    
-    const id = randomUUID();
+    const b = req.body;
+    const mes       = b.mes       || b.month;
+    const ano       = b.ano       || b.year;
+    const situacao  = b.situacao  || b.status || 'ABERTO';
+    const dataInicio = b.data_inicio || b.dataInicio || b.startDate;
+    const dataFinal  = b.data_final  || b.dataFinal  || b.endDate;
+    const idUnidade  = b.id_unidade  || b.idUnidade;
+    const criadoPor  = b.criado_por  || b.criadoPor  || b.createdBy;
+
+    if (!criadoPor) {
+      return res.status(400).json({ error: { message: 'criado_por é obrigatório', status: 400 } });
+    }
+
     const result = await db.query(
-      `INSERT INTO payroll_periods 
-       (id, unit_id, month, year, start_date, end_date, criado_por, notes, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'OPEN')
-       RETURNING *`,
-      [id, unit_id, month, year, start_date, end_date, criado_por, notes]
+      `INSERT INTO periodos_folha (id, id_unidade, mes, ano, situacao, data_inicio, data_final, criado_por)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [randomUUID(), idUnidade, mes, ano, situacao, dataInicio, dataFinal, criadoPor]
     );
-    
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
     console.error('Erro ao criar período de folha:', error);
@@ -79,75 +62,132 @@ router.post('/periods', async (req: Request, res: Response) => {
   }
 });
 
-// 3. SALVAR CÁLCULO DE FOLHA DE UM FUNCIONÁRIO
-router.post('/calculations', async (req: Request, res: Response) => {
-  try {
-    const data = req.body;
-    const id = randomUUID();
-    
-    // Mapeamento para snake_case das colunas da tabela payroll_calculations
-    const query = `
-      INSERT INTO payroll_calculations (
-        id, employee_id, competency_month, gross_salary,
-        base_salary, overtime, night_shift, hazard_pay, commission, bonuses, family_salary, other_allowances,
-        inss, irrf, fgts, health_insurance, dental_insurance, meal_allowance, meal_ticket, transport, 
-        pharmacy, life_insurance, advance, consignado, coparticipation, absences, delays, alimony, other_deductions,
-        total_allowances, total_deductions, net_salary, employer_cost,
-        inss_base, inss_rate, inss_value, irrf_base, irrf_rate, irrf_deduction, irrf_value, fgts_base, fgts_rate, fgts_value
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 
-        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43
-      ) ON CONFLICT (employee_id, competency_month) 
-      DO UPDATE SET
-        gross_salary = EXCLUDED.gross_salary,
-        base_salary = EXCLUDED.base_salary,
-        overtime = EXCLUDED.overtime,
-        inss = EXCLUDED.inss,
-        irrf = EXCLUDED.irrf,
-        net_salary = EXCLUDED.net_salary,
-        atualizado = CURRENT_TIMESTAMP
-      RETURNING *`;
+// ─── FOLHA DE PAGAMENTO ───────────────────────────────────────────────────────
 
-    const params = [
-      id, data.employeeId, data.competencyMonth, data.grossSalary,
-      data.allowances.baseSalary, data.allowances.overtime, data.allowances.nightShift, data.allowances.hazardPay, data.allowances.commission, data.allowances.bonuses, data.allowances.familySalary, data.allowances.other,
-      data.deductions.inss, data.deductions.irrf, data.deductions.fgts, data.deductions.healthInsurance, data.deductions.dentalInsurance, data.deductions.mealAllowance, data.deductions.mealTicket, data.deductions.transport,
-      data.deductions.pharmacy, data.deductions.lifeInsurance, data.deductions.advance, data.deductions.consignado, data.deductions.coparticipation, data.deductions.absences, data.deductions.delays, data.deductions.alimony, data.deductions.other,
-      data.totals.totalAllowances, data.totals.totalDeductions, data.totals.netSalary, data.totals.employerCost,
-      data.calculationDetails.inssBase, data.calculationDetails.inssRate, data.calculationDetails.inssValue, data.calculationDetails.irrfBase, data.calculationDetails.irrfRate, data.calculationDetails.irrfDeduction, data.calculationDetails.irrfValue, data.calculationDetails.fgtsBase, data.calculationDetails.fgtsRate, data.calculationDetails.fgtsValue
-    ];
+// GET /payroll — lista folhas de pagamento
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const { idUnidade, mes, ano } = req.query;
+    let query = `
+      SELECT fp.*, p.nome AS nome_funcionario
+      FROM folha_pagamento fp
+      JOIN funcionarios f ON f.id_funcionario = fp.id_funcionario
+      JOIN pessoas p ON p.id_pessoa = f.id_pessoa
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let i = 1;
+
+    if (idUnidade) { query += ` AND fp.id_unidade = $${i++}`; params.push(idUnidade); }
+    if (mes)       { query += ` AND fp.mes = $${i++}`;        params.push(mes); }
+    if (ano)       { query += ` AND fp.ano = $${i++}`;        params.push(ano); }
+    query += ' ORDER BY fp.ano DESC, fp.mes DESC, p.nome ASC';
 
     const result = await db.query(query, params);
-    res.status(201).json(result.rows[0]);
+    res.json(result.rows);
   } catch (error: any) {
-    console.error('Erro ao salvar cálculo de folha:', error);
+    console.error('Erro ao buscar folhas:', error);
     res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
   }
 });
 
-// 4. BUSCAR CÁLCULOS DE UM PERÍODO
-router.get('/calculations/:competencyMonth', async (req: Request, res: Response) => {
+// POST /payroll — cria folha de pagamento
+router.post('/', async (req: Request, res: Response) => {
   try {
-    const { competencyMonth } = req.params;
-    const { unitId } = req.query;
-    
+    const b = req.body;
+    const result = await db.query(
+      `INSERT INTO folha_pagamento
+         (id, id_unidade, id_funcionario, mes, ano, data_referencia,
+          salario_base, inss, irrf, fgts, salario_liquido, situacao)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [
+        randomUUID(),
+        b.id_unidade || b.idUnidade,
+        b.id_funcionario || b.idFuncionario || b.employeeId,
+        b.mes || b.month,
+        b.ano || b.year,
+        b.data_referencia || b.dataReferencia || b.referenceDate,
+        b.salario_base || b.salarioBase || 0,
+        b.inss || 0,
+        b.irrf || 0,
+        b.fgts || 0,
+        b.salario_liquido || b.salarioLiquido || 0,
+        b.situacao || b.status || 'PROCESSADO',
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Erro ao criar folha:', error);
+    res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
+  }
+});
+
+// ─── CÁLCULOS DE FOLHA ────────────────────────────────────────────────────────
+
+// GET /payroll/calculations/:mesCompetencia
+router.get('/calculations/:mesCompetencia', async (req: Request, res: Response) => {
+  try {
+    const { mesCompetencia } = req.params;
+    const { idUnidade } = req.query;
+
     let query = `
-      SELECT pc.*, e.employee_name as name 
-      FROM payroll_calculations pc
-      JOIN employees e ON e.id = pc.employee_id
-      WHERE pc.competency_month = $1`;
-    
-    const params: any[] = [competencyMonth];
-    
-    if (unitId) {
-      query += ' AND e.unit_id = $2';
-      params.push(unitId);
+      SELECT cf.*, p.nome AS nome_funcionario
+      FROM calculos_folha cf
+      JOIN funcionarios f ON f.id_funcionario = cf.id_funcionario
+      JOIN pessoas p ON p.id_pessoa = f.id_pessoa
+      WHERE cf.mes_competencia = $1
+    `;
+    const params: any[] = [mesCompetencia];
+
+    if (idUnidade) {
+      query += ' AND f.id_unidade = $2';
+      params.push(idUnidade);
     }
-    
+
     const result = await db.query(query, params);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Erro ao buscar cálculos de folha:', error);
+    res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
+  }
+});
+
+// POST /payroll/calculations — salva cálculo de folha
+router.post('/calculations', async (req: Request, res: Response) => {
+  try {
+    const b = req.body;
+    const idFuncionario = b.id_funcionario || b.idFuncionario || b.employeeId;
+    const mesCompetencia = b.mes_competencia || b.mesCompetencia || b.competencyMonth;
+
+    const result = await db.query(
+      `INSERT INTO calculos_folha
+         (id, id_funcionario, mes_competencia, salario_bruto,
+          sindicato_taxa, farmacia, seguro_vida, inss, irrf, fgts, salario_liquido)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (id_funcionario, mes_competencia)
+       DO UPDATE SET
+         salario_bruto=EXCLUDED.salario_bruto,
+         inss=EXCLUDED.inss, irrf=EXCLUDED.irrf, fgts=EXCLUDED.fgts,
+         salario_liquido=EXCLUDED.salario_liquido,
+         atualizado_em=CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        randomUUID(),
+        idFuncionario,
+        mesCompetencia,
+        b.salario_bruto || b.salarioBruto || b.grossSalary || 0,
+        b.sindicato_taxa || b.sindicatoTaxa || 0,
+        b.farmacia || 0,
+        b.seguro_vida || b.seguroVida || 0,
+        b.inss || 0,
+        b.irrf || 0,
+        b.fgts || 0,
+        b.salario_liquido || b.salarioLiquido || b.netSalary || 0,
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Erro ao salvar cálculo de folha:', error);
     res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
   }
 });

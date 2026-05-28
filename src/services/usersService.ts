@@ -17,13 +17,7 @@
  */
 
 import apiClient from './apiService';
-
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (users service).
- */
+import { Usuario } from '../../types';
 
 export interface PermissionModule {
   code: string;
@@ -40,47 +34,27 @@ export interface AppPermission {
   canManage: boolean;
 }
 
-export interface AppUser {
-  id: string;
-  name: string;
-  email: string;
-  username: string;
-  role: string;
-  unitId: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  is_active?: boolean;
-  permissions: AppPermission[];
-  unit_name?: string;
-  last_login?: string;
-}
-
 export class UsersService {
-  static async getUsers(): Promise<AppUser[]> {
-    return apiClient.get<AppUser[]>('/users');
+  static async getUsers(): Promise<Usuario[]> {
+    return apiClient.get<Usuario[]>('/users');
   }
 
   static async getPermissionModules(): Promise<PermissionModule[]> {
     return apiClient.get<PermissionModule[]>('/users/permission-modules');
   }
 
-  static async createUser(data: {
-    name: string;
+  static async createUser(dados: {
+    nome: string;
     email: string;
-    password: string;
+    username: string;
     role: string;
-    unitId: string;
-    isActive?: boolean;
-  }): Promise<AppUser> {
-    return apiClient.post<AppUser>('/users', data);
+    id_unidade: string;
+  }): Promise<Usuario> {
+    return apiClient.post<Usuario>('/users', dados);
   }
 
-  static async updateUser(id: string, data: {
-    name?: string;
-    role?: string;
-    unitId?: string;
-    isActive?: boolean;
-  }): Promise<AppUser> {
-    return apiClient.put<AppUser>(`/users/${id}`, data);
+  static async updateUser(id: string, dados: Partial<Usuario>): Promise<Usuario> {
+    return apiClient.put<Usuario>(`/users/${id}`, dados);
   }
 
   static async updatePermissions(id: string, permissions: AppPermission[]): Promise<AppPermission[]> {

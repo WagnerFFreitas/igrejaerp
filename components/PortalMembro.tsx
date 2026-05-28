@@ -57,7 +57,7 @@ export const PortalMembro: React.FC<PortalMembroProps> = ({ memberId }) => {
 
     return {
       ...rawMember,
-      unidadeId: rawMember?.unidadeId || rawMember?.unit_id || rawMember?.unitId || 'u-sede',
+      idUnidade: rawMember?.idUnidade || rawMember?.id_unidade || rawMember?.idUnidade || 'u-sede',
       matricula: rawMember?.matricula || `M-${String(rawMember?.id || '000').slice(0, 8)}`,
       nome: rawMember?.nome || rawMember?.name || '',
       telefone: rawMember?.telefone || rawMember?.phone || rawMember?.celular || '',
@@ -70,7 +70,7 @@ export const PortalMembro: React.FC<PortalMembroProps> = ({ memberId }) => {
       dependentes: Array.isArray(rawMember?.dependentes) ? rawMember.dependentes : (Array.isArray(rawMember?.dependents) ? rawMember.dependents : []),
       dataMembro: rawMember?.dataMembro || rawMember?.membershipDate || rawMember?.data_membro || undefined,
       ministerioPrincipal: rawMember?.ministerioPrincipal || rawMember?.mainMinistry || rawMember?.ministerio || undefined,
-      avatar: rawMember?.avatar || `https://ui-avatars.com/api/?nome=${encodeURIComponent(rawMember?.nome || rawMember?.nome || 'Membro')}&background=003399&color=fff&bold=true`,
+      avatar: rawMember?.avatar,
       endereco,
       email: rawMember?.email || '',
       dataNascimento: rawMember?.dataNascimento || rawMember?.birthDate || rawMember?.data_nascimento || new Date().toISOString(),
@@ -78,7 +78,7 @@ export const PortalMembro: React.FC<PortalMembroProps> = ({ memberId }) => {
       rg: rawMember?.rg || '',
       sexo: rawMember?.sexo || rawMember?.gender || 'OTHER',
       estadoCivil: rawMember?.estadoCivil || rawMember?.maritalStatus || 'SINGLE',
-      ehDizimista: Boolean(rawMember?.ehDizimista || rawMember?.isTithable),
+      dizimista: Boolean(rawMember?.dizimista || rawMember?.isTithable),
       ehOfertanteRegular: Boolean(rawMember?.ehOfertanteRegular || rawMember?.isRegularGiver),
       participaCampanhas: Boolean(rawMember?.participaCampanhas || rawMember?.participatesCampaigns)
     } as Member;
@@ -177,7 +177,7 @@ export const PortalMembro: React.FC<PortalMembroProps> = ({ memberId }) => {
           <div className="flex gap-8 items-center">
             <div className="w-32 h-32 rounded-[2rem] bg-indigo-100 overflow-hidden">
               <img 
-                src={member.avatar || 'https://i.pravatar.cc/150?u=' + member.id} 
+                src={member.avatar}
                 className="w-full h-full object-cover" 
                 alt={member.nome}
               />

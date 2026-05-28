@@ -116,7 +116,7 @@ class ApiClient {
   // MÉTODOS DE AUTENTICAÇÃO
   // =====================================================
   async login(identifier: string, password: string) {
-    const response = await this.client.post('/auth/login', {
+    const response = await this.client.post('/autenticacao/login', {
       email: identifier,
       username: identifier,
       password
@@ -125,27 +125,27 @@ class ApiClient {
   }
 
   async register(userData: any) {
-    const response = await this.client.post('/auth/register', userData);
+    const response = await this.client.post('/autenticacao/register', userData);
     return response.data;
   }
 
   async verifyToken() {
-    const response = await this.client.get('/auth/verify');
+    const response = await this.client.get('/autenticacao/verify');
     return response.data;
   }
 
   async logout() {
-    const response = await this.client.post('/auth/logout');
+    const response = await this.client.post('/autenticacao/logout');
     return response.data;
   }
 
-  async getAuditLogs(params?: { unitId?: string; action?: string; entity?: string; limit?: number }) {
-    const response = await this.client.get('/audit', { params });
+  async getAuditLogs(params?: { idUnidade?: string; action?: string; entity?: string; limit?: number }) {
+    const response = await this.client.get('/auditoria', { params });
     return response.data;
   }
 
   async createAuditLog(data: any) {
-    const response = await this.client.post('/audit', data);
+    const response = await this.client.post('/auditoria', data);
     return response.data;
   }
 

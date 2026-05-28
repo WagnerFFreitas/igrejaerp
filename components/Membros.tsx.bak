@@ -538,11 +538,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
           console.log("✅ Foto uploaded com sucesso");
         } catch (error) {
           console.warn("⚠️ Erro ao fazer upload da foto:", error);
-          memberData.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'M')}&background=003399&color=fff&bold=true`;
+          memberData.avatar = memberData.avatar; // Apenas foto real
         }
       } else if (!memberData.avatar) {
         console.log("🎨 Usando avatar padrão");
-        memberData.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'M')}&background=003399&color=fff&bold=true`;
+        // Apenas fotos reais, sem avatar automático
       }
 
       console.log("💾 Salvando membro no database...");
@@ -948,7 +948,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, setMem
                   <div className="flex items-center gap-6 pb-6 border-b border-slate-100">
                     <div className="relative group">
                       <div className="w-24 h-24 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                        <img src={formData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'M')}&background=003399&color=fff&bold=true`} className="w-full h-full object-cover" />
+                        <img src={formData.avatar} className="w-full h-full object-cover" />
                       </div>
                       <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-3xl">
                         <Camera className="text-white mb-1" size={24} />

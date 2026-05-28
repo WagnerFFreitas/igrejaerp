@@ -28,18 +28,25 @@ import Database from '../database';
 
 function mapUnitToFrontend(row: any) {
   return {
-    id: row.id,
-    nome: row.nome_unidade,
+    id: row.id_unidade,
+    idUnidade: row.id_unidade,
+    nome: row.nome,
     cnpj: row.cnpj,
-    enderecoLinha1: row.endereco_linha1,
-    enderecoLinha2: row.endereco_linha2,
+    enderecoLinha1: row.logradouro,
+    enderecoLinha2: row.numero,
+    logradouro: row.logradouro,
+    numero: row.numero,
+    bairro: row.bairro,
     cidade: row.cidade,
     estado: row.estado,
+    cep: row.cep,
+    pais: row.pais,
     email: row.email,
     telefone: row.telefone,
-    sede: row.sede,
-    criadoEm: row.criado,
-    atualizadoEm: row.atualizado,
+    situacao: row.situacao,
+    ativo: row.ativo,
+    criadoEm: row.criado_em,
+    atualizadoEm: row.atualizado_em,
   };
 }
 
@@ -47,7 +54,7 @@ export class UnitController {
   static async getAll(req: Request, res: Response) {
     const db = Database.getInstance();
     try {
-      const result = await db.query('SELECT * FROM units ORDER BY nome_unidade');
+      const result = await db.query('SELECT * FROM unidades ORDER BY nome');
       const units = result.rows.map(mapUnitToFrontend);
       res.json({ units });
     } catch (error: any) {
@@ -60,7 +67,7 @@ export class UnitController {
     const { id } = req.params;
     const db = Database.getInstance();
     try {
-      const result = await db.query('SELECT * FROM units WHERE id = $1', [id]);
+      const result = await db.query('SELECT * FROM unidades WHERE id_unidade = $1', [id]);
       if (result.rows.length === 0) {
         return res.status(404).json({ error: { message: 'Unidade não encontrada' } });
       }
@@ -73,15 +80,59 @@ export class UnitController {
 
   static async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { nome, cnpj, enderecoLinha1, enderecoLinha2, sede } = req.body;
+    const {
+      nome,
+      cnpj,
+      telefone,
+      email,
+      logradouro,
+      enderecoLinha1,
+      numero,
+      enderecoLinha2,
+      bairro,
+      cidade,
+      estado,
+      cep,
+      pais,
+      situacao,
+      ativo,
+    } = req.body;
     const db = Database.getInstance();
     try {
       const result = await db.query(
-        `UPDATE units 
-         SET nome_unidade = $1, cnpj = $2, endereco_linha1 = $3, endereco_linha2 = $4, sede = $5, atualizado = CURRENT_TIMESTAMP
-         WHERE id = $6
+        `UPDATE unidades 
+         SET nome = COALESCE($1, nome),
+             cnpj = COALESCE($2, cnpj),
+             telefone = COALESCE($3, telefone),
+             email = COALESCE($4, email),
+             logradouro = COALESCE($5, logradouro),
+             numero = COALESCE($6, numero),
+             bairro = COALESCE($7, bairro),
+             cidade = COALESCE($8, cidade),
+             estado = COALESCE($9, estado),
+             cep = COALESCE($10, cep),
+             pais = COALESCE($11, pais),
+             situacao = COALESCE($12, situacao),
+             ativo = COALESCE($13, ativo),
+             atualizado_em = CURRENT_TIMESTAMP
+         WHERE id_unidade = $14
          RETURNING *`,
-        [nome, cnpj, enderecoLinha1, enderecoLinha2, sede, id]
+        [
+          nome,
+          cnpj,
+          telefone,
+          email,
+          logradouro || enderecoLinha1,
+          numero || enderecoLinha2,
+          bairro,
+          cidade,
+          estado,
+          cep,
+          pais,
+          situacao,
+          ativo,
+          id,
+        ]
       );
       if (result.rows.length === 0) {
         return res.status(404).json({ error: { message: 'Unidade não encontrada' } });

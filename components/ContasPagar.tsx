@@ -69,7 +69,7 @@ import {
  * É como se fosse os "parâmetros" de uma função.
  */
 interface ContasPagarProps {
-  currentUnitId: string;           // ID da unidade/filial atual
+  currentIdUnidade: string;           // ID da unidade/filial atual
   onTransactionAdded?: () => void; // Função opcional para avisar quando adicionar transação
 }
 
@@ -80,7 +80,7 @@ interface ContasPagarProps {
  * <ContasPagarProps> = Tipo das props que aceita
  */
 export const ContasPagar: React.FC<ContasPagarProps> = ({ 
-  currentUnitId, 
+  currentIdUnidade, 
   onTransactionAdded 
 }) => {
   
@@ -157,7 +157,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
       setIsLoading(true);
       
       // Chama serviço para buscar transações da unidade
-      const loadedTransactions = await transactionService.getTransactions(currentUnitId);
+      const loadedTransactions = await transactionService.getTransactions(currentIdUnidade);
       
       // Guarda transações no estado
       setTransactions(loadedTransactions);
@@ -246,7 +246,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
         // MODO CRIAÇÃO: Salva nova transação
         await transactionService.saveTransaction({
           ...formData,
-          unitId: currentUnitId,  // Garante que tem ID da unidade
+          idUnidade: currentIdUnidade,  // Garante que tem ID da unidade
           createdAt: new Date().toISOString(),
         });
         alert('Transação criada com sucesso!');

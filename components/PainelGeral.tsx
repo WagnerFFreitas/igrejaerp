@@ -70,12 +70,12 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
       : null;
 
     const membersThisMonth = members.filter(m => {
-      const d = new Date((m as any).criadoEm || (m as any).created_at || '');
+      const d = new Date((m as any).criado || (m as any).created_at || '');
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     }).length;
 
     const membersLastMonth = members.filter(m => {
-      const d = new Date((m as any).criadoEm || (m as any).created_at || '');
+      const d = new Date((m as any).criado || (m as any).created_at || '');
       return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
     }).length;
 
@@ -90,8 +90,13 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
 
   // ── Gráfico: receita dos últimos 6 meses ─────────────────────────────────
   const chartData = useMemo(() => {
+    console.log('📊 PainelGeral chartData calculando:', { 
+      transactionsCount: transactions.length,
+      sampleTransaction: transactions[0] 
+    });
+    
     const now = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
+    const result = Array.from({ length: 6 }, (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
       const month = d.getMonth();
       const year = d.getFullYear();
@@ -107,6 +112,9 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
         despesa: expense,
       };
     });
+    
+    console.log('📊 chartData resultado:', result);
+    return result;
   }, [transactions]);
   
   const [insights, setInsights] = useState<string>('Consultando inteligência ministerial...');
@@ -121,7 +129,11 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
   const [predictions, setPredictions] = useState<string>('');
   const [isGeneratingPredictions, setIsGeneratingPredictions] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'predictions' | 'access'>('overview');
-  const canManageUsers = AuthService.canManageUsers(user);
+  const canManageUsers = user && (
+    (user as any).role === 'DEVELOPER' || 
+    (user as any).role === 'ADMIN' || 
+    (user as any).unrestrictedAccess === true
+  );
 
   // Efeito para gerenciar o contador de cooldown
   useEffect(() => {
@@ -184,7 +196,7 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
     try {
       const activeMembersCount = members.filter(m => m.situacao === 'ATIVO' || m.status === 'ACTIVE').length;
       const newMembersCount = members.filter(m => {
-        const joinDate = new Date(m.criadoEm || m.createdAt || '');
+        const joinDate = new Date(m.criado || m.createdAt || '');
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         return joinDate > thirtyDaysAgo;
@@ -417,12 +429,13 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div className="lg:col-span-8 bg-white p-8 rounded-[2rem] border border-slate-100 h-96 shadow-sm">
+            <div className="lg:col-span-8 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm" style={{ height: '384px' }}>
               <h3 className="text-base font-black text-slate-900 uppercase tracking-widest mb-6 border-b pb-2 flex items-center gap-2">
                 <TrendingUp size={18} className="text-indigo-600"/> Receita vs Despesa — Últimos 6 Meses
               </h3>
-              <div className="h-[calc(100%-2rem)] min-h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
+              {chartData.length > 0 ? (
+              <div className="w-full h-full" style={{ minHeight: '300px' }}>
+                <ResponsiveContainer width="100%" height={300} minWidth={0}>
                   <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">
@@ -442,9 +455,9 @@ export const PainelGeral: React.FC<PainelGeralProps> = ({ user, members, employe
                   <Area type="monotone" dataKey="despesa" name="Despesa" stroke="#f43f5e" strokeWidth={2.5} fillOpacity={1} fill="url(#colorDesp)" />
                 </AreaChart>
               </ResponsiveContainer>
-            </div>
-              {transactions.length === 0 && (
-                <p className="text-center text-xs text-slate-400 mt-2">Nenhuma transação registrada ainda.</p>
+              </div>
+              ) : (
+                <p className="text-center text-sm text-slate-400 mt-8">Nenhuma transação registrada ainda.</p>
               )}
             </div>
 

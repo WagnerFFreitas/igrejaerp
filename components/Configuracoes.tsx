@@ -85,7 +85,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
       });
 
       // 2. Atualizar todos os funcionários com os novos valores padrão de VA e VR
-      const employees = await dbService.getEmployees(user.unitId);
+      const employees = await dbService.getEmployees(user.idUnidade);
       let updatedCount = 0;
 
       for (const emp of employees) {
@@ -127,14 +127,14 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
     
     setIsRemovingDuplicates(true);
     try {
-      const unitId = user.unitId;
+      const idUnidade = user.idUnidade;
       
       // Limpar cache local para forçar busca do Firebase
       await IndexedDBService.clear('members');
       await IndexedDBService.clear('employees');
       
       // Buscar dados atualizados do Firebase
-      const members = await dbService.getMembers(unitId);
+      const members = await dbService.getMembers(idUnidade);
       console.log("🔍 Membros encontrados:", members.length);
       const memberNames = new Map<string, string>(); // Map name -> id
       const duplicateMembers: string[] = [];
@@ -149,7 +149,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         }
       }
       
-      const employees = await dbService.getEmployees(unitId);
+      const employees = await dbService.getEmployees(idUnidade);
       console.log("🔍 Funcionários encontrados:", employees.length);
       const employeeNames = new Map<string, string>(); // Map name -> id
       const duplicateEmployees: string[] = [];
@@ -210,7 +210,7 @@ export const Configuracoes: React.FC<ConfiguracoesProps> = ({ user }) => {
         system: 'ADJPA-ERP-v5',
         version: '5.2.0',
         metadata: {
-          unitId: user.unitId,
+          idUnidade: user.idUnidade,
           timestamp: Date.now(),
           exportedBy: user.name,
           userEmail: '***REDACTED***' // Ocultar email no backup

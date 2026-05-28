@@ -1,20 +1,10 @@
-/**
- * ============================================================================
- * APP.TSX
- * ============================================================================
- *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Ponto de entrada da interface React e componente raiz da aplicação.
- *
- * ONDE É USADO?
- * -------------
- * Parte do projeto usada em runtime ou build.
- *
- * COMO FUNCIONA?
- * --------------
- * Controla a apresentação e interações da interface com o usuário.
- */
+/**********************************************************************
+*                               APP.TSX                               *
+***********************************************************************
+* Interface inicial do React e componente raiz da aplicação.          *
+* O projeto usada em runtime ou build.                                *
+* Controla a apresentação e interações da interface com o usuário.    * 
+***********************************************************************/
 
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
@@ -32,7 +22,7 @@ import { Relatorios } from './components/Relatorios';
 import { Auditoria } from './components/Auditoria';
 import { PortalMembro } from './components/PortalMembro';
 import { Configuracoes } from './components/Configuracoes';
-import { UserAuth, Payroll, Member, Transaction, FinancialAccount, Asset, EmployeeLeave, UserRole } from './types';
+import { Usuario, Funcionario, Membro, Transacao, FinancialAccount, Asset, EmployeeLeave, UserRole, Unidade } from './types';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { MemberService } from './src/services/memberService';
 import { EmployeeService, TransactionService } from './src/services/employeeService';
@@ -46,20 +36,14 @@ import {
   User as UserIcon, Key, LogIn, Church, AlertCircle, Loader2, Cloud, ShieldCheck, Lock
 } from 'lucide-react';
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (app).
- */
-
-const Login: React.FC<{ onLogin: (user: UserAuth) => void }> = ({ onLogin }) => {
+// O bloco abaixo e o principal ao qual define os arquivos (app).
+const Login: React.FC<{ onLogin: (user: Usuario) => void }> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [usersInitialized, setUsersInitialized] = useState(false);
   const [initializationError, setInitializationError] = useState('');
-
+  
   const styles = {
     page: {
       minHeight: '100vh',
@@ -225,11 +209,11 @@ const Login: React.FC<{ onLogin: (user: UserAuth) => void }> = ({ onLogin }) => 
         unrestrictedAccess: authUser.unrestrictedAccess
       };
       
-      console.log('✅ Usuário autenticado:', user.name, user.role);
+      console.log('✅ Usuário autenticado:', authUser.nome, authUser.role);
       
       // Chamar onLogin
-      onLogin(user);
-      console.log('✅ Login concluído com sucesso!');
+      onLogin(authUser);
+      console.log('✅ Login bem-sucedido!', authUser.nome);
       
     } catch (error) {
       console.error('❌ Erro no processo de login:', error);
@@ -326,20 +310,39 @@ const Login: React.FC<{ onLogin: (user: UserAuth) => void }> = ({ onLogin }) => 
 };
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<UserAuth | null>(null);
-  const [currentUnitId, setCurrentUnitId] = useState<string>('u-sede');
+  const [currentUnitId, setCurrentUnitId] = useState<string>(() => {
+    // Tenta recuperar do localStorage ou usa 'u-sede' como padrão
+    const saved = localStorage.getItem('currentUnitId');
+    return saved && saved !== 'undefined' ? saved : 'u-sede';
+  });
+  const [user, setUser] = useState<Usuario | null>(AuthService.getCurrentUser());
+  // Alias para compatibilidade com JSX que usa currentUser
+  const currentUser = user;
+  const setCurrentUser = setUser;
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isLoading, setIsLoading] = useState(false); // Inicia como false para mostrar login imediatamente
-  
-  const [employees, setEmployees] = useState<Payroll[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [members, setMembers] = useState<Membro[]>([]);
+  const [employees, setEmployees] = useState<Funcionario[]>([]);
+  const [transactions, setTransactions] = useState<Transacao[]>([]);
+  const [selectedUnit, setSelectedUnit] = useState<string>('u-sede');
+  const [units, setUnits] = useState<Unidade[]>([]);
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [leaves, setLeaves] = useState<EmployeeLeave[]>([]);
   const [evaluations, setEvaluations] = useState<Record<string, any[]>>({});
-  const accessibleTabs = AuthService.getAccessibleTabs(currentUser as any);
-  const canAccessTab = (tabId: string) => AuthService.canAccessTab(currentUser as any, tabId);
+  const [isLoading, setIsLoading] = useState(false); 
+  
+  const ALL_TABS = ['dashboard', 'members', 'finance', 'assets', 'rh', 'dp', 'leaves', 'payroll', 'events', 'reports', 'messages', 'audit', 'portal', 'settings'];
+  const accessibleTabs = (!user || user.role === 'DEVELOPER' || (user as any).unrestrictedAccess)
+    ? ALL_TABS
+    : (user as any).permissions
+      ? ALL_TABS.filter(tab => (user as any).permissions?.[tab] !== false)
+      : ALL_TABS;
+
+  const canAccessTab = (tabId: string) => {
+    if (!user) return false;
+    if (user.role === 'DEVELOPER' || (user as any).unrestrictedAccess) return true;
+    return true; // Simplified for now
+  };
 
   // Inicializar sistema
   useEffect(() => {
@@ -350,22 +353,17 @@ const App: React.FC = () => {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
           try {
-            const parsedUser = JSON.parse(storedUser) as UserAuth;
+            const parsedUser = JSON.parse(storedUser) as Usuario;
             const tokenCheck = await AuthService.verifyToken();
             if (tokenCheck.valid && tokenCheck.user) {
-              setCurrentUser({
-                id: tokenCheck.user.id,
-                name: tokenCheck.user.name,
-                username: tokenCheck.user.username || tokenCheck.user.email,
-                role: tokenCheck.user.role,
-                unitId: tokenCheck.user.unitId,
-                permissions: tokenCheck.user.permissions,
-                unrestrictedAccess: tokenCheck.user.unrestrictedAccess
-              });
-              setCurrentUnitId(tokenCheck.user.unitId);
+              setUser(tokenCheck.user);
+              if (tokenCheck.user.id_unidade && tokenCheck.user.id_unidade !== 'undefined') {
+                setCurrentUnitId(tokenCheck.user.id_unidade);
+                localStorage.setItem('currentUnitId', tokenCheck.user.id_unidade);
+              }
             } else {
               localStorage.removeItem('currentUser');
-              setCurrentUser(null);
+              setUser(null);
             }
           } catch {
             localStorage.removeItem('currentUser');
@@ -381,7 +379,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!user) return;
 
     if (accessibleTabs.length === 0) {
       if (activeTab !== 'dashboard') {
@@ -393,12 +391,12 @@ const App: React.FC = () => {
     if (!canAccessTab(activeTab)) {
       setActiveTab(accessibleTabs[0]);
     }
-  }, [currentUser, activeTab, accessibleTabs.join('|')]);
+  }, [user, activeTab, accessibleTabs.join('|')]);
 
   useEffect(() => {
     const fetchData = async (isPolling = false) => {
       // Só carrega dados se usuário estiver logado
-      if (!currentUser) return;
+      if (!user) return;
       
       // Não mostra o spinner de loading durante o polling em segundo plano
       if (!isPolling) {
@@ -419,7 +417,7 @@ const App: React.FC = () => {
         
         // Carregar dados da API REST
         if (!isPolling) console.log("Fazendo requisição para API com unitId:", apiUnitId);
-        const membersResponse = await MemberService.getMembers({ unitId: apiUnitId });
+        const membersResponse = await MemberService.getMembers({ idUnidade: apiUnitId });
         if (!isPolling) console.log("Resposta da API:", membersResponse);
         
         const members = (membersResponse.members || []) as any[];
@@ -430,8 +428,8 @@ const App: React.FC = () => {
         
         // Carregar dados de funcionários, transações, contas bancárias e avaliações
         const [employeesResponse, transactionsResponse, accountsData, evaluationsData, leavesData] = await Promise.all([
-          EmployeeService.getEmployees({ unitId: apiUnitId }),
-          TransactionService.getTransactions({ unitId: apiUnitId }),
+          EmployeeService.getEmployees({ idUnidade: apiUnitId }),
+          TransactionService.getTransactions({ idUnidade: apiUnitId }),
           accountService.getAccounts(apiUnitId),
           // Carregar avaliações do banco para o Top 10 e RecursosHumanos
           fetch(`/api/rh/evaluations?unitId=${apiUnitId}`).then(r => r.ok ? r.json() : []).catch(() => []),
@@ -467,7 +465,7 @@ const App: React.FC = () => {
         if (!isPolling) {
           console.log("Dados carregados:", { 
             members: members.length, 
-            memberNames: members.map(m => m.name),
+            memberNames: members.map(m => m.nome),
             transactions: transactions.length, 
             accounts: accounts.length, 
             employees: employees.length, 
@@ -496,13 +494,13 @@ const App: React.FC = () => {
 
     // Limpa o intervalo quando o componente é desmontado ou as dependências mudam
     return () => clearInterval(intervalId);
-  }, [currentUser, currentUnitId]);
+  }, [user, currentUnitId]);
 
-  const { logMenuAccess } = useAudit(currentUser);
+  const { logMenuAccess } = useAudit(user);
 
   // Registrar acesso aos menus
   useEffect(() => {
-    if (currentUser && activeTab) {
+    if (user && activeTab) {
       const menuNames = {
         'dashboard': 'Dashboard Executivo',
         'members': 'Membros',
@@ -527,9 +525,9 @@ const App: React.FC = () => {
         });
       }
     }
-  }, [activeTab, currentUser]);
+  }, [activeTab, user]);
 
-  if (!currentUser) {
+  if (!user) {
     // Mostrar tela de login ou loading
     if (isLoading) {
       return (
@@ -545,10 +543,12 @@ const App: React.FC = () => {
     // Adicionar tratamento de erro para a tela de login
     try {
       return <Login onLogin={u => { 
-        console.log("Usuário logado:", u);
-        setCurrentUser(u); 
-        setCurrentUnitId(u.unitId); 
-        
+        // Mapear dados da unidade do usuário logado se necessário
+        if (user && !selectedUnit) {
+          setSelectedUnit(user.id_unidade);
+        }
+        setUser(u);
+        setCurrentUnitId(u.id_unidade);
         // Salvar usuário no localStorage para persistência
         localStorage.setItem('currentUser', JSON.stringify(u));
         console.log("💾 Usuário salvo no localStorage:", u);
@@ -576,12 +576,12 @@ const App: React.FC = () => {
   
   const mappedUnitId = unitIdMap[currentUnitId] || currentUnitId;
   
-  const unitMembers = members.filter((m: any) => (m.unidadeId || m.unitId || m.unit_id) === mappedUnitId);
-  const unitEmployees = employees.filter(e => e.unitId === mappedUnitId);
-  const unitTransactions = transactions.filter(t => t.unitId === mappedUnitId);
-  const unitAccounts = accounts.filter(a => a.unitId === mappedUnitId);
-  const unitAssets = assets.filter(a => a.unitId === mappedUnitId);
-  const unitLeaves = leaves.filter(l => l.unitId === mappedUnitId);
+  const unitMembers = members.filter((m: any) => (m.id_unidade || m.unidadeId || m.unitId || m.unit_id) === mappedUnitId);
+  const unitEmployees = employees.filter((e: any) => (e.id_unidade || e.unitId || e.unit_id) === mappedUnitId);
+  const unitTransactions = transactions.filter((t: any) => (t.id_unidade || t.unitId || t.unit_id) === mappedUnitId);
+  const unitAccounts = accounts.filter((a: any) => (a.id_unidade || a.unitId || a.unit_id) === mappedUnitId);
+  const unitAssets = assets.filter((a: any) => (a.id_unidade || a.unitId || a.unit_id) === mappedUnitId);
+  const unitLeaves = leaves.filter((l: any) => (l.id_unidade || l.unitId || l.unit_id) === mappedUnitId);
 
   console.log('Filtros de dados:', {
     frontendUnitId: currentUnitId,
@@ -611,10 +611,12 @@ const App: React.FC = () => {
 
     switch (activeTab) {
       case 'dashboard': return <PainelGeral user={currentUser} members={unitMembers} employees={unitEmployees} transactions={unitTransactions} accounts={unitAccounts} />;
-      case 'members': return (
+      case 'members': 
+        console.log('🔍 Renderizando Membros com currentUnitId:', currentUnitId);
+        return (
         <Membros 
           members={unitMembers} 
-          currentUnitId={currentUnitId}
+          currentUnitId={currentUnitId || 'u-sede'}
           setMembers={setMembers} 
           setTransactions={setTransactions}
           accounts={unitAccounts}

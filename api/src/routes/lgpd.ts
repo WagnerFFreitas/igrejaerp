@@ -28,8 +28,12 @@ import { LGPDController } from '../controllers/lgpdController';
 
 const router = Router();
 
-router.get('/policy', LGPDController.getCurrentPolicy);
-router.get('/consents/:memberId', LGPDController.getMemberConsents);
-router.post('/consent', LGPDController.saveConsent);
+// Políticas LGPD
+router.get('/politicas', LGPDController.getCurrentPolicy);
+router.post('/politicas', LGPDController.savePolicy);
+
+// Consentimentos LGPD
+router.get('/consentimentos/:memberId', LGPDController.getMemberConsents);
+router.post('/consentimentos', LGPDController.saveConsent);
 
 export default router;

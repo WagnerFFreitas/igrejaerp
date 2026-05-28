@@ -19,11 +19,11 @@
 
 import React, { useState } from 'react';
 import { BarChart3, Download, FileSpreadsheet, DollarSign, Users, Briefcase, Share2, CheckCircle2, Loader2, FileJson, Printer, Calculator, TrendingUp, FileText } from 'lucide-react';
-import { Transaction, Member, SocialChargesReport, Payroll } from '../types';
+import { Transacao, Membro, SocialChargesReport, Payroll } from '../types';
 
 interface RelatoriosProps {
-  transactions: Transaction[];
-  members: Member[];
+  transactions: Transacao[];
+  members: Membro[];
   employees?: Payroll[];
 }
 
@@ -55,10 +55,10 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
 
     // Calcular totais
     const totals = transactions.reduce((acc, curr) => {
-      if (curr.status === 'PAID') {
-        if (curr.type === 'INCOME') acc.income += curr.amount;
-        else acc.expense += curr.amount;
-      } else if (curr.status === 'PENDING') acc.payable += curr.amount;
+      if (curr.situacao === 'REALIZADO') {
+        if (curr.tipo === 'ENTRADA') acc.income += curr.valor;
+        else acc.expense += curr.valor;
+      } else if (curr.situacao === 'PENDENTE') acc.payable += curr.valor;
       return acc;
     }, { income: 0, expense: 0, payable: 0 });
 
@@ -66,10 +66,10 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
 
     // Agrupar por categoria
     const byCategory = transactions.reduce((acc, t) => {
-      const cat = t.category || 'OUTROS';
+      const cat = t.categoria || 'OUTROS';
       if (!acc[cat]) acc[cat] = { income: 0, expense: 0, count: 0 };
-      if (t.type === 'INCOME') acc[cat].income += t.amount;
-      else acc[cat].expense += t.amount;
+      if (t.tipo === 'ENTRADA') acc[cat].income += t.valor;
+      else acc[cat].expense += t.valor;
       acc[cat].count += 1;
       return acc;
     }, {} as Record<string, { income: number; expense: number; count: number }>);
@@ -149,8 +149,8 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
             <div style="padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px">
               ${section('Estatísticas')}
               ${field('Total de Categorias', String(Object.keys(byCategory).length))}
-              ${field('Maior Receita', totals.income > 0 ? fmtCurrency(Math.max(...transactions.filter(t => t.type === 'INCOME').map(t => t.amount))) : '—')}
-              ${field('Maior Despesa', totals.expense > 0 ? fmtCurrency(Math.max(...transactions.filter(t => t.type === 'EXPENSE').map(t => t.amount))) : '—')}
+              ${field('Maior Receita', totals.income > 0 ? fmtCurrency(Math.max(...transactions.filter(t => t.tipo === 'ENTRADA').map(t => t.valor))) : '—')}
+              ${field('Maior Despesa', totals.expense > 0 ? fmtCurrency(Math.max(...transactions.filter(t => t.tipo === 'SAIDA').map(t => t.valor))) : '—')}
             </div>
           </div>
 
@@ -164,12 +164,12 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
               <tbody>
                 ${transactions.slice(0, 12).map(t => `
                   ${tableRow([
-                    fmtDate(t.date),
-                    (t.description || '—').substring(0, 25) + (t.description && t.description.length > 25 ? '...' : ''),
-                    (t.category || 'OUTROS').substring(0, 8),
-                    t.type === 'INCOME' ? 'R' : 'D',
-                    fmtCurrency(t.amount),
-                    t.status === 'PAID' ? 'L' : 'A'
+                    fmtDate(t.data_transacao),
+                    (t.descricao || '—').substring(0, 25) + (t.descricao && t.descricao.length > 25 ? '...' : ''),
+                    (t.categoria || 'OUTROS').substring(0, 8),
+                    t.tipo === 'ENTRADA' ? 'R' : 'D',
+                    fmtCurrency(t.valor),
+                    t.situacao === 'REALIZADO' ? 'L' : 'A'
                   ])}
                 `).join('')}
               </tbody>
@@ -238,10 +238,10 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
   // Funções específicas para cada tipo de relatório
   const generateMonthlyBalance = () => {
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const monthlyTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
+    const monthlyTransactions = transactions.filter(t => t.data_transacao.startsWith(currentMonth));
     
-    const income = monthlyTransactions.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + t.amount, 0);
-    const expense = monthlyTransactions.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0);
+    const income = monthlyTransactions.filter(t => t.tipo === 'ENTRADA').reduce((sum, t) => sum + t.valor, 0);
+    const expense = monthlyTransactions.filter(t => t.tipo === 'SAIDA').reduce((sum, t) => sum + t.valor, 0);
     
     return {
       title: 'Balancete Mensal',
@@ -256,20 +256,20 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
 
   const generateTithingReport = () => {
     const tithingTransactions = transactions.filter(t => 
-      t.category === 'Dizimo' || t.category.includes('Dizimo')
+      t.categoria === 'Dizimo' || t.categoria.includes('Dizimo')
     );
     
     const monthlyTithing = tithingTransactions.reduce((acc, t) => {
-      const month = t.date.slice(0, 7);
+      const month = t.data_transacao.slice(0, 7);
       if (!acc[month]) acc[month] = { amount: 0, count: 0 };
-      acc[month].amount += t.amount;
+      acc[month].amount += t.valor;
       acc[month].count += 1;
       return acc;
     }, {} as Record<string, { amount: number; count: number }>);
 
     return {
       title: 'Relatório de Dízimos',
-      totalTithing: tithingTransactions.reduce((sum, t) => sum + t.amount, 0),
+      totalTithing: tithingTransactions.reduce((sum, t) => sum + t.valor, 0),
       totalDonors: tithingTransactions.length,
       monthlyBreakdown: monthlyTithing,
       transactions: tithingTransactions
@@ -277,12 +277,12 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
   };
 
   const generateTalentBoard = () => {
-    const activeMembers = members.filter(m => m.status === 'ACTIVE');
+    const activeMembers = members.filter(m => m.situacao === 'Ativo' || m.situacao === 'ACTIVE');
     const memberSkills = activeMembers.map(m => ({
-      name: m.name,
-      skills: m.mainMinistry || 'Não definido',
-      position: m.ecclesiasticalPosition || 'Membro',
-      memberSince: m.membershipDate
+      name: m.nome,
+      skills: (m as any).mainMinistry || 'Não definido',
+      position: (m as any).ecclesiasticalPosition || 'Membro',
+      memberSince: m.data_ingresso || m.data_criacao
     }));
 
     return {
@@ -333,12 +333,12 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
 
   const generateMemberMonthlyBalance = () => {
     const memberContributions = transactions.filter(t => 
-      t.memberId || t.category.includes('Membro') || t.category.includes('Contribuição')
+      t.id_membro || t.categoria.includes('Membro') || t.categoria.includes('Contribuição')
     );
     
     return {
       title: 'Balancete Mensal de Membros',
-      totalContributions: memberContributions.reduce((sum, t) => sum + t.amount, 0),
+      totalContributions: memberContributions.reduce((sum, t) => sum + t.valor, 0),
       contributorsCount: memberContributions.length,
       transactions: memberContributions
     };
@@ -346,13 +346,13 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
 
   const generateMemberTithingReport = () => {
     const memberTithing = transactions.filter(t => 
-      (t.memberId || t.category.includes('Membro')) && 
-      (t.category === 'Dizimo' || t.category.includes('Dizimo'))
+      (t.id_membro || t.categoria.includes('Membro')) && 
+      (t.categoria === 'Dizimo' || t.categoria.includes('Dizimo'))
     );
 
     return {
       title: 'Dízimos por Período - Membros',
-      totalTithing: memberTithing.reduce((sum, t) => sum + t.amount, 0),
+      totalTithing: memberTithing.reduce((sum, t) => sum + t.valor, 0),
       totalMembers: memberTithing.length,
       transactions: memberTithing
     };

@@ -26,18 +26,15 @@
 
 export type UserRole = 'ADMIN' | 'SECRETARY' | 'TREASURER' | 'PASTOR' | 'RH' | 'DP' | 'FINANCEIRO' | 'DEVELOPER';
 
-export interface UserAuth {
-  id: string;
-  nome?: string;
-  name: string;
-  nomeUsuario?: string;
+export interface Usuario {
+  id_usuario: string;
+  id_pessoa: string;
+  nome: string;
   username: string;
   email?: string;
-  perfil?: UserRole;
   role: UserRole;
   avatar?: string;
-  unidadeId?: string;
-  unitId: string;
+  id_unidade: string;
   permissions?: Array<{
     moduleCode: string;
     canRead: boolean;
@@ -45,28 +42,23 @@ export interface UserAuth {
     canDelete: boolean;
     canManage: boolean;
   }>;
-  acessoIrrestrito?: boolean;
   unrestrictedAccess?: boolean;
 }
 
-export interface Unit {
-  id: string;
-  nome?: string;
-  name?: string;
+export interface Unidade {
+  id_unidade: string;
+  nome: string;
   cnpj: string;
   endereco?: string;
-  address?: string;
-  enderecoLinha1?: string;
-  enderecoLinha2?: string;
   cidade?: string;
-  city?: string;
   estado?: string;
-  state?: string;
   email?: string;
   telefone?: string;
-  phone?: string;
-  sede?: boolean;
-  isHeadquarter?: boolean;
+  cep?: string;
+  numero?: string;
+  bairro?: string;
+  situacao?: string;
+  data_criacao?: string;
 }
 
 export interface PayrollPeriod {
@@ -79,9 +71,9 @@ export interface PayrollPeriod {
   status?: 'OPEN' | 'CLOSED' | 'PROCESSING';
   dataInicio?: string;
   startDate?: string;
-  dataFim?: string;
+  dataFinal?: string;
   endDate?: string;
-  processadoEm?: string;
+  processado?: string;
   fechadoEm?: string;
   totalFuncionarios?: number;
   totalEmployees?: number;
@@ -93,17 +85,15 @@ export interface PayrollPeriod {
   totalFGTS?: number;
   totalIrrf?: number;
   totalIRRF?: number;
-  unidadeId?: string;
   unitId?: string;
+  idUnidade?: string;
   criadoPor?: string;
   createdBy?: string;
   observacoes?: string;
 }
 
 export interface Asset {
-  id: string;
-  unidadeId: string;                    // Unidade responsável
-  unitId?: string;
+  unitId: string;                    // Unidade responsável
   categoria: AssetType;               // Categoria do bem
   category?: AssetType;
   nome: string;                      // Nome descritivo
@@ -162,8 +152,8 @@ export interface Asset {
     state?: string;
     country?: string;
   };
-  criadoEm: string;
-  atualizadoEm: string;
+  criado: string;
+  atualizado: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -172,9 +162,8 @@ export type LeaveType = 'VACATION' | 'MEDICAL' | 'MATERNITY' | 'PATERNITY' | 'MI
 
 export interface EmployeeLeave {
   id: string;
-  unidadeId?: string;
   unitId?: string;
-  funcionarioId?: string;
+  id_funcionario?: string;
   employeeId?: string;
   nomeFuncionario?: string;
   employeeName?: string;
@@ -182,7 +171,7 @@ export interface EmployeeLeave {
   type?: LeaveType;
   dataInicio?: string;
   startDate?: string;
-  dataFim?: string;
+  dataFinal?: string;
   endDate?: string;
   cid10?: string;
   doctorName?: string;
@@ -212,92 +201,56 @@ export interface Dependent {
   cpf?: string;
 }
 
-// Added missing FinancialAccount interface
-export interface FinancialAccount {
-  id: string;
-  unidadeId: string;
-  unitId?: string;
+export interface ContaBancaria {
+  id_conta: string;
+  id_unidade: string;
   nome: string;
-  name?: string;
   tipo: 'CASH' | 'BANK' | 'SAVINGS' | 'INVESTMENT';
-  type?: 'CASH' | 'BANK' | 'SAVINGS' | 'INVESTMENT';
-  saldoAtual: number;
-  currentBalance?: number;
-  saldoMinimo?: number;
-  minimumBalance?: number;
-  situacao: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
-  status?: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
-  codigoBanco?: string;
-  bankCode?: string;
-  numeroAgencia?: string;
-  agencyNumber?: string;
-  numeroConta?: string;
-  accountNumber?: string;
-  createdAt?: string;        // Data de criação
-  updatedAt?: string;        // Data de atualização
+  saldo_atual: number;
+  saldo_minimo?: number;
+  situacao: 'ATIVO' | 'INATIVO' | 'BLOQUEADO';
+  codigo_banco?: string;
+  nome_banco?: string;
+  numero_agencia?: string;
+  numero_conta?: string;
+  data_criacao?: string;
+  data_atualizacao?: string;
 }
 
-// Added missing Transaction interface
-export interface Transaction {
-  id: string;
-  unidadeId?: string;
-  unitId?: string;
-  descricao?: string;
-  description?: string;
-  valor?: number;
-  amount?: number;
-  data?: string;
-  date?: string;
-  dataCompetencia?: string;
-  competencyDate?: string;
-  tipo?: 'INCOME' | 'EXPENSE';
-  type?: 'INCOME' | 'EXPENSE';
-  categoria?: string;
-  category?: string;
-  centroCusto?: string;
-  costCenter?: string;
-  contaId?: string;
-  accountId?: string;
-  membroId?: string;
-  memberId?: string;
-  situacao?: 'PAID' | 'PENDING';
-  status?: 'PAID' | 'PENDING';
+/** @deprecated Use ContaBancaria instead */
+export type FinancialAccount = ContaBancaria;
+
+export interface Transacao {
+  id_transacao: string;
+  id_unidade: string;
+  tipo: 'ENTRADA' | 'SAIDA';
+  categoria: string;
+  descricao: string;
+  valor: number;
+  data_transacao: string;
+  data_competencia?: string;
+  data_vencimento?: string;
+  situacao: 'PENDENTE' | 'REALIZADO' | 'CANCELADO';
+  forma_pagamento?: string;
+  id_pessoa?: string;
+  id_membro?: string;
+  id_conta?: string;
+  id_centro_custo?: string;
+  id_projeto?: string;
+  natureza_operacao?: string;
+  nome_fornecedor?: string;
+  valor_pago?: number;
+  valor_restante?: number;
+  parcelado?: boolean;
+  total_parcelas?: number;
+  numero_parcela?: number;
+  id_transacao_origem?: string;
   conciliado?: boolean;
-  isConciliated?: boolean;
-  naturezaOperacao?: string;
-  operationNature?: string;
-  projetoId?: string;
-  projectId?: string;
-  createdAt?: string;
-  formaPagamento?: 'PIX' | 'CASH' | 'CREDIT_CARD' | 'TRANSFER'; // Adicionado TRANSFER
-  paymentMethod?: 'PIX' | 'CASH' | 'CREDIT_CARD' | 'TRANSFER';
-  nomeFornecedor?: string;
-  providerName?: string;
-  
-  // NOVOS CAMPOS PARA CONTAS A PAGAR/RECEBER
-  dataVencimento?: string;              // Data de vencimento
-  dueDate?: string;
-  valorPago?: number;           // Quanto já foi pago (para baixa parcial)
-  paidAmount?: number;
-  valorRestante?: number;      // Saldo restante a pagar
-  remainingAmount?: number;
-  
-  // NOVOS CAMPOS PARA PARCELAMENTO
-  ehParcelado?: boolean;       // Se é parcela
-  isInstallment?: boolean;
-  numeroParcela?: number;    // Número da parcela (1, 2, 3...)
-  installmentNumber?: number;
-  totalParcelas?: number;    // Total de parcelas (ex: 12)
-  totalInstallments?: number;
-  installmentCount?: number;
-  paiId?: string;             // ID da transação pai (vincula parcelas)
-  parentId?: string;
-  contagemParcelas?: number;     // Quantidade de parcelas ao criar (campo temporário)
-  
-  // NOVOS CAMPOS PARA CONCILIAÇÃO
-  conciliationDate?: string;     // Data da conciliação bancária
-  notes?: string;                // Observações adicionais
-  externalId?: string;           // ID externo (banco/OFX) para conciliação
+  data_conciliacao?: string;
+  observacoes?: string;
+  id_externo?: string;
+  data_criacao?: string;
+  data_atualizacao?: string;
 }
 
 // ============================================================================
@@ -314,35 +267,26 @@ export type EmploymentRegime = 'CLT' | 'PRO_LABORE' | 'ESTAGIO' | 'AUTONOMO';
  * FUNCIONÁRIO / PASTOR / COLABORADOR
  * ===================================
  */
-export interface Employee {
-  id: string;
-  unidadeId?: string;
-  unitId?: string;
-  nome?: string;
-  name?: string;
-  employeeName?: string;
-  cpf: string;
-  rg?: string;
-  pis: string;
-  matricula: string;
-  cargo: string;
-  departamento: string;
-  department?: string;
-  regime: EmploymentRegime;
-  dataAdmissao?: string;
-  admissionDate?: string;
-  salarioBase?: number;              // Salário base
+export interface Funcionario {
+  id_funcionario: string;
+  id_pessoa?: string;
+  id_unidade?: string;
+  nome: string;
+  email?: string;
+  telefone?: string;
+  cargo?: string;
+  departamento?: string;
   salary?: number;
   salario_base?: number;
   cargaHorariaSemanal?: number;           // Carga horária semanal (ex: 40)
   workHours?: number;
-  dependents: Dependent[];
+  dependents?: Dependent[];
   bankAccount?: {
-    bank: string;
-    agency: string;
-    account: string;
+    bank?: string;
+    agency?: string;
+    account?: string;
   };
-  active: boolean;
+  active?: boolean;
   status?: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
   terminationDate?: string;
   observations?: string;
@@ -366,7 +310,7 @@ export interface Employee {
  * ==============================
  */
 export interface PayrollCalculation {
-  employeeId: string;
+  id_funcionario: string;
   competencyMonth: string;     // Mês de competência (YYYY-MM)
   grossSalary: number;         // Salário bruto
   overtimeHours?: number;
@@ -485,7 +429,7 @@ export interface SocialChargesReport {
   
   // DETALHES POR FUNCIONÁRIO
   employeeDetails: Array<{
-    employeeId: string;
+    id_funcionario: string;
     employeeName: string;
     employeeCpf: string;
     grossSalary: number;
@@ -581,7 +525,6 @@ export interface PayrollInput {
 // Added missing ChurchEvent interface
 export interface ChurchEvent {
   id: string;
-  unidadeId?: string;
   unitId?: string;
   titulo?: string;
   title?: string;
@@ -1024,7 +967,7 @@ export interface ESocialError {
 // ========================
 */
 export interface ESocialWorker {
-  employeeId: string;
+  id_funcionario: string;
   cpf: string;
   nis: string;               // NIT/PIS/PASEP
   name: string;
@@ -1065,360 +1008,112 @@ export interface ESocialWorker {
   };
 }
 
-export interface Member {
-  id: string;
-  unidadeId: string;
+export interface Membro {
+  id_membro: string;
+  id_pessoa?: string;
+  id_unidade?: string;
   matricula: string;
   nome: string;
-  name?: string;
   cpf: string;
   rg: string;
   email: string;
   telefone: string;
-  phone?: string;
+  celular?: string;
   whatsapp?: string;
-  profissao?: string;
-  profession?: string;
-  funcao: 'MEMBER' | 'VISITOR' | 'VOLUNTEER' | 'STAFF' | 'LEADER';
-  status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
-  
-  // Filiação
-  nomePai?: string;
-  nomeMae?: string;
-
-  // Emergência e Saúde
-  tipoSanguineo?: string;
-  contatoEmergencia?: string;
+  data_nascimento: string;
+  sexo: 'M' | 'F' | 'OTHER';
+  estado_civil: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
   
   // Vida Cristã
-  dataConversao?: string;
-  localConversao?: string;
-  dataBatismo?: string;
-  igrejaBatismo?: string;
-  pastorBatizador?: string;
-  batismoEspiritoSanto?: boolean | string;
+  data_conversao?: string;
+  local_conversao?: string;
+  data_batismo?: string;
+  igreja_batismo?: string;
+  pastor_batizador?: string;
+  batismo_espirito_santo?: string;
+  data_ingresso?: string;
+  igreja_origem?: string;
+  curso_discipulado?: string;
+  escola_biblica?: string;
   
-  // Formação e Status
-  dataMembresia?: string;
-  dataMembro?: string;
-  igrejaOrigem?: string;
-  cursoDiscipulado?: 'NAO_INICIADO' | 'EM_ANDAMENTO' | 'CONCLUIDO';
-  escolaBiblica?: 'ATIVO' | 'INATIVO' | 'NAO_FREQUENTA';
+  // Ministérios
+  ministerio_principal?: string;
+  funcao_ministerio?: string;
+  outros_ministerios?: string[];
+  cargo_eclesiastico?: string;
+  data_consagracao?: string;
   
-  // Ministérios e Cargos
-  ministerioPrincipal?: string;
-  mainMinistry?: string;
-  funcaoMinisterio?: string;
-  outrosMinisterios?: string[];
-  cargoEclesiastico?: string;
-  ecclesiasticalPosition?: string;
-  dataConsagracao?: string;
-
-  // Financeiro Individual
-  ehDizimista: boolean;
-  ehOfertanteRegular: boolean;
-  participaCampanhas: boolean;
-  contribuicoes: MemberContribution[];
+  situacao: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+  funcao: 'MEMBER' | 'LEADER' | 'PASTOR' | 'VISITOR';
+  dizimista: boolean;
+  ofertante: boolean;
+  eh_ofertante_regular?: boolean;
+  participa_campanhas?: boolean;
+  contribuicoes?: MemberContribution[];
   
-  // Dados de RH / Pagamento
+  // Financeiro
   banco?: string;
-  agenciaBancaria?: string;
-  contaBancaria?: string;
-  chavePix?: string;
+  agencia_bancaria?: string;
+  conta_bancaria?: string;
+  chave_pix?: string;
+  
+  // Família
+  nome_pai?: string;
+  nome_mae?: string;
+  nome_conjuge?: string;
+  data_casamento?: string;
+  tipo_sanguineo?: string;
+  contato_emergencia?: string;
+  necessidades_especiais?: string;
+  id_familia?: string;
   dependentes?: Dependent[];
 
-  dataNascimento: string;
-  birthDate?: string;
-  sexo: 'M' | 'F' | 'OTHER';
-  gender?: 'M' | 'F' | 'OTHER';
-  estadoCivil: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
-  maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
-  talentos?: string;
-  celula?: string;
-  cellGroup?: string;
-  nomeConjuge?: string;
-  dataCasamento?: string;
-  role?: 'MEMBER' | 'VISITOR' | 'VOLUNTEER' | 'STAFF' | 'LEADER';
-  membershipDate?: string;
-  contributions?: MemberContribution[];
-  dependents?: Dependent[];
-  createdAt?: string;
-  version?: string;
-  profile_data?: any;
-  cep?: string;
-  
-  endereco: {
-    cep: string;
-    logradouro: string;
-    numero: string;
-    complemento?: string;
-    bairro: string;
-    cidade: string;
-    estado: string;
-  };
-  
-  observacoes?: string;
-  necessidadesEspeciais?: string;
-  tags?: string[];
-  familiaId?: string;
-  avatar: string;
-  donsEspirituais?: string;
-  ehPcd?: boolean;
-  tipoDeficiencia?: string;
-  
-  // LGPD - Consentimento de Tratamento de Dados
-  lgpdConsentimento?: {
-    dataProcessing: boolean;
-    communication: boolean;
-    marketing: boolean;
-    financial: boolean;
-    consentDate?: string;
-    policyVersion?: string;
-    documentUrl?: string;
-  };
-  lgpdConsent?: {
-    dataProcessing: boolean;
-    communication: boolean;
-    marketing: boolean;
-    financial: boolean;
-    consentDate?: string;
-    policyVersion?: string;
-    documentUrl?: string;
-  };
-}
-
-export interface Payroll {
-  id: string;
-  unitId: string;
-  membro_id?: string;
-  matricula: string;
-  employeeName: string;
-  nome?: string;
-  email?: string;
-  phone?: string;
-  cpf: string;
-  rg: string;
-  pis: string;
-  ctps: string;
-  titulo_eleitor?: string;
-  reservista?: string;
-  aso_data?: string;
-  blood_type?: string;
-  emergency_contact?: string;
-  cargo: string;
-  funcao: string;
-  departamento: string;
-  cbo: string;
-  data_admissao: string;
-  data_demissao?: string;
-  birthDate: string;
-  tipo_contrato: 'CLT' | 'PJ' | 'VOLUNTARIO' | 'TEMPORARIO';
-  jornada_trabalho: string;
-  regime_trabalho: 'PRESENCIAL' | 'HIBRIDO' | 'REMOTO';
-  salario_base: number;
-  tipo_salario: 'MENSAL' | 'HORISTA' | 'COMISSIONADO';
-  sindicato?: string;
-  convencao_coletiva?: string;
-  he50_qtd: number;
-  he100_qtd: number;
-  dsr_ativo: boolean;
-  adic_noturno_qtd: number;
-  insalubridade_grau: 'NONE' | 'MIN' | 'MED' | 'MAX';
-  periculosidade_ativo: boolean;
-  comissoes: number;
-  gratificacoes: number;
-  premios: number;
-  ats_percentual: number;
-  auxilio_moradia: number;
-  salario_familia: number;
-  arredondamento: number;
-  dependentes_qtd: number;
-  dependentes_lista?: Dependent[];
-  otherMinistries?: string[];
-  is_pcd: boolean;
-  tipo_deficiencia: string;
-  banco: string;
-  codigo_banco: string;
-  agencia: string;
-  conta: string;
-  tipo_conta: 'CORRENTE' | 'POUPANCA';
-  titular: string;
-  chave_pix: string;
-  vt_ativo: boolean;
-  vale_transporte_total: number;
-  va_ativo: boolean;
-  vale_alimentacao: number;
-  vr_ativo: boolean;
-  vale_refeicao: number;
-  cep?: string;
+  // Localização
+  endereco?: string;
   numero?: string;
+  complemento?: string;
   bairro?: string;
   cidade?: string;
   estado?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  ps_ativo: boolean;
-  plano_saude_colaborador: number;
-  po_ativo: boolean;
-  plano_saude_dependentes: number;
-  vale_farmacia: number;
-  seguro_vida: number;
-  faltas: number;
-  atrasos: number;
-  adiantamento: number;
-  pensao_alimenticia: number;
-  consignado: number;
-  outros_descontos: number;
-  coparticipacoes: number;
-  inss: number;
-  fgts_retido: number;
-  irrf: number;
-  fgts_patronal: number;
-  inss_patronal: number;
-  rat: number;
-  terceiros: number;
-  month: string;
-  year: string;
-  total_proventos: number;
-  total_descontos: number;
-  salario_liquido: number;
-  status: 'PAID' | 'PENDING' | 'ACTIVE' | 'INACTIVE';
-  cnh_numero?: string;
-  cnh_categoria?: string;
-  cnh_vencimento?: string;
-  // Novos campos adicionados
-  sexo?: string;
-  estado_civil?: string;
-  nacionalidade?: string;
-  naturalidade?: string;
-  escolaridade?: string;
-  raca_cor?: string;
-  nome_mae?: string;
-  nome_pai?: string;
-  email_pessoal?: string;
-  telefone?: string;
-  celular?: string;
-  deficiencia_obs?: string;
-  avatar?: string;                    // Avatar do funcionário
-  observacoes_saude?: string;         // Observações de saúde
-  bh_lancamentos?: any[];            // Lançamentos de banco de horas
-
-  ctps_serie?: string;
-  ctps_uf?: string;
-  ctps_data_emissao?: string;
-  pis_data_cadastro?: string;
-  rg_orgao_emissor?: string;
-  rg_data_emissao?: string;
-  titulo_eleitor_zona?: string;
-  titulo_eleitor_secao?: string;
-  reservista_numero?: string;
-  reservista_categoria?: string;
-  documentos_upload?: string;
-
-  data_termino_contrato?: string;
-  exame_admissional?: string;
-  centro_custo?: string;
-  local_trabalho?: string;
-  convencao_coletiva_ref?: string;
-  forma_pagamento?: string;
-  dia_pagamento?: string;
-  primeiro_emprego?: boolean;
-  optante_fgts?: boolean;
-
-  carga_horaria_semanal?: string;
-  escala_trabalho?: string;
-  horario_entrada?: string;
-  horario_saida?: string;
-  inicio_intervalo?: string;
-  fim_intervalo?: string;
-  duracao_intervalo?: string;
-  segunda_a_sexta?: string;
-  sabado?: string;
-  trabalha_feriados?: boolean;
-  tipo_registro_ponto?: string;
-  tolerancia_ponto?: string;
-  codigo_horario?: string;
-  utiliza_banco_horas?: boolean;
-  controla_intervalo?: boolean;
-  horas_extras_autorizadas?: boolean;
-
-  bh_credito_total?: string;
-  bh_debito_total?: string;
-  bh_saldo_atual?: string;
-  bh_periodo_apuracao?: string;
-  bh_data_inicio_acordo?: string;
-  bh_data_fim_acordo?: string;
-  bh_limite_saldo?: string;
-  bh_periodo_compensacao?: string;
-  bh_multiplicador_diurna?: string;
-  bh_multiplicador_noturna?: string;
-
-  banco_digito_agencia?: string;
-  banco_digito_conta?: string;
-  banco_tipo_chave_pix?: string;
-
-  vt_optante?: boolean;
-  vt_valor_diario?: number;
-  vt_qtd_vales_dia?: number;
-  vt_linhas_trajeto?: string;
-  va_valor_mensal?: number;
-  vr_valor_diario?: number;
-  vr_operadora?: string;
-  vr_desconto_percentual?: number;
-  ps_operadora?: string;
-  ps_tipo_plano?: string;
-  ps_desconto_percentual?: number;
-  ps_carteirinha?: string;
-  ps_inclui_dependentes?: boolean;
-  ps_dependentes_ativo?: boolean;  // Campo faltante adicionado
-  va_operadora?: string;          // Campo faltante adicionado
-  po_operadora?: string;
-  po_valor_mensal?: number;
-  po_desconto_percentual?: number;
-  po_carteirinha?: string;        // Campo faltante adicionado
-  plano_odontologico?: number;    // Campo faltante adicionado
-  auxilio_creche?: number;
-  auxilio_educacao?: number;
-  gympass_plano?: string;
-
-  esocial_categoria?: string;
-  esocial_matricula?: string;
-  esocial_natureza_atividade?: string;
-  esocial_tipo_regime_prev?: string;
-  esocial_tipo_regime_trab?: string;
-  esocial_indicativo_admissao?: string;
-  esocial_tipo_jornada?: string;
-  esocial_descricao_jornada?: string;
-  esocial_contrato_parcial?: boolean;
-  esocial_teletrabalho?: boolean;
-  esocial_clausula_asseguratoria?: boolean;
-  esocial_sucessao_trab?: boolean;
-  esocial_tipo_admissao?: string;
-  esocial_cnpj_anterior?: string;
-  esocial_matricula_anterior?: string;
-  esocial_data_admissao_origem?: string;
-
-  address: {
-    zipCode: string;
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    country?: string;               // Campo adicionado
-  };
+  cep?: string;
   
-  // LGPD - Consentimento de Tratamento de Dados
-  lgpdConsent?: {
-    dataProcessing: boolean;
-    communication: boolean;
-    marketing: boolean;
-    financial: boolean;
-    consentDate?: string;
-    policyVersion?: string;
-    documentUrl?: string;
-  };
+  // Outros
+  talentos?: string;
+  dons_espirituais?: string;
+  cell_group?: string;
+  profissao?: string;
+  escolaridade?: string;
+  is_pcd?: boolean;
+  tipo_deficiencia?: string;
+  tags?: string[];
+  email_pessoal?: string;
+  observacoes?: string;
+  data_criacao?: string;
+  data_atualizacao?: string;
+  ativo?: boolean;
+  avatar?: string;
+  
+  // LGPD (Opcional se for implementado separadamente)
+  lgpd_consent?: any;
+}
+
+export interface Funcionario {
+  id_funcionario: string;
+  id_pessoa?: string;
+  id_unidade?: string;
+  nome: string;
+  email?: string;
+  telefone?: string;
+  cargo?: string;
+  departamento?: string;
+  data_admissao?: string;
+  data_rescisao?: string;
+  salario?: number;
+  situacao?: string;
+  observacoes?: string;
+  data_criacao?: string;
+  data_atualizacao?: string;
+  ativo?: boolean;
 }
 
 // ============================================================================
@@ -1804,7 +1499,7 @@ export interface LGPDPolicy {
  */
 export interface PerformanceEvaluation {
   id: string;
-  employeeId: string;
+  id_funcionario: string;
   employeeName: string;
   evaluatorId: string;
   evaluatorName: string;
@@ -1970,7 +1665,7 @@ export interface EvaluationCycle {
 
 export interface DevelopmentPlan {
   id: string;
-  employeeId: string;
+  id_funcionario: string;
   employeeName: string;
   managerId: string;
   managerName: string;
@@ -2041,7 +1736,7 @@ export interface DevelopmentObjective {
 
 export interface SalaryHistory {
   id: string;
-  employeeId: string;
+  id_funcionario: string;
   employeeName: string;
   employeeCargo: string;
   employeeDepartamento: string;
@@ -2092,7 +1787,7 @@ export interface SalaryHistory {
 
 export interface SalaryAdjustmentRequest {
   id: string;
-  employeeId: string;
+  id_funcionario: string;
   employeeName: string;
   
   // Proposta de ajuste
@@ -2784,7 +2479,7 @@ export interface TreasuryAlert {
   titulo: string;
   descricao: string;
   gravidade: 'BAIXA' | 'MEDIA' | 'ALTA' | 'CRITICA';
-  contaId?: string;
+  idConta?: string;
   investimentoId?: string;
   emprestimoId?: string;
   valor?: number;

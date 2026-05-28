@@ -1,82 +1,52 @@
 /**
- * ============================================================================
- * ACCOUNTS.TS
- * ============================================================================
- *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Rotas de API para accounts.
- *
- * ONDE É USADO?
- * -------------
- * Usado pelo servidor backend para processar requisições.
- *
- * COMO FUNCIONA?
- * --------------
- * Executa lógica de backend e responde a chamadas externas.
+ * ACCOUNTS.TS — Alinhado ao schema PT-BR
+ * Tabela principal: contas_bancarias
+ * Tabela auxiliar:  contas_financeiras (saldo/tipo)
  */
 
 import { Router } from 'express';
 import Database from '../database';
 import { randomUUID } from 'crypto';
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (accounts).
- */
-
 const router = Router();
 const db = Database.getInstance();
 
-const UNIT_ALIASES: Record<string, string> = {
-  'u-sede':  '00000000-0000-0000-0000-000000000001',
-  'u-matriz':'00000000-0000-0000-0000-000000000001',
-};
-const normalizeAccountUnitId = (id: any) => (id && UNIT_ALIASES[id]) ? UNIT_ALIASES[id] : id;
-
-const mapAccountRow = (row: any) => ({
-  id: row.id,
-  unidadeId: row.unit_id,
-  nome: row.nome,
-  tipo: row.tipo,
-  saldoAtual: parseFloat(row.saldo_atual) || 0,
-  saldoMinimo: row.saldo_minimo != null ? parseFloat(row.saldo_minimo) : null,
-  situacao: row.situacao,
-  codigoBanco: row.codigo_banco,
-  numeroAgencia: row.numero_agencia,
-  numeroConta: row.numero_conta,
-  criadoEm: row.criado,
-  atualizadoEm: row.atualizado,
+const mapearConta = (row: any) => ({
+  id:           row.id,
+  idUnidade:    row.id_unidade,
+  nomeConta:    row.nome_conta,
+  tipoConta:    row.tipo_conta,
+  nomeBanco:    row.nome_banco,
+  agencia:      row.agencia,
+  numeroConta:  row.numero_conta,
+  moeda:        row.moeda || 'BRL',
+  estaAtivo:    row.esta_ativo ?? true,
+  // campos extras de contas_financeiras quando disponíveis
+  saldo:        row.saldo != null ? parseFloat(row.saldo) : null,
+  criadoEm:     row.criado_em,
+  atualizadoEm: row.atualizado_em,
 });
 
 // GET /accounts
 router.get('/', async (req, res) => {
   try {
-    const { unitId } = req.query;
-
+    const { idUnidade } = req.query;
     let query = `
-      SELECT
-        id, unit_id, nome, tipo,
-        saldo_atual, saldo_minimo, situacao,
-        codigo_banco, numero_agencia, numero_conta,
-        criado, atualizado
-      FROM financial_accounts
-      WHERE 1=1
+      SELECT cb.*, cf.saldo
+      FROM contas_bancarias cb
+      LEFT JOIN contas_financeiras cf ON cf.id_unidade = cb.id_unidade AND cf.nome = cb.nome_conta
+      WHERE cb.esta_ativo = true
     `;
     const params: any[] = [];
-    let paramIndex = 1;
 
-    if (unitId) {
-      query += ` AND unit_id = $${paramIndex++}`;
-      params.push(unitId);
+    if (idUnidade) {
+      query += ' AND cb.id_unidade = $1';
+      params.push(idUnidade);
     }
 
-    query += ` AND situacao != 'INACTIVE' ORDER BY nome ASC`;
-
+    query += ' ORDER BY cb.nome_conta ASC';
     const result = await db.query(query, params);
-    res.json(result.rows.map(mapAccountRow));
+    res.json(result.rows.map(mapearConta));
   } catch (error: any) {
     console.error('Erro ao buscar contas:', error);
     res.status(500).json({ error: { message: 'Erro interno', status: 500, details: error.message } });
@@ -86,19 +56,16 @@ router.get('/', async (req, res) => {
 // GET /accounts/:id
 router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
     const result = await db.query(
-      `SELECT id, unit_id, nome, tipo, saldo_atual, saldo_minimo, situacao,
-              codigo_banco, numero_agencia, numero_conta, criado, atualizado
-       FROM financial_accounts WHERE id = $1`,
-      [id]
+      `SELECT cb.*, cf.saldo
+       FROM contas_bancarias cb
+       LEFT JOIN contas_financeiras cf ON cf.id_unidade = cb.id_unidade AND cf.nome = cb.nome_conta
+       WHERE cb.id = $1`,
+      [req.params.id]
     );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: { message: 'Conta não encontrada', status: 404 } });
-    }
-    res.json(mapAccountRow(result.rows[0]));
+    if (!result.rows.length) return res.status(404).json({ error: { message: 'Conta não encontrada', status: 404 } });
+    res.json(mapearConta(result.rows[0]));
   } catch (error: any) {
-    console.error('Erro ao buscar conta:', error);
     res.status(500).json({ error: { message: 'Erro interno', status: 500, details: error.message } });
   }
 });
@@ -106,36 +73,31 @@ router.get('/:id', async (req, res) => {
 // POST /accounts
 router.post('/', async (req, res) => {
   try {
-    const body = req.body;
+    const b = req.body;
     const id = randomUUID();
-    const unitId = normalizeAccountUnitId(body.unitId || body.unit_id);
-    const name = body.name || body.nome;
-    const type = body.type || body.tipo || 'CASH';
-    const balance = body.currentBalance ?? body.saldo_atual ?? 0;
-    const minBalance = body.minimumBalance ?? body.saldo_minimo ?? null;
-    const status = body.status || body.situacao || 'ACTIVE';
-    const bankCode = body.bankCode || body.bank_code || null;
-    const agencyNumber = body.agencyNumber || body.agency_number || null;
-    const accountNumber = body.accountNumber || body.account_number || null;
+    const idUnidade = b.idUnidade || b.id_unidade || null;
+    const nomeConta = b.nomeConta || b.nome_conta || b.nome || b.name;
+    const tipoConta = b.tipoConta || b.tipo_conta || b.tipo || b.type || 'CORRENTE';
+    const nomeBanco = b.nomeBanco || b.nome_banco || b.bankName || null;
+    const agencia   = b.agencia   || b.agency     || null;
+    const numeroConta = b.numeroConta || b.numero_conta || b.accountNumber || null;
+    const moeda     = b.moeda     || b.currency   || 'BRL';
 
-    // Salvar em financial_accounts (tabela principal da rota)
-    const r1 = await db.query(
-      `INSERT INTO financial_accounts
-         (id, unit_id, nome, tipo, saldo_atual, saldo_minimo, situacao, codigo_banco, numero_agencia, numero_conta, criado, atualizado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       RETURNING *`,
-      [id, unitId, name, type, balance, minBalance, status, bankCode, agencyNumber, accountNumber]
+    const result = await db.query(
+      `INSERT INTO contas_bancarias (id, id_unidade, nome_conta, tipo_conta, nome_banco, agencia, numero_conta, moeda, esta_ativo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true) RETURNING *`,
+      [id, idUnidade, nomeConta, tipoConta, nomeBanco, agencia, numeroConta, moeda]
     );
 
-    // Sincronizar em accounts (tabela referenciada pela FK de transactions)
+    // Sincronizar em contas_financeiras
     await db.query(
-      `INSERT INTO accounts (id, unit_id, nome_conta, tipo_conta, saldo_atual, esta_ativo, criado, atualizado)
-       VALUES ($1,$2,$3,$4,$5,$6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       ON CONFLICT (id) DO UPDATE SET nome_conta=$3, saldo_atual=$5, atualizado=CURRENT_TIMESTAMP`,
-      [id, unitId, name, type === 'CASH' ? 'CASH' : 'CHECKING', balance, status === 'ACTIVE']
+      `INSERT INTO contas_financeiras (id_conta, id_unidade, nome, tipo, saldo)
+       VALUES ($1,$2,$3,$4,0)
+       ON CONFLICT DO NOTHING`,
+      [randomUUID(), idUnidade, nomeConta, tipoConta]
     );
 
-    res.status(201).json(mapAccountRow(r1.rows[0]));
+    res.status(201).json(mapearConta(result.rows[0]));
   } catch (error: any) {
     console.error('Erro ao criar conta:', error);
     res.status(500).json({ error: { message: 'Erro interno', status: 500, details: error.message } });
@@ -146,63 +108,39 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const body = req.body;
+    const b = req.body;
     const result = await db.query(
-      `UPDATE financial_accounts
-       SET nome = $1, tipo = $2, saldo_atual = $3, saldo_minimo = $4,
-           situacao = $5, codigo_banco = $6, numero_agencia = $7, numero_conta = $8,
-           atualizado = CURRENT_TIMESTAMP
-       WHERE id = $9
-       RETURNING *`,
+      `UPDATE contas_bancarias
+       SET nome_conta=$1, tipo_conta=$2, nome_banco=$3, agencia=$4, numero_conta=$5, moeda=$6,
+           atualizado_em=CURRENT_TIMESTAMP
+       WHERE id=$7 RETURNING *`,
       [
-        body.name || body.nome,
-        body.type || body.tipo,
-        body.currentBalance ?? body.saldo_atual,
-        body.minimumBalance ?? body.saldo_minimo ?? null,
-        body.status || body.situacao,
-        body.bankCode || body.bank_code || null,
-        body.agencyNumber || body.agency_number || null,
-        body.accountNumber || body.account_number || null,
+        b.nomeConta || b.nome_conta || b.nome || b.name,
+        b.tipoConta || b.tipo_conta || b.tipo || b.type,
+        b.nomeBanco || b.nome_banco || b.bankName || null,
+        b.agencia   || b.agency    || null,
+        b.numeroConta || b.numero_conta || b.accountNumber || null,
+        b.moeda     || b.currency  || 'BRL',
         id,
       ]
     );
-    await db.query(
-      `UPDATE accounts
-       SET nome_conta = $1, tipo_conta = $2, saldo_atual = $3, esta_ativo = $4, atualizado = CURRENT_TIMESTAMP
-       WHERE id = $5`,
-      [
-        body.name || body.nome,
-        (body.type || body.tipo) === 'CASH' ? 'CASH' : 'CHECKING',
-        body.currentBalance ?? body.saldo_atual ?? 0,
-        (body.status || body.situacao) === 'ACTIVE',
-        id
-      ]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: { message: 'Conta não encontrada', status: 404 } });
-    }
-    res.json(mapAccountRow(result.rows[0]));
+    if (!result.rows.length) return res.status(404).json({ error: { message: 'Conta não encontrada', status: 404 } });
+    res.json(mapearConta(result.rows[0]));
   } catch (error: any) {
     console.error('Erro ao atualizar conta:', error);
     res.status(500).json({ error: { message: 'Erro interno', status: 500, details: error.message } });
   }
 });
 
-// DELETE /accounts/:id (soft delete — marca como INACTIVE)
+// DELETE /accounts/:id — soft delete
 router.delete('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
     await db.query(
-      `UPDATE financial_accounts SET situacao = 'INACTIVE', atualizado = CURRENT_TIMESTAMP WHERE id = $1`,
-      [id]
-    );
-    await db.query(
-      `UPDATE accounts SET esta_ativo = false, atualizado = CURRENT_TIMESTAMP WHERE id = $1`,
-      [id]
+      `UPDATE contas_bancarias SET esta_ativo=false, atualizado_em=CURRENT_TIMESTAMP WHERE id=$1`,
+      [req.params.id]
     );
     res.status(204).send();
   } catch (error: any) {
-    console.error('Erro ao desativar conta:', error);
     res.status(500).json({ error: { message: 'Erro interno', status: 500, details: error.message } });
   }
 });

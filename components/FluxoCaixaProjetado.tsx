@@ -301,8 +301,9 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
             </h3>
           </div>
           
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full min-h-[250px]">
+            {projection.dailyProjections && projection.dailyProjections.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
               <AreaChart data={projection.dailyProjections}>
                 <defs>
                   <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
@@ -340,6 +341,9 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
                 />
               </AreaChart>
             </ResponsiveContainer>
+            ) : (
+              <p className="text-center text-sm text-slate-400 mt-8">Nenhuma projeção disponível.</p>
+            )}
           </div>
         </div>
       )}

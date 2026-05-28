@@ -32,7 +32,13 @@ import eventRoutes from './routes/events';
 import userRoutes from './routes/users';
 import { bootstrapAuthData } from './services/bootstrapAuthData';
 import accountRoutes from './routes/accounts';
-import treasuryRoutes from './routes/treasury';
+import treasuryChartOfAccountsRoutes from './routes/treasury-chart-of-accounts';
+import treasuryCashFlowsRoutes from './routes/treasury-cash-flows';
+import treasuryForecastsRoutes from './routes/treasury-forecasts';
+import treasuryInvestmentsRoutes from './routes/treasury-investments';
+import treasuryLoansRoutes from './routes/treasury-loans';
+import treasuryAlertsRoutes from './routes/treasury-alerts';
+import treasuryPositionsRoutes from './routes/treasury-positions';
 import reconciliationRoutes from './routes/reconciliation';
 import cepRoutes from './routes/cep';
 import rhRoutes from './routes/rh';
@@ -109,22 +115,40 @@ app.get('/health', async (_req, res) => {
 // =====================================================
 // ROTAS DA API
 // =====================================================
-app.use(`${API_PREFIX}/auth`,         authRoutes);
-app.use(`${API_PREFIX}/members`,      memberRoutes);
-app.use(`${API_PREFIX}/employees`,    employeeRoutes);
-app.use(`${API_PREFIX}/transactions`, transactionRoutes);
-app.use(`${API_PREFIX}/units`,        unitRoutes);
-app.use(`${API_PREFIX}/assets`,       assetRoutes);
-app.use(`${API_PREFIX}/events`,       eventRoutes);
-app.use(`${API_PREFIX}/users`,        userRoutes);
-app.use(`${API_PREFIX}/accounts`,       accountRoutes);
-app.use(`${API_PREFIX}/treasury`,       treasuryRoutes);
-app.use(`${API_PREFIX}/reconciliations`, reconciliationRoutes);
-app.use(`${API_PREFIX}/cep`,            cepRoutes);
-app.use(`${API_PREFIX}/rh`,             rhRoutes);
-app.use(`${API_PREFIX}/audit`,          auditRoutes);
-app.use(`${API_PREFIX}/lgpd`,         lgpdRoutes);
-app.use(`${API_PREFIX}/payroll`,      payrollRoutes);
+app.use(`${API_PREFIX}/autenticacao`,         authRoutes);
+app.use(`${API_PREFIX}/membros`,              memberRoutes);
+app.use(`${API_PREFIX}/funcionarios`,         employeeRoutes);
+app.use(`${API_PREFIX}/afastamentos`,         rhRoutes);
+app.use(`${API_PREFIX}/unidades`,             unitRoutes);
+app.use(`${API_PREFIX}/contas-bancarias`,     accountRoutes);
+app.use(`${API_PREFIX}/transacoes`,           transactionRoutes);
+app.use(`${API_PREFIX}/conciliacoes-bancarias`, reconciliationRoutes);
+app.use(`${API_PREFIX}/patrimonios`,          assetRoutes);
+app.use(`${API_PREFIX}/periodos-folha`,       payrollRoutes);
+app.use(`${API_PREFIX}/eventos`,              eventRoutes);
+
+// Tesouraria
+app.use(`${API_PREFIX}/tesouraria/plano-contas`,         treasuryChartOfAccountsRoutes);
+app.use(`${API_PREFIX}/tesouraria/fluxos-caixa`,        treasuryCashFlowsRoutes);
+app.use(`${API_PREFIX}/tesouraria/previsoes`,           treasuryForecastsRoutes);
+app.use(`${API_PREFIX}/tesouraria/investimentos`,       treasuryInvestmentsRoutes);
+app.use(`${API_PREFIX}/tesouraria/emprestimos`,         treasuryLoansRoutes);
+app.use(`${API_PREFIX}/tesouraria/alertas`,             treasuryAlertsRoutes);
+app.use(`${API_PREFIX}/tesouraria/posicoes-financeiras`, treasuryPositionsRoutes);
+
+// LGPD
+app.use(`${API_PREFIX}/lgpd/politicas`,       lgpdRoutes);
+app.use(`${API_PREFIX}/lgpd/consentimentos`,  lgpdRoutes);
+
+// Auditoria e Permissões
+app.use(`${API_PREFIX}/auditoria`,            auditRoutes);
+app.use(`${API_PREFIX}/usuarios/modulos-permissao`, userRoutes);
+app.use(`${API_PREFIX}/usuarios/:id/permissoes`, userRoutes);
+app.use(`${API_PREFIX}/usuarios`,             userRoutes);
+
+// Utilitários
+app.use(`${API_PREFIX}/cep`,                  cepRoutes);
+app.use(`${API_PREFIX}/rh`,                   rhRoutes);
 
 // =====================================================
 // MIDDLEWARE DE ERRO GLOBAL

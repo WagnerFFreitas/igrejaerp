@@ -27,7 +27,7 @@ import { dbService } from '../services/databaseService';
 import AuthService from '../src/services/authService';
 
 interface EventosProps {
-  currentUnitId: string;
+  currentIdUnidade: string;
   members: Member[];
   user?: any;
 }
@@ -58,7 +58,7 @@ const ROLES = {
   'Casais': ['Líder', 'Assistente', 'Coordenador']
 };
 
-export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }) => {
+export const Eventos: React.FC<EventosProps> = ({ currentIdUnidade, members, user }) => {
   const canWriteEvents = AuthService.hasPermission(user, 'events', 'write');
   const canDeleteEvents = AuthService.hasPermission(user, 'events', 'delete');
   const [events, setEvents] = useState<ChurchEvent[]>([]);
@@ -96,14 +96,14 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
   useEffect(() => {
     const loadEvents = async () => {
       try {
-        const eventsData = await dbService.getEvents(currentUnitId);
+        const eventsData = await dbService.getEvents(currentIdUnidade);
         setEvents(eventsData || []);
       } catch (error) {
         console.error('Erro ao carregar eventos:', error);
       }
     };
     loadEvents();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   // Função para gerar eventos recorrentes
   const generateRecurringEvents = (baseEvent: ChurchEvent): ChurchEvent[] => {
@@ -161,7 +161,7 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
     
     const baseEvent: ChurchEvent = {
       id: `evt-${Date.now()}`,
-      unitId: currentUnitId,
+      idUnidade: currentIdUnidade,
       title: form.title,
       description: form.description,
       date: form.date,
