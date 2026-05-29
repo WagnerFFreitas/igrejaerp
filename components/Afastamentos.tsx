@@ -19,17 +19,17 @@
 
 import React, { useState } from 'react';
 import { PlaneTakeoff, Plus, Search, Stethoscope, Baby, Clock, User, Edit2, X, Save, Loader2, Trash2, Printer, Download, Filter } from 'lucide-react';
-import { EmployeeLeave, Payroll, LeaveType } from '../types';
-import { dbService } from '../services/databaseService';
+import { EmployeeLeave, Payroll, LeaveType } from '../tipos';
+import { dbService } from '../services/bancoDadosService';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import AuthService from '../src/services/authService';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 interface AfastamentosProps {
   leaves: EmployeeLeave[];
   setLeaves: (leaves: EmployeeLeave[]) => void;
-  currentUnitId: string;
-  employees: Payroll[];
+  currentIdUnidade: string;
+  funcionarios: Payroll[];
   user?: any;
 }
 
@@ -40,9 +40,9 @@ interface AfastamentosProps {
  * Define o bloco principal deste arquivo (afastamentos).
  */
 
-export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, currentUnitId, employees, user }) => {
-  const canWriteLeaves = AuthService.hasPermission(user, 'leaves', 'write');
-  const canDeleteLeaves = AuthService.hasPermission(user, 'leaves', 'delete');
+export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, currentIdUnidade, funcionarios, user }) => {
+  const canWriteLeaves = AutenticacaoService.hasPermission(user, 'leaves', 'write');
+  const canDeleteLeaves = AutenticacaoService.hasPermission(user, 'leaves', 'delete');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,10 +69,10 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
 
     setIsSaving(true);
     try {
-      const employee = employees.find(e => e.id === formData.employeeId);
+      const employee = funcionarios.find(e => e.id === formData.employeeId);
       const newLeave: EmployeeLeave = {
         id: formData.id || crypto.randomUUID(),
-        unitId: currentUnitId,
+        idUnidade: currentIdUnidade,
         employeeId: formData.employeeId!,
         employeeName: employee?.employeeName || 'Desconhecido',
         type: formData.type as LeaveType,
@@ -188,7 +188,7 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
         }
         
         pdf.setFontSize(9);
-        pdf.text(employees.find(emp => emp.id === leave.employeeId)?.matricula || 'N/A', 20, yPos);
+        pdf.text(funcionarios.find(emp => emp.id === leave.employeeId)?.matricula || 'N/A', 20, yPos);
         pdf.text(leave.employeeName.substring(0, 20), 50, yPos);
         pdf.text(leave.type.substring(0, 12), 100, yPos);
         pdf.text(leave.status.substring(0, 10), 130, yPos);
@@ -216,12 +216,12 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
 
   const getFilteredLeaves = () => {
     return leaves.filter(l => {
-      const matchesUnit = l.unitId === currentUnitId;
+      const matchesUnit = l.idUnidade === currentIdUnidade;
       const matchesSearch = !searchTerm || 
         l.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         l.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         l.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employees.find(emp => emp.id === l.employeeId)?.matricula?.toLowerCase().includes(searchTerm.toLowerCase());
+        funcionarios.find(emp => emp.id === l.employeeId)?.matricula?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = !filterType || l.type === filterType;
       const matchesStatus = !filterStatus || l.status === filterStatus;
       const matchesEmployee = !filterEmployee || l.employeeId === filterEmployee;
@@ -324,7 +324,7 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Todos os funcionários</option>
-              {employees.map(e => (
+              {funcionarios.map(e => (
                 <option key={e.id} value={e.id}>{e.employeeName}</option>
               ))}
             </select>
@@ -346,7 +346,7 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
           <tbody className="divide-y divide-slate-50">
             {getFilteredLeaves().map(leave => (
               <tr key={leave.id}>
-                <td className="px-8 py-5 text-slate-500">{employees.find(emp => emp.id === leave.employeeId)?.matricula || 'N/A'}</td>
+                <td className="px-8 py-5 text-slate-500">{funcionarios.find(emp => emp.id === leave.employeeId)?.matricula || 'N/A'}</td>
                 <td className="px-8 py-5 font-bold">{leave.employeeName}</td>
                 <td className="px-8 py-5">{
                   leave.type === 'VACATION' ? 'Férias' :
@@ -392,7 +392,7 @@ export const Afastamentos: React.FC<AfastamentosProps> = ({ leaves, setLeaves, c
                 onChange={e => setFormData({...formData, employeeId: e.target.value})}
               >
                 <option value="">Selecione o colaborador</option>
-                {employees.map(e => <option key={e.id} value={e.id}>{e.employeeName}</option>)}
+                {funcionarios.map(e => <option key={e.id} value={e.id}>{e.employeeName}</option>)}
               </select>
               <select 
                 className="w-full p-3 rounded-xl border border-slate-200"

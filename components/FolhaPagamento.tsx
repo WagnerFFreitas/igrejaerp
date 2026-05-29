@@ -29,16 +29,16 @@ import {
   Calendar, TrendingUp, TrendingDown, AlertCircle, CheckCircle, Clock, MoreVertical,
   Printer, Mail, Share2
 } from 'lucide-react';
-import { Employee, PayrollCalculation, PaySlip, PayrollInput } from '../types';
-import { payrollService } from '../services/payrollService';
+import { Employee, PayrollCalculation, PaySlip, PayrollInput } from '../tipos';
+import { payrollService } from '../services/folhaService';
 
 /**
  * PROPRIEDADES DO COMPONENTE
  * ==========================
  */
 interface FolhaPagamentoProps {
-  employees: Employee[];
-  currentUnitId: string;
+  funcionarios: Employee[];
+  currentIdUnidade: string;
 }
 
 /**
@@ -46,8 +46,8 @@ interface FolhaPagamentoProps {
  * ====================
  */
 export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
-  employees,
-  currentUnitId,
+  funcionarios,
+  currentIdUnidade,
 }) => {
   
   /**
@@ -73,7 +73,7 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
   // Visualizar recibo
   const [showPaySlip, setShowPaySlip] = useState(false);
 
-  console.log('FolhaPagamento: employees', employees);
+  console.log('FolhaPagamento: funcionarios', funcionarios);
   
   /**
    * CALCULAR FOLHA DO FUNCIONÁRIO SELECIONADO
@@ -124,8 +124,8 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
    */
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     });
   };
   
@@ -184,13 +184,13 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
             <select
               value={selectedEmployee?.id || ''}
               onChange={(e) => {
-                const emp = employees.find(emp => emp.id === e.target.value);
+                const emp = funcionarios.find(emp => emp.id === e.target.value);
                 setSelectedEmployee(emp || null);
               }}
               className="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl font-bold text-xs outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Selecione um funcionário...</option>
-              {employees.map(emp => (
+              {funcionarios.map(emp => (
                 <option key={emp.id} value={emp.id}>
                   {emp.name} - {emp.cargo} ({emp.regime})
                 </option>
@@ -210,7 +210,7 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
             <Users size={20} className="opacity-75" />
           </div>
           <div className="text-3xl font-black">
-            {employees.length}
+            {funcionarios.length}
           </div>
           <div className="text-[9px] font-medium opacity-75 mt-1">
             Ativos na unidade
@@ -225,7 +225,7 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
           </div>
           <div className="text-3xl font-black">
             {formatCurrency(
-              employees.reduce((sum, e) => sum + e.salary, 0) / (employees.length || 1)
+              funcionarios.reduce((sum, e) => sum + e.salary, 0) / (funcionarios.length || 1)
             )}
           </div>
           <div className="text-[9px] font-medium opacity-75 mt-1">
@@ -241,7 +241,7 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
           </div>
           <div className="text-3xl font-black">
             {formatCurrency(
-              employees.reduce((sum, e) => sum + e.salary, 0)
+              funcionarios.reduce((sum, e) => sum + e.salary, 0)
             )}
           </div>
           <div className="text-[9px] font-medium opacity-75 mt-1">
@@ -257,7 +257,7 @@ export const FolhaPagamento: React.FC<FolhaPagamentoProps> = ({
           </div>
           <div className="text-3xl font-black">
             {formatCurrency(
-              employees.reduce((sum, e) => sum + (e.salary * 0.33), 0)
+              funcionarios.reduce((sum, e) => sum + (e.salary * 0.33), 0)
             )}
           </div>
           <div className="text-[9px] font-medium opacity-75 mt-1">

@@ -31,7 +31,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { cashFlowProjectionService, ProjectionConfig } from '../services/projecaoFluxoCaixaService';
 import { CashFlowProjection, CashFlowAlert } from '../utils/calculosFluxoCaixa';
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 /**
  * PROPRIEDADES DO COMPONENTE
@@ -39,7 +39,7 @@ import { Transaction } from '../types';
  */
 interface FluxoCaixaProjetadoProps {
   currentBalance: number;              // Saldo atual
-  transactions: Transaction[];          // Histórico
+  transacoes: Transaction[];          // Histórico
   receivables: Transaction[];           // Contas a receber
   payables: Transaction[];              // Contas a pagar
 }
@@ -50,7 +50,7 @@ interface FluxoCaixaProjetadoProps {
  */
 export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
   currentBalance,
-  transactions,
+  transacoes,
   receivables,
   payables,
 }) => {
@@ -92,7 +92,7 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
       
       const result = await cashFlowProjectionService.generateProjection(
         currentBalance,
-        transactions,
+        transacoes,
         receivables,
         payables,
         config
@@ -113,8 +113,8 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
    */
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     });
   };
   
@@ -301,8 +301,9 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
             </h3>
           </div>
           
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full min-h-[250px]">
+            {projection.dailyProjections && projection.dailyProjections.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
               <AreaChart data={projection.dailyProjections}>
                 <defs>
                   <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
@@ -340,6 +341,9 @@ export const FluxoCaixaProjetado: React.FC<FluxoCaixaProjetadoProps> = ({
                 />
               </AreaChart>
             </ResponsiveContainer>
+            ) : (
+              <p className="text-center text-sm text-slate-400 mt-8">Nenhuma projeção disponível.</p>
+            )}
           </div>
         </div>
       )}

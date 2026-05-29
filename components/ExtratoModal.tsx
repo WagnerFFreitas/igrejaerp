@@ -16,24 +16,24 @@
 
 import React, { useState } from 'react';
 import { X, Download, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 interface ExtratoModalProps {
   accountId: string;
-  transactions: Transaction[];
+  transacoes: Transaction[];
   onClose: () => void;
 }
 
 export const ExtratoModal: React.FC<ExtratoModalProps> = ({
   accountId,
-  transactions,
+  transacoes,
   onClose,
 }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
   // Filtra transações por período
-  const filteredTransactions = transactions.filter((t) => {
+  const filteredTransactions = transacoes.filter((t) => {
     if (!startDate && !endDate) return true;
     const tDate = new Date(t.date);
     const start = startDate ? new Date(startDate) : null;
@@ -55,8 +55,8 @@ export const ExtratoModal: React.FC<ExtratoModalProps> = ({
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+      style: 'moeda',
+      moeda: 'BRL',
     }).format(value);
   };
 

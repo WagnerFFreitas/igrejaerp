@@ -34,7 +34,7 @@ const normalizeUnitId = (id: string) => UNIT_ID_ALIASES[id] || id;
 export const patrimonioService = {
   getAssets: async (unitId: string) => {
     try {
-      const data = await apiClient.get<any[]>('/assets', { unitId: normalizeUnitId(unitId) });
+      const data = await apiClient.get<any[]>('/patrimonios', { unitId: normalizeUnitId(unitId) });
       return data || [];
     } catch (e) {
       console.error('❌ patrimonioService.getAssets:', e);
@@ -44,20 +44,20 @@ export const patrimonioService = {
 
   // Alias usado pelo Patrimonio.tsx
   registerAsset: async (asset: any) => {
-    const payload = { ...asset, unitId: normalizeUnitId(asset.unitId || asset.unit_id) };
-    return apiClient.post('/assets', payload);
+    const payload = { ...asset, unitId: normalizeUnitId(asset.unitId || asset.id_unidade) };
+    return apiClient.post('/patrimonios', payload);
   },
 
   createAsset: async (asset: any) => {
-    const payload = { ...asset, unitId: normalizeUnitId(asset.unitId || asset.unit_id) };
-    return apiClient.post('/assets', payload);
+    const payload = { ...asset, unitId: normalizeUnitId(asset.unitId || asset.id_unidade) };
+    return apiClient.post('/patrimonios', payload);
   },
 
   updateAsset: async (id: string, asset: any) => {
-    return apiClient.put(`/assets/${id}`, asset);
+    return apiClient.put(`/patrimonios/${id}`, asset);
   },
 
   deleteAsset: async (id: string) => {
-    return apiClient.delete(`/assets/${id}`);
+    return apiClient.delete(`/patrimonios/${id}`);
   },
 };

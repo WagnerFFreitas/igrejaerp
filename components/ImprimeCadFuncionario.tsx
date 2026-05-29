@@ -18,10 +18,10 @@
 
 import React, { useState } from 'react';
 import { Printer, X } from 'lucide-react';
-import { Payroll } from '../types';
+import { Payroll } from '../tipos';
 
 interface ImprimeCadFuncionarioProps {
-  employees: Payroll[];
+  funcionarios: Payroll[];
   onClose: () => void;
   preSelected?: Payroll[];
 }
@@ -33,8 +33,8 @@ interface ImprimeCadFuncionarioProps {
  * Define o bloco principal deste arquivo (imprime cad funcionario).
  */
 
-export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ employees, onClose, preSelected }) => {
-  const sorted = [...employees].sort((a, b) => (a.matricula || '').localeCompare(b.matricula || ''));
+export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ funcionarios, onClose, preSelected }) => {
+  const sorted = [...funcionarios].sort((a, b) => (a.matricula || '').localeCompare(b.matricula || ''));
   const firstMat = sorted[0]?.matricula?.match(/F(\d+)/)?.[0] || 'F01';
   const lastMat  = sorted[sorted.length - 1]?.matricula?.match(/F(\d+)/)?.[0] || firstMat;
 
@@ -55,7 +55,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
       alert('Faixa inválida. Informe no formato F01 a F05, com início menor ou igual ao fim.');
       return;
     }
-    const filtered = employees
+    const filtered = funcionarios
       .filter(e => { const n = parseNum(e.matricula || ''); return n !== null && n >= start && n <= end; })
       .sort((a, b) => (a.matricula || '').localeCompare(b.matricula || ''));
     if (filtered.length === 0) {
@@ -73,7 +73,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
     return isNaN(dt.getTime()) ? d : dt.toLocaleDateString('pt-BR');
   };
   const fmtCurrency = (v?: number) =>
-    v != null ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
+    v != null ? v.toLocaleString('pt-BR', { style: 'moeda', moeda: 'BRL' }) : '—';
   const contratoMap: Record<string, string> = {
     CLT: 'CLT', PJ: 'PJ', VOLUNTARIO: 'Voluntário', TEMPORARIO: 'Temporário',
   };
@@ -102,7 +102,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
       const statusColor = e.status === 'ACTIVE' ? '#15803d' : '#b91c1c';
       const statusBg    = e.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2';
       const statusLabel = e.status === 'ACTIVE' ? 'Ativo' : e.status === 'INACTIVE' ? 'Inativo' : e.status === 'PAID' ? 'Pago' : 'Pendente';
-      const avatarUrl   = e.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.employeeName)}&background=1d4ed8&color=fff&bold=true&size=80`;
+      const avatarUrl   = e.avatar;
 
       const depsHtml = e.dependentes_lista && e.dependentes_lista.length > 0 ? `
         <div style="margin-top:6px">
@@ -149,7 +149,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
               ${field('Telefone', e.telefone)}
               ${field('Celular', e.celular)}
               ${field('E-mail', e.email || e.email_pessoal)}
-              ${field('Contato Emergência', e.emergency_contact)}
+              ${field('Contato Emergência', e.contato_emergencia)}
               ${e.is_pcd ? field('PCD', e.tipo_deficiencia || 'Sim') : ''}
             </div>
 
@@ -329,7 +329,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2.5px solid #0f172a', paddingBottom: '12px', marginBottom: '16px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <img
-                    src={e.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.employeeName)}&background=1d4ed8&color=fff&bold=true&size=80`}
+                    src={e.avatar}
                     style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #e2e8f0' }}
                     alt=""
                   />
@@ -366,7 +366,7 @@ export const ImprimeCadFuncionario: React.FC<ImprimeCadFuncionarioProps> = ({ em
                   <Field label="Telefone" value={e.telefone} />
                   <Field label="Celular" value={e.celular} />
                   <Field label="E-mail" value={e.email || e.email_pessoal} />
-                  <Field label="Contato Emergência" value={e.emergency_contact} />
+                  <Field label="Contato Emergência" value={e.contato_emergencia} />
                   {e.is_pcd && <Field label="PCD" value={e.tipo_deficiencia || 'Sim'} />}
                 </div>
 

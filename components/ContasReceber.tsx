@@ -38,7 +38,7 @@ import { PaymentAlert } from '../utils/calculosContasReceber';
  * ==========================
  */
 interface ContasReceberProps {
-  currentUnitId: string;
+  currentIdUnidade: string;
   onTransactionAdded?: () => void;
 }
 
@@ -53,7 +53,7 @@ type FilterStatus = 'ALL' | 'PENDING' | 'OVERDUE' | 'PAID' | 'NEGOTIATING';
  * ====================
  */
 export const ContasReceber: React.FC<ContasReceberProps> = ({ 
-  currentUnitId, 
+  currentIdUnidade, 
   onTransactionAdded 
 }) => {
   
@@ -103,11 +103,11 @@ export const ContasReceber: React.FC<ContasReceberProps> = ({
       setIsLoading(true);
       
       // Busca recebimentos
-      const allReceivables = await receivablesService.getReceivables(currentUnitId);
+      const allReceivables = await receivablesService.getReceivables(currentIdUnidade);
       setReceivables(allReceivables);
       
       // Busca alertas
-      const paymentAlerts = await receivablesService.getPaymentAlerts(currentUnitId);
+      const paymentAlerts = await receivablesService.getPaymentAlerts(currentIdUnidade);
       setAlerts(paymentAlerts);
       
       setIsLoading(false);
@@ -153,8 +153,8 @@ export const ContasReceber: React.FC<ContasReceberProps> = ({
    */
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     });
   };
   

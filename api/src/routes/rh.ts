@@ -1,202 +1,59 @@
 /**
- * ============================================================================
- * RH.TS
- * ============================================================================
- *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Rotas de API para rh.
- *
- * ONDE É USADO?
- * -------------
- * Usado pelo servidor backend para processar requisições.
- *
- * COMO FUNCIONA?
- * --------------
- * Executa lógica de backend e responde a chamadas externas.
+ * RH.TS — Alinhado ao schema PT-BR
+ * Tabela existente: afastamentos_funcionarios
+ * Tabelas ainda não modeladas: avaliacoes_desempenho, planos_pdi
+ * → retornam 501 até serem criadas
  */
 
 import { Router } from 'express';
 import Database from '../database';
 import { randomUUID } from 'crypto';
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (rh).
- */
-
 const router = Router();
 const db = Database.getInstance();
 
-// ─── AVALIAÇÕES DE DESEMPENHO ────────────────────────────────────────────────
+const TIPOS_AFASTAMENTO = ['FERIAS', 'MEDICO', 'MATERNIDADE', 'PATERNIDADE', 'MILITAR', 'CASAMENTO', 'LUTO', 'NAO_REMUNERADO'];
+const SITUACOES_AFASTAMENTO = ['AGENDADO', 'ATIVO', 'CONCLUIDO', 'CANCELADO'];
 
-router.get('/evaluations', async (req, res) => {
-  try {
-    const { unitId, employeeId } = req.query;
-    let query = 'SELECT * FROM performance_evaluations WHERE 1=1';
-    const params: any[] = [];
-    let i = 1;
-    if (unitId)     { query += ` AND unit_id = $${i++}`;     params.push(unitId); }
-    if (employeeId) { query += ` AND funcionario_id = $${i++}`; params.push(employeeId); }
-    query += ' ORDER BY data_avaliacao DESC';
-    const result = await db.query(query, params);
-    res.json(result.rows.map(r => ({
-      ...r,
-      unitId: r.unit_id,
-      employeeId: r.funcionario_id,
-      employeeName: r.nome_funcionario,
-      evaluationDate: r.data_avaliacao,
-      evaluationType: r.tipo_avaliacao,
-      overallScore: parseFloat(r.overall_score) || 0,
-      overallRating: r.overall_rating,
-      competencies: r.competencies || [],
-      goals: r.goals || [],
-      evaluatedBy: r.evaluated_by,
-      approvedBy: r.approved_by,
-    })));
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
+const naoImplementado = (_req: any, res: any) =>
+  res.status(501).json({
+    error: {
+      message: 'Funcionalidade ainda não modelada no schema atual.',
+      status: 501,
+    },
+  });
 
-router.post('/evaluations', async (req, res) => {
-  try {
-    const b = req.body;
-    const result = await db.query(
-      `INSERT INTO performance_evaluations
-         (id, unit_id, funcionario_id, nome_funcionario, data_avaliacao, tipo_avaliacao,
-          overall_score, overall_rating, competencies, goals, strengths, improvements,
-          action_plan, status, evaluated_by, criado, atualizado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),NOW()) RETURNING *`,
-      [randomUUID(), b.unitId||b.unit_id, b.employeeId||b.funcionario_id,
-       b.employeeName||b.nome_funcionario, b.evaluationDate||b.data_avaliacao||new Date().toISOString().split('T')[0],
-       b.evaluationType||'ANNUAL', b.overallScore||0, b.overallRating||'SATISFACTORY',
-       JSON.stringify(b.competencies||[]), JSON.stringify(b.goals||[]),
-       b.strengths||null, b.improvements||null, b.actionPlan||null,
-       b.status||'DRAFT', b.evaluatedBy||null]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
-
-router.put('/evaluations/:id', async (req, res) => {
-  try {
-    const b = req.body;
-    const result = await db.query(
-      `UPDATE performance_evaluations
-       SET overall_score=$1, overall_rating=$2, competencies=$3, goals=$4,
-           strengths=$5, improvements=$6, action_plan=$7, status=$8, atualizado=NOW()
-       WHERE id=$9 RETURNING *`,
-      [b.overallScore||0, b.overallRating||'SATISFACTORY',
-       JSON.stringify(b.competencies||[]), JSON.stringify(b.goals||[]),
-       b.strengths||null, b.improvements||null, b.actionPlan||null,
-       b.status||'DRAFT', req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ error: { message: 'Não encontrado' } });
-    res.json(result.rows[0]);
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
-
-router.delete('/evaluations/:id', async (req, res) => {
-  try {
-    await db.query('DELETE FROM performance_evaluations WHERE id=$1', [req.params.id]);
-    res.status(204).send();
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
-
-// ─── PDI ─────────────────────────────────────────────────────────────────────
-
-router.get('/pdi', async (req, res) => {
-  try {
-    const { unitId, employeeId } = req.query;
-    let query = 'SELECT * FROM pdi_plans WHERE 1=1';
-    const params: any[] = [];
-    let i = 1;
-    if (unitId)     { query += ` AND unit_id = $${i++}`;     params.push(unitId); }
-    if (employeeId) { query += ` AND funcionario_id = $${i++}`; params.push(employeeId); }
-    query += ' ORDER BY criado DESC';
-    const result = await db.query(query, params);
-    res.json(result.rows.map(r => ({
-      ...r,
-      unitId: r.unit_id,
-      employeeId: r.funcionario_id,
-      employeeName: r.nome_funcionario,
-    })));
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
-
-router.post('/pdi', async (req, res) => {
-  try {
-    const b = req.body;
-    const result = await db.query(
-      `INSERT INTO pdi_plans
-         (id, unit_id, funcionario_id, nome_funcionario, meta, prazo, status, observacoes, criado_por, criado, atualizado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW()) RETURNING *`,
-      [randomUUID(), b.unitId||b.unit_id, b.employeeId||b.funcionario_id,
-       b.employeeName||b.nome_funcionario, b.meta,
-       b.prazo||null, b.status||'PENDENTE', b.observacoes||null, b.createdBy||null]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
-
-router.put('/pdi/:id', async (req, res) => {
-  try {
-    const b = req.body;
-    const result = await db.query(
-      `UPDATE pdi_plans SET meta=$1, prazo=$2, status=$3, observacoes=$4, atualizado=NOW()
-       WHERE id=$5 RETURNING *`,
-      [b.meta, b.prazo||null, b.status, b.observacoes||null, req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ error: { message: 'Não encontrado' } });
-    res.json(result.rows[0]);
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
-
-router.delete('/pdi/:id', async (req, res) => {
-  try {
-    await db.query('DELETE FROM pdi_plans WHERE id=$1', [req.params.id]);
-    res.status(204).send();
-  } catch (e: any) {
-    res.status(500).json({ error: { message: e.message } });
-  }
-});
-
-// ─── AFASTAMENTOS ──────────────────────────────────────────────────────────
+// ─── AFASTAMENTOS ─────────────────────────────────────────────────────────────
 
 router.get('/leaves', async (req, res) => {
   try {
-    const { unitId, employeeId } = req.query;
-    let query = 'SELECT * FROM employee_leaves WHERE 1=1';
+    const { idUnidade, idFuncionario } = req.query;
+    let query = `
+      SELECT af.*, p.nome AS nome_funcionario
+      FROM afastamentos_funcionarios af
+      JOIN funcionarios f ON f.id_funcionario = af.id_funcionario
+      JOIN pessoas p ON p.id_pessoa = f.id_pessoa
+      WHERE 1=1
+    `;
     const params: any[] = [];
     let i = 1;
-    if (unitId)     { query += ` AND unit_id = $${i++}`;     params.push(unitId); }
-    if (employeeId) { query += ` AND funcionario_id = $${i++}`; params.push(employeeId); }
-    query += ' ORDER BY data_inicio DESC';
+
+    if (idUnidade)     { query += ` AND af.id_unidade = $${i++}`;     params.push(idUnidade); }
+    if (idFuncionario) { query += ` AND af.id_funcionario = $${i++}`; params.push(idFuncionario); }
+    query += ' ORDER BY af.data_inicio DESC';
+
     const result = await db.query(query, params);
-    res.json(result.rows.map(r => ({
-      ...r,
-      unitId: r.unit_id,
-      employeeId: r.funcionario_id,
-      employeeName: r.nome_funcionario,
-      startDate: r.data_inicio,
-      endDate: r.data_fim,
-      doctorName: r.doctor_name,
-      attachmentUrl: r.attachment_url,
+    res.json(result.rows.map((r: any) => ({
+      id:              r.id,
+      idUnidade:       r.id_unidade,
+      idFuncionario:   r.id_funcionario,
+      nomeFuncionario: r.nome_funcionario,
+      tipo:            r.tipo,
+      dataInicio:      r.data_inicio,
+      dataFinal:       r.data_final,
+      situacao:        r.situacao,
+      criadoEm:        r.criado_em,
+      atualizadoEm:    r.atualizado_em,
     })));
   } catch (e: any) {
     res.status(500).json({ error: { message: e.message } });
@@ -206,15 +63,24 @@ router.get('/leaves', async (req, res) => {
 router.post('/leaves', async (req, res) => {
   try {
     const b = req.body;
+    const tipo = TIPOS_AFASTAMENTO.includes((b.tipo || b.type || '').toUpperCase())
+      ? (b.tipo || b.type).toUpperCase() : 'MEDICO';
+    const situacao = SITUACOES_AFASTAMENTO.includes((b.situacao || b.status || '').toUpperCase())
+      ? (b.situacao || b.status).toUpperCase() : 'AGENDADO';
+
     const result = await db.query(
-      `INSERT INTO employee_leaves
-         (id, unit_id, funcionario_id, nome_funcionario, type, data_inicio, data_fim,
-          cid10, doctor_name, crm, status, observations, attachment_url, criado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW()) RETURNING *`,
-      [b.id || randomUUID(), b.unitId||b.unit_id, b.employeeId||b.funcionario_id,
-       b.employeeName||b.nome_funcionario, b.type, b.startDate||b.data_inicio, b.endDate||b.data_fim,
-       b.cid10||null, b.doctorName||b.doctor_name||null, b.crm||null,
-       b.status||'SCHEDULED', b.observations||null, b.attachmentUrl||b.attachment_url||null]
+      `INSERT INTO afastamentos_funcionarios
+         (id, id_unidade, id_funcionario, tipo, data_inicio, data_final, situacao)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [
+        randomUUID(),
+        b.id_unidade || b.idUnidade,
+        b.id_funcionario || b.idFuncionario || b.employeeId,
+        tipo,
+        b.data_inicio || b.dataInicio || b.startDate,
+        b.data_final  || b.dataFinal  || b.endDate,
+        situacao,
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (e: any) {
@@ -225,16 +91,23 @@ router.post('/leaves', async (req, res) => {
 router.put('/leaves/:id', async (req, res) => {
   try {
     const b = req.body;
+    const situacao = SITUACOES_AFASTAMENTO.includes((b.situacao || b.status || '').toUpperCase())
+      ? (b.situacao || b.status).toUpperCase() : undefined;
+
     const result = await db.query(
-      `UPDATE employee_leaves
-       SET type=$1, data_inicio=$2, data_fim=$3, cid10=$4, doctor_name=$5,
-           crm=$6, status=$7, observations=$8, attachment_url=$9
-       WHERE id=$10 RETURNING *`,
-      [b.type, b.startDate||b.data_inicio, b.endDate||b.data_fim,
-       b.cid10||null, b.doctorName||b.doctor_name||null, b.crm||null,
-       b.status, b.observations||null, b.attachmentUrl||b.attachment_url||null, req.params.id]
+      `UPDATE afastamentos_funcionarios
+       SET data_inicio=$1, data_final=$2,
+           situacao=COALESCE($3::situacao_afastamento, situacao),
+           atualizado_em=CURRENT_TIMESTAMP
+       WHERE id=$4 RETURNING *`,
+      [
+        b.data_inicio || b.dataInicio || b.startDate,
+        b.data_final  || b.dataFinal  || b.endDate,
+        situacao || null,
+        req.params.id,
+      ]
     );
-    if (!result.rows.length) return res.status(404).json({ error: { message: 'Não encontrado' } });
+    if (!result.rows.length) return res.status(404).json({ error: { message: 'Afastamento não encontrado', status: 404 } });
     res.json(result.rows[0]);
   } catch (e: any) {
     res.status(500).json({ error: { message: e.message } });
@@ -243,11 +116,26 @@ router.put('/leaves/:id', async (req, res) => {
 
 router.delete('/leaves/:id', async (req, res) => {
   try {
-    await db.query('DELETE FROM employee_leaves WHERE id=$1', [req.params.id]);
+    await db.query(
+      `UPDATE afastamentos_funcionarios SET situacao='CANCELADO', atualizado_em=CURRENT_TIMESTAMP WHERE id=$1`,
+      [req.params.id]
+    );
     res.status(204).send();
   } catch (e: any) {
     res.status(500).json({ error: { message: e.message } });
   }
 });
+
+// ─── AVALIAÇÕES DE DESEMPENHO — não modeladas ainda ──────────────────────────
+router.get('/evaluations',      naoImplementado);
+router.post('/evaluations',     naoImplementado);
+router.put('/evaluations/:id',  naoImplementado);
+router.delete('/evaluations/:id', naoImplementado);
+
+// ─── PDI — não modelado ainda ────────────────────────────────────────────────
+router.get('/pdi',      naoImplementado);
+router.post('/pdi',     naoImplementado);
+router.put('/pdi/:id',  naoImplementado);
+router.delete('/pdi/:id', naoImplementado);
 
 export default router;

@@ -64,18 +64,18 @@ npm start
 - `POST /api/auth/logout` - Logout
 
 ### Membros
-- `GET /api/members` - Listar membros
-- `GET /api/members/:id` - Buscar membro
-- `POST /api/members` - Criar membro
-- `PUT /api/members/:id` - Atualizar membro
-- `DELETE /api/members/:id` - Remover membro
+- `GET /api/membros` - Listar membros
+- `GET /api/membros/:id` - Buscar membro
+- `POST /api/membros` - Criar membro
+- `PUT /api/membros/:id` - Atualizar membro
+- `DELETE /api/membros/:id` - Remover membro
 
 ### Outros
-- `GET /api/employees` - Funcionários
-- `GET /api/transactions` - Transações
-- `GET /api/units` - Unidades
-- `GET /api/assets` - Ativos
-- `GET /api/events` - Eventos
+- `GET /api/funcionarios` - Funcionários
+- `GET /api/transacoes` - Transações
+- `GET /api/unidades` - Unidades
+- `GET /api/patrimonios` - Ativos
+- `GET /api/eventos-igreja` - Eventos
 
 ## 🏥 Health Check
 

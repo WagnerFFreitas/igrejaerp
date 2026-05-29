@@ -6,7 +6,7 @@
  * ============================================================================
  */
 
-import { Transaction, Member, Payroll, Asset } from '../types';
+import { Transacao, Membro, PayrollCalculation, Asset } from '../tipos';
 
 /**
  * Calcular crescimento percentual
@@ -67,8 +67,8 @@ export function calcularDepreciacaoPeriodo(valorOriginal: number, vidaUtilAnos: 
 /**
  * Calcular valor patrimonial líquido
  */
-export function calcularValorPatrimonialLiquido(assets: Asset[]): number {
-  return assets.reduce((total, asset) => {
+export function calcularValorPatrimonialLiquido(patrimonios: Asset[]): number {
+  return patrimonios.reduce((total, asset) => {
     const depreciacaoAcumulada = asset.accumulatedDepreciation || 0;
     return total + (asset.acquisitionValue - depreciacaoAcumulada);
   }, 0);
@@ -137,10 +137,10 @@ export function calcularYoY(valorAnoAtual: number, valorAnoAnterior: number): {
 /**
  * Agrupar transações por categoria
  */
-export function agruparPorCategoria(transactions: Transaction[]): Record<string, number> {
-  return transactions.reduce((acc, t) => {
-    const category = t.category || 'Outros';
-    acc[category] = (acc[category] || 0) + t.amount;
+export function agruparPorCategoria(transacoes: Transacao[]): Record<string, number> {
+  return transacoes.reduce((acc, t) => {
+    const category = t.categoria || 'Outros';
+    acc[category] = (acc[category] || 0) + t.valor;
     return acc;
   }, {} as Record<string, number>);
 }

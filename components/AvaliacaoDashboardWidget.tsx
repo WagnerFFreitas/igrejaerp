@@ -21,11 +21,11 @@ import {
   Trophy, TrendingUp, Users, Star, Award, Target, AlertCircle, 
   ChevronRight, BarChart3, Filter, Search, Eye, Download
 } from 'lucide-react';
-import { Payroll, UserAuth } from '../types';
+import { Payroll, UserAuth } from '../tipos';
 
 interface AvaliacaoDashboardWidgetProps {
-  employees: Payroll[];
-  currentUnitId: string;
+  funcionarios: Payroll[];
+  currentIdUnidade: string;
   user?: UserAuth;
 }
 
@@ -51,8 +51,8 @@ interface EmployeeRanking {
  */
 
 export default function AvaliacaoDashboardWidget({
-  employees,
-  currentUnitId,
+  funcionarios,
+  currentIdUnidade,
   user
 }: AvaliacaoDashboardWidgetProps) {
   const [rankings, setRankings] = useState<EmployeeRanking[]>([]);
@@ -63,7 +63,7 @@ export default function AvaliacaoDashboardWidget({
   useEffect(() => {
     const loadRankings = async () => {
       setIsLoading(true);
-      const realRankings: EmployeeRanking[] = employees.map((employee, index) => {
+      const realRankings: EmployeeRanking[] = funcionarios.map((employee, index) => {
         const score = 0;
         const status: EmployeeRanking['status'] = employee.status === 'ACTIVE' ? 'active' : 'inactive';
         return {
@@ -86,7 +86,7 @@ export default function AvaliacaoDashboardWidget({
     };
 
     loadRankings();
-  }, [currentUnitId, employees]);
+  }, [currentIdUnidade, funcionarios]);
 
   const filteredRankings = rankings.filter(ranking => {
     const matchesSearch = ranking.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

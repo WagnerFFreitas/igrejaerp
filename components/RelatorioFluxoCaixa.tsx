@@ -28,7 +28,7 @@ import {
   Calendar, DollarSign, Percent, Target, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import { CashFlowProjection } from '../utils/calculosFluxoCaixa';
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 /**
  * PROPRIEDADES DO COMPONENTE
@@ -64,8 +64,8 @@ export const RelatorioFluxoCaixa: React.FC<RelatorioFluxoCaixaProps> = ({
    */
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     });
   };
   

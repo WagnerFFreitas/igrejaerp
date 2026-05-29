@@ -19,12 +19,12 @@
 
 import React, { useState } from 'react';
 import { BarChart3, Download, FileSpreadsheet, DollarSign, Users, Briefcase, Share2, CheckCircle2, Loader2, FileJson, Printer, Calculator, TrendingUp, FileText } from 'lucide-react';
-import { Transaction, Member, SocialChargesReport, Payroll } from '../types';
+import { Transacao, Membro, SocialChargesReport, Payroll } from '../tipos';
 
 interface RelatoriosProps {
-  transactions: Transaction[];
-  members: Member[];
-  employees?: Payroll[];
+  transacoes: Transacao[];
+  members: Membro[];
+  funcionarios?: Payroll[];
 }
 
 /**
@@ -34,7 +34,7 @@ interface RelatoriosProps {
  * Define o bloco principal deste arquivo (relatorios).
  */
 
-export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, employees = [] }) => {
+export const Relatorios: React.FC<RelatoriosProps> = ({ transacoes, members, funcionarios = [] }) => {
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 
@@ -50,26 +50,26 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
   };
 
   const handlePrint = () => {
-    const fmtCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'moeda', moeda: 'BRL' });
     const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 
     // Calcular totais
-    const totals = transactions.reduce((acc, curr) => {
-      if (curr.status === 'PAID') {
-        if (curr.type === 'INCOME') acc.income += curr.amount;
-        else acc.expense += curr.amount;
-      } else if (curr.status === 'PENDING') acc.payable += curr.amount;
+    const totals = transacoes.reduce((acc, curr) => {
+      if (curr.situacao === 'REALIZADO') {
+        if (curr.tipo === 'ENTRADA') acc.income += curr.valor;
+        else acc.expense += curr.valor;
+      } else if (curr.situacao === 'PENDENTE') acc.payable += curr.valor;
       return acc;
     }, { income: 0, expense: 0, payable: 0 });
 
     const balance = totals.income - totals.expense;
 
     // Agrupar por categoria
-    const byCategory = transactions.reduce((acc, t) => {
-      const cat = t.category || 'OUTROS';
+    const byCategory = transacoes.reduce((acc, t) => {
+      const cat = t.categoria || 'OUTROS';
       if (!acc[cat]) acc[cat] = { income: 0, expense: 0, count: 0 };
-      if (t.type === 'INCOME') acc[cat].income += t.amount;
-      else acc[cat].expense += t.amount;
+      if (t.tipo === 'ENTRADA') acc[cat].income += t.valor;
+      else acc[cat].expense += t.valor;
       acc[cat].count += 1;
       return acc;
     }, {} as Record<string, { income: number; expense: number; count: number }>);
@@ -141,16 +141,16 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
             <div style="padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px">
               ${section('Resumo Operacional')}
-              ${field('Total de Transações', String(transactions.length))}
+              ${field('Total de Transações', String(transacoes.length))}
               ${field('Contas a Pagar', fmtCurrency(totals.payable))}
               ${field('Saldo Projetado', fmtCurrency(balance - totals.payable))}
-              ${field('Média por Transação', transactions.length > 0 ? fmtCurrency((totals.income + totals.expense) / transactions.length) : 'R$ 0,00')}
+              ${field('Média por Transação', transacoes.length > 0 ? fmtCurrency((totals.income + totals.expense) / transacoes.length) : 'R$ 0,00')}
             </div>
             <div style="padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px">
               ${section('Estatísticas')}
               ${field('Total de Categorias', String(Object.keys(byCategory).length))}
-              ${field('Maior Receita', totals.income > 0 ? fmtCurrency(Math.max(...transactions.filter(t => t.type === 'INCOME').map(t => t.amount))) : '—')}
-              ${field('Maior Despesa', totals.expense > 0 ? fmtCurrency(Math.max(...transactions.filter(t => t.type === 'EXPENSE').map(t => t.amount))) : '—')}
+              ${field('Maior Receita', totals.income > 0 ? fmtCurrency(Math.max(...transacoes.filter(t => t.tipo === 'ENTRADA').map(t => t.valor))) : '—')}
+              ${field('Maior Despesa', totals.expense > 0 ? fmtCurrency(Math.max(...transacoes.filter(t => t.tipo === 'SAIDA').map(t => t.valor))) : '—')}
             </div>
           </div>
 
@@ -162,19 +162,19 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
                 ${tableRow(['Data', 'Descrição', 'Cat', 'Tipo', 'Valor', 'Status'], true)}
               </thead>
               <tbody>
-                ${transactions.slice(0, 12).map(t => `
+                ${transacoes.slice(0, 12).map(t => `
                   ${tableRow([
-                    fmtDate(t.date),
-                    (t.description || '—').substring(0, 25) + (t.description && t.description.length > 25 ? '...' : ''),
-                    (t.category || 'OUTROS').substring(0, 8),
-                    t.type === 'INCOME' ? 'R' : 'D',
-                    fmtCurrency(t.amount),
-                    t.status === 'PAID' ? 'L' : 'A'
+                    fmtDate(t.data_transacao),
+                    (t.descricao || '—').substring(0, 25) + (t.descricao && t.descricao.length > 25 ? '...' : ''),
+                    (t.categoria || 'OUTROS').substring(0, 8),
+                    t.tipo === 'ENTRADA' ? 'R' : 'D',
+                    fmtCurrency(t.valor),
+                    t.situacao === 'REALIZADO' ? 'L' : 'A'
                   ])}
                 `).join('')}
               </tbody>
             </table>
-            ${transactions.length > 12 ? `<div style="font-size:7px;color:#64748b;margin-top:3px;text-align:center">... e mais ${transactions.length - 12} transações</div>` : ''}
+            ${transacoes.length > 12 ? `<div style="font-size:7px;color:#64748b;margin-top:3px;text-align:center">... e mais ${transacoes.length - 12} transações</div>` : ''}
           </div>
 
           <!-- Tabela Resumo por Categoria -->
@@ -206,7 +206,7 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
               Este relatório foi gerado automaticamente pelo ADJPA ERP Sistema de Gestão Ministerial
             </div>
             <div style="font-size:6px;color:#cbd5e1">
-              Total de registros: ${transactions.length} transações
+              Total de registros: ${transacoes.length} transações
             </div>
           </div>
 
@@ -238,10 +238,10 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
   // Funções específicas para cada tipo de relatório
   const generateMonthlyBalance = () => {
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const monthlyTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
+    const monthlyTransactions = transacoes.filter(t => t.data_transacao.startsWith(currentMonth));
     
-    const income = monthlyTransactions.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + t.amount, 0);
-    const expense = monthlyTransactions.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0);
+    const income = monthlyTransactions.filter(t => t.tipo === 'ENTRADA').reduce((sum, t) => sum + t.valor, 0);
+    const expense = monthlyTransactions.filter(t => t.tipo === 'SAIDA').reduce((sum, t) => sum + t.valor, 0);
     
     return {
       title: 'Balancete Mensal',
@@ -249,40 +249,40 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
       income,
       expense,
       balance: income - expense,
-      transactions: monthlyTransactions,
+      transacoes: monthlyTransactions,
       totalTransactions: monthlyTransactions.length
     };
   };
 
   const generateTithingReport = () => {
-    const tithingTransactions = transactions.filter(t => 
-      t.category === 'Dizimo' || t.category.includes('Dizimo')
+    const tithingTransactions = transacoes.filter(t => 
+      t.categoria === 'Dizimo' || t.categoria.includes('Dizimo')
     );
     
     const monthlyTithing = tithingTransactions.reduce((acc, t) => {
-      const month = t.date.slice(0, 7);
+      const month = t.data_transacao.slice(0, 7);
       if (!acc[month]) acc[month] = { amount: 0, count: 0 };
-      acc[month].amount += t.amount;
+      acc[month].amount += t.valor;
       acc[month].count += 1;
       return acc;
     }, {} as Record<string, { amount: number; count: number }>);
 
     return {
       title: 'Relatório de Dízimos',
-      totalTithing: tithingTransactions.reduce((sum, t) => sum + t.amount, 0),
+      totalTithing: tithingTransactions.reduce((sum, t) => sum + t.valor, 0),
       totalDonors: tithingTransactions.length,
       monthlyBreakdown: monthlyTithing,
-      transactions: tithingTransactions
+      transacoes: tithingTransactions
     };
   };
 
   const generateTalentBoard = () => {
-    const activeMembers = members.filter(m => m.status === 'ACTIVE');
+    const activeMembers = members.filter(m => m.situacao === 'Ativo' || m.situacao === 'ACTIVE');
     const memberSkills = activeMembers.map(m => ({
-      name: m.name,
-      skills: m.mainMinistry || 'Não definido',
-      position: m.ecclesiasticalPosition || 'Membro',
-      memberSince: m.membershipDate
+      name: m.nome,
+      skills: (m as any).mainMinistry || 'Não definido',
+      position: (m as any).ecclesiasticalPosition || 'Membro',
+      memberSince: m.data_ingresso || m.data_criacao
     }));
 
     return {
@@ -299,13 +299,13 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
   };
 
   const generatePerformanceReport = () => {
-    const activeEmployees = employees.filter(e => !e.data_demissao);
+    const activeEmployees = funcionarios.filter(e => !e.data_demissao);
     
     return {
       title: 'Avaliação de Desempenho',
       totalEmployees: activeEmployees.length,
       averageSalary: activeEmployees.reduce((sum, e) => sum + (e.salario_base || 0), 0) / activeEmployees.length,
-      employees: activeEmployees.map(e => ({
+      funcionarios: activeEmployees.map(e => ({
         name: e.nome,
         position: e.cargo,
         salary: e.salario_base || 0,
@@ -315,7 +315,7 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
   };
 
   const generateSalaryHistory = () => {
-    const salaryData = employees.map(e => ({
+    const salaryData = funcionarios.map(e => ({
       name: e.nome,
       currentSalary: e.salario_base || 0,
       position: e.cargo,
@@ -327,34 +327,34 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
       title: 'Histórico Salarial',
       totalPayroll: salaryData.reduce((sum, e) => sum + e.currentSalary, 0),
       averageSalary: salaryData.reduce((sum, e) => sum + e.currentSalary, 0) / salaryData.length,
-      employees: salaryData
+      funcionarios: salaryData
     };
   };
 
   const generateMemberMonthlyBalance = () => {
-    const memberContributions = transactions.filter(t => 
-      t.memberId || t.category.includes('Membro') || t.category.includes('Contribuição')
+    const memberContributions = transacoes.filter(t => 
+      t.id_membro || t.categoria.includes('Membro') || t.categoria.includes('Contribuição')
     );
     
     return {
       title: 'Balancete Mensal de Membros',
-      totalContributions: memberContributions.reduce((sum, t) => sum + t.amount, 0),
+      totalContributions: memberContributions.reduce((sum, t) => sum + t.valor, 0),
       contributorsCount: memberContributions.length,
-      transactions: memberContributions
+      transacoes: memberContributions
     };
   };
 
   const generateMemberTithingReport = () => {
-    const memberTithing = transactions.filter(t => 
-      (t.memberId || t.category.includes('Membro')) && 
-      (t.category === 'Dizimo' || t.category.includes('Dizimo'))
+    const memberTithing = transacoes.filter(t => 
+      (t.id_membro || t.categoria.includes('Membro')) && 
+      (t.categoria === 'Dizimo' || t.categoria.includes('Dizimo'))
     );
 
     return {
       title: 'Dízimos por Período - Membros',
-      totalTithing: memberTithing.reduce((sum, t) => sum + t.amount, 0),
+      totalTithing: memberTithing.reduce((sum, t) => sum + t.valor, 0),
       totalMembers: memberTithing.length,
-      transactions: memberTithing
+      transacoes: memberTithing
     };
   };
 
@@ -396,7 +396,7 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
     dl.click();
   };
   const generateSocialChargesReport = (): SocialChargesReport => {
-    const activeEmployees = employees.filter(emp => emp.data_demissao ? false : true);
+    const activeEmployees = funcionarios.filter(emp => emp.data_demissao ? false : true);
     
     // Valores simulados - em produção viriam do cálculo real da folha
     const grossSalaryTotal = activeEmployees.reduce((sum, emp) => sum + (emp.salario_base || 0), 0);
@@ -512,7 +512,7 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
             <p className="text-slate-400 font-medium leading-relaxed max-w-md">Exporte balancetes e dados da folha em formatos compatíveis com os principais softwares contábeis.</p>
           </div>
           <div className="flex gap-4">
-             <button onClick={() => handleExport('FINANCEIRO', 'CSV', transactions)} className="flex items-center gap-2 py-4 px-8 bg-white text-slate-900 rounded-2xl font-black uppercase text-xs shadow-xl transition-all hover:scale-105 active:scale-95">{isExporting?.includes('FINANCEIRO') ? <Loader2 size={16} className="animate-spin"/> : <FileSpreadsheet size={16}/>} Financeiro CSV</button>
+             <button onClick={() => handleExport('FINANCEIRO', 'CSV', transacoes)} className="flex items-center gap-2 py-4 px-8 bg-white text-slate-900 rounded-2xl font-black uppercase text-xs shadow-xl transition-all hover:scale-105 active:scale-95">{isExporting?.includes('FINANCEIRO') ? <Loader2 size={16} className="animate-spin"/> : <FileSpreadsheet size={16}/>} Financeiro CSV</button>
              <button onClick={() => handleExport('FOLHA', 'JSON', members)} className="flex items-center gap-2 py-4 px-8 bg-indigo-500 text-white rounded-2xl font-black uppercase text-xs shadow-xl transition-all hover:scale-105 active:scale-95">{isExporting?.includes('FOLHA') ? <Loader2 size={16} className="animate-spin"/> : <FileJson size={16}/>} Folha/DP JSON</button>
           </div>
         </div>
@@ -658,7 +658,7 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
           </div>
 
           {/* Preview do Relatório */}
-          {employees && employees.length > 0 && (
+          {funcionarios && funcionarios.length > 0 && (
             <div className="mt-8 border-t border-slate-100 pt-8">
               <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <FileText size={20} className="text-indigo-600" />
@@ -672,29 +672,29 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">Total Funcionários</span>
-                      <span className="text-sm font-bold text-slate-900">{employees.filter(e => !e.data_demissao).length}</span>
+                      <span className="text-sm font-bold text-slate-900">{funcionarios.filter(e => !e.data_demissao).length}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">Salários Brutos</span>
                       <span className="text-sm font-bold text-slate-900">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                          employees.filter(e => !e.data_demissao).reduce((sum, e) => sum + (e.salario_base || 0), 0)
+                        {new Intl.NumberFormat('pt-BR', { style: 'moeda', moeda: 'BRL' }).format(
+                          funcionarios.filter(e => !e.data_demissao).reduce((sum, e) => sum + (e.salario_base || 0), 0)
                         )}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">Encargos Empregador</span>
                       <span className="text-sm font-bold text-indigo-600">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                          employees.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.345), 0)
+                        {new Intl.NumberFormat('pt-BR', { style: 'moeda', moeda: 'BRL' }).format(
+                          funcionarios.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.345), 0)
                         )}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">Custo Total</span>
                       <span className="text-sm font-bold text-emerald-600">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                          employees.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 1.345), 0)
+                        {new Intl.NumberFormat('pt-BR', { style: 'moeda', moeda: 'BRL' }).format(
+                          funcionarios.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 1.345), 0)
                         )}
                       </span>
                     </div>
@@ -708,32 +708,32 @@ export const Relatorios: React.FC<RelatoriosProps> = ({ transactions, members, e
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">FGTS (8%)</span>
                       <span className="text-sm font-bold text-slate-900">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                          employees.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.08), 0)
+                        {new Intl.NumberFormat('pt-BR', { style: 'moeda', moeda: 'BRL' }).format(
+                          funcionarios.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.08), 0)
                         )}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">INSS Empregador (20%)</span>
                       <span className="text-sm font-bold text-slate-900">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                          employees.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.20), 0)
+                        {new Intl.NumberFormat('pt-BR', { style: 'moeda', moeda: 'BRL' }).format(
+                          funcionarios.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.20), 0)
                         )}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">RAT (1%)</span>
                       <span className="text-sm font-bold text-slate-900">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                          employees.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.01), 0)
+                        {new Intl.NumberFormat('pt-BR', { style: 'moeda', moeda: 'BRL' }).format(
+                          funcionarios.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.01), 0)
                         )}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600">Terceiros (5.5%)</span>
                       <span className="text-sm font-bold text-slate-900">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                          employees.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.055), 0)
+                        {new Intl.NumberFormat('pt-BR', { style: 'moeda', moeda: 'BRL' }).format(
+                          funcionarios.filter(e => !e.data_demissao).reduce((sum, e) => sum + ((e.salario_base || 0) * 0.055), 0)
                         )}
                       </span>
                     </div>

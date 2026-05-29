@@ -1,9 +1,26 @@
-import React, { useRef } from 'react';
-import { X, Printer } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+/**
+ * ============================================================================
+ * TERMOVOLUNTARIADO.TSX
+ * ============================================================================
+ *
+ * O QUE ESTE ARQUIVO FAZ?
+ * ------------------------
+ * Componente visual do frontend para termo voluntariado.
+ *
+ * ONDE É USADO?
+ * -------------
+ * Usado na interface React como parte do frontend.
+ *
+ * COMO FUNCIONA?
+ * --------------
+ * Controla a apresentação e interações da interface com o usuário.
+ */
 
-import { DADOS_IGREJA_PADRAO } from '../data/DadosIgreja';
+import React, { useRef } from 'react';
+import ReactDOM from 'react-dom';
+import { X, Printer } from 'lucide-react';
+
+
 
 interface TermoVoluntariadoProps {
   nome: string;
@@ -11,10 +28,13 @@ interface TermoVoluntariadoProps {
   rg?: string;
   endereco?: string;
   telefone?: string;
-  igrejaNome?: string;
-  igrejaCnpj?: string;
+  igrejaNome: string;
+  igrejaCnpj: string;
   igrejaEndereco?: string;
+  igrejaEnderecoLinha1?: string;
+  igrejaEnderecoLinha2?: string;
   igrejaContato?: string;
+  igrejaTelefone?: string;
   consentimentos?: {
     dataProcessing?: boolean;
     communication?: boolean;
@@ -24,6 +44,13 @@ interface TermoVoluntariadoProps {
   };
   onClose: () => void;
 }
+
+/**
+ * BLOCO PRINCIPAL
+ * ===============
+ *
+ * Define o bloco principal deste arquivo (termo voluntariado).
+ */
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div style={{ marginBottom: 25, position: 'relative' }}>
@@ -74,6 +101,8 @@ export const TermoVoluntariado: React.FC<TermoVoluntariadoProps> = ({
   igrejaNome,
   igrejaCnpj,
   igrejaEndereco,
+  igrejaEnderecoLinha1,
+  igrejaEnderecoLinha2,
   igrejaContato,
   onClose,
 }) => {
@@ -192,25 +221,28 @@ export const TermoVoluntariado: React.FC<TermoVoluntariadoProps> = ({
     };
   };
   
-  // Funções para detectar dados de "placeholder" que vêm do banco/estado padrão do sistema
-  const isPlaceholderNome = (val?: string) => !val || !val.trim() || val.includes('Igreja ADJPA Sede') || val.includes('ADJPA - SEDE MUNDIAL');
-  const isPlaceholderCnpj = (val?: string) => !val || !val.trim() || val.includes('00.000.000/000');
-  const isPlaceholderEmail = (val?: string) => !val || !val.trim() || val.includes('adjpamatriz') || val.includes('adjpa.com.br') || val.includes('contato@igreja.com');
-  const isPlaceholderEndereco = (val?: string) => !val || !val.trim() || val.includes('AV. BRASIL, 1234');
+  const dadosInstituicaoOk = !!(igrejaNome && igrejaCnpj);
 
-  // Determinar valores a exibir (substituindo placeholders pelos dados padrão corretos)
-  const displayNome = isPlaceholderNome(igrejaNome) ? DADOS_IGREJA_PADRAO.nome : igrejaNome;
-  const displayCnpj = isPlaceholderCnpj(igrejaCnpj) ? DADOS_IGREJA_PADRAO.cnpj : igrejaCnpj;
-  const displayContato = isPlaceholderEmail(igrejaContato) ? DADOS_IGREJA_PADRAO.email : igrejaContato;
-  const displayEndereco = isPlaceholderEndereco(igrejaEndereco) ? DADOS_IGREJA_PADRAO.endereco : igrejaEndereco;
-  const isDefaultEndereco = displayEndereco === DADOS_IGREJA_PADRAO.endereco;
+  const displayNome = igrejaNome || '';
+  const displayCnpj = igrejaCnpj || '';
+  const displayContato = igrejaContato || '';
+  
+  const displayEndereco = igrejaEndereco || '';
+  const displayEnderecoL1 = igrejaEnderecoLinha1 || '';
+  const displayEnderecoL2 = igrejaEnderecoLinha2 || '';
 
   return (
     <>
       <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm no-print">
         <div className="absolute top-6 right-6 flex gap-3 no-print z-[700]">
           <button
-            onClick={handlePrint}
+            onClick={() => {
+              if (!dadosInstituicaoOk) {
+                alert('Não foi possível carregar os dados da instituição. Verifique a conexão com o servidor e tente novamente.');
+                return;
+              }
+              handlePrint();
+            }}
             className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-xl hover:bg-indigo-700 transition-all transform hover:scale-105"
           >
             <Printer size={16} /> Imprimir Termo
@@ -249,10 +281,10 @@ export const TermoVoluntariado: React.FC<TermoVoluntariadoProps> = ({
               <div style={{ display: 'flex', marginBottom: 6, lineHeight: 1.4 }}>
                 <strong style={{ minWidth: '78px', flexShrink: 0 }}>Endereço:</strong>
                 <div>
-                  {isDefaultEndereco ? (
+                  {(displayEnderecoL1 || displayEnderecoL2) ? (
                     <>
-                      {DADOS_IGREJA_PADRAO.enderecoLinha1}
-                      <div>{DADOS_IGREJA_PADRAO.enderecoLinha2}</div>
+                      {displayEnderecoL1}
+                      <div>{displayEnderecoL2}</div>
                     </>
                   ) : (
                     displayEndereco

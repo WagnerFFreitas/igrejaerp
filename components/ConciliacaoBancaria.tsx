@@ -23,19 +23,19 @@ import {
   TrendingUp, DollarSign, Calendar, MoreVertical, Download,
   Plus, BarChart3, AlertCircle, Clock, Settings, Play, User
 } from 'lucide-react';
-import BankReconciliationService from '../services/bankReconciliationService';
-import { accountService } from '../services/accountService';
+import ConciliacaoBancariaService from '../services/conciliacaoBancariaService';
+import { accountService } from '../services/contasService';
 import { 
   BankReconciliation, 
   BankTransaction, 
   BankAccount, 
   BankDiscrepancy,
   ReconciliationReport 
-} from '../types';
+} from '../tipos';
 
 interface ConciliacaoBancariaProps {
-  currentUnitId: string;
-  accounts?: BankAccount[];
+  currentIdUnidade: string;
+  contas_bancarias?: BankAccount[];
   user?: any;
 }
 
@@ -47,18 +47,18 @@ interface ConciliacaoBancariaProps {
  */
 
 export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({ 
-  currentUnitId,
-  accounts: propAccounts = [],
+  currentIdUnidade,
+  contas_bancarias: propAccounts = [],
   user
 }) => {
   
-  const [activeTab, setActiveTab] = useState<'reconciliation' | 'transactions' | 'discrepancies' | 'reports'>('reconciliation');
+  const [activeTab, setActiveTab] = useState<'reconciliation' | 'transacoes' | 'discrepancies' | 'reports'>('reconciliation');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [reconciliations, setReconciliations] = useState<BankReconciliation[]>([]);
-  const [transactions, setTransactions] = useState<BankTransaction[]>([]);
+  const [transacoes, setTransactions] = useState<BankTransaction[]>([]);
   const [discrepancies, setDiscrepancies] = useState<BankDiscrepancy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isReconciling, setIsReconciling] = useState(false);
@@ -78,8 +78,8 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
       setIsLoading(true);
       try {
         const [loadedReconciliations, loadedAccounts] = await Promise.all([
-          BankReconciliationService.getReconciliations(currentUnitId),
-          accountService.getAccounts(currentUnitId),
+          ConciliacaoBancariaService.getReconciliations(currentIdUnidade),
+          accountService.getAccounts(currentIdUnidade),
         ]);
         setReconciliations(loadedReconciliations);
         // Usa contas reais do banco; fallback para props se vier vazio
@@ -91,7 +91,7 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
       }
     };
     loadData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   /**
    * FUNÇÕES
@@ -106,16 +106,16 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
       if (selectedAccount) {
         try {
           setIsLoading(true);
-          const result = await BankReconciliationService.importBankStatement(
+          const result = await ConciliacaoBancariaService.importBankStatement(
             selectedAccount,
             file,
-            currentUnitId
+            currentIdUnidade
           );
           
           // Recarregar transações
-          const updatedTransactions = await BankReconciliationService.getTransactionsByAccount(
+          const updatedTransactions = await ConciliacaoBancariaService.getTransactionsByAccount(
             selectedAccount,
-            currentUnitId
+            currentIdUnidade
           );
           setTransactions(updatedTransactions);
           
@@ -140,15 +140,15 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
 
     try {
       setIsReconciling(true);
-      const result = await BankReconciliationService.executeReconciliation(
+      const result = await ConciliacaoBancariaService.executeReconciliation(
         selectedAccount,
         startDate,
         endDate,
-        currentUnitId
+        currentIdUnidade
       );
       
       // Recarregar dados
-      const updatedReconciliations = await BankReconciliationService.getReconciliations(currentUnitId);
+      const updatedReconciliations = await ConciliacaoBancariaService.getReconciliations(currentIdUnidade);
       setReconciliations(updatedReconciliations);
       
       alert('Conciliação executada com sucesso!');
@@ -162,8 +162,8 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     }).format(value);
   };
 
@@ -217,7 +217,7 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
       <div className="flex border-b border-slate-200 mb-6">
         {[
           { id: 'reconciliation', label: 'Conciliação', icon: BarChart3 },
-          { id: 'transactions', label: 'Transações', icon: FileText },
+          { id: 'transacoes', label: 'Transações', icon: FileText },
           { id: 'discrepancies', label: 'Divergências', icon: AlertCircle },
           { id: 'reports', label: 'Relatórios', icon: Download }
         ].map(tab => (
@@ -315,7 +315,7 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
                     <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
-                        <span>{fmtDate(reconciliation.dataInicio || (reconciliation as any).data_inicio)} — {fmtDate(reconciliation.dataFim || (reconciliation as any).data_fim)}</span>
+                        <span>{fmtDate(reconciliation.dataInicio || (reconciliation as any).data_inicio)} — {fmtDate(reconciliation.dataFinal || (reconciliation as any).data_final)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <User size={14} />
@@ -384,16 +384,16 @@ export const ConciliacaoBancaria: React.FC<ConciliacaoBancariaProps> = ({
         </div>
       )}
 
-      {activeTab === 'transactions' && (
+      {activeTab === 'transacoes' && (
         <div className="space-y-4">
-          {transactions.length === 0 ? (
+          {transacoes.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
               <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
               <h3 className="text-lg font-semibold mb-2">Nenhuma transação encontrada</h3>
               <p className="text-sm">Importe extratos bancários para visualizar as transações.</p>
             </div>
           ) : (
-            transactions.map(transaction => (
+            transacoes.map(transaction => (
               <div key={transaction.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

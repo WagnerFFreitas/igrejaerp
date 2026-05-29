@@ -148,7 +148,7 @@ export const TermoVoluntariado: React.FC<TermoVoluntariadoProps> = ({
       width: 210mm;
       height: 297mm;
       z-index: -100;
-      pointer-events: none;
+      pointer-eventos_igreja: none;
     }
     
     .bg-layer img {
@@ -259,7 +259,7 @@ export const TermoVoluntariado: React.FC<TermoVoluntariadoProps> = ({
         </div>
 
         <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-y-auto max-h-[92vh] pb-24 relative">
-          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+          <div className="absolute inset-0 pointer-eventos_igreja-none" style={{ zIndex: 0 }}>
              <img src="/img/timbrado.png" className="w-full h-full object-cover opacity-[0.1]" alt="" />
           </div>
 

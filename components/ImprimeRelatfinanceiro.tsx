@@ -18,12 +18,12 @@
 
 import React, { useState } from 'react';
 import { Printer, X, Calendar, DollarSign, TrendingUp, TrendingDown, FileText } from 'lucide-react';
-import { Transaction, Member, FinancialAccount } from '../types';
+import { Transaction, Member, FinancialAccount } from '../tipos';
 
 interface ImprimeRelatfinanceiroProps {
-  transactions: Transaction[];
+  transacoes: Transaction[];
   members: Member[];
-  accounts: FinancialAccount[];
+  contas_bancarias: FinancialAccount[];
   onClose: () => void;
 }
 
@@ -35,9 +35,9 @@ interface ImprimeRelatfinanceiroProps {
  */
 
 export const ImprimeRelatfinanceiro: React.FC<ImprimeRelatfinanceiroProps> = ({ 
-  transactions, 
+  transacoes, 
   members, 
-  accounts, 
+  contas_bancarias, 
   onClose 
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'custom'>('current');
@@ -50,7 +50,7 @@ export const ImprimeRelatfinanceiro: React.FC<ImprimeRelatfinanceiroProps> = ({
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999); // Incluir o dia final completo
 
-    return transactions.filter(t => {
+    return transacoes.filter(t => {
       const tDate = new Date(t.date);
       return tDate >= start && tDate <= end;
     });
@@ -71,7 +71,7 @@ export const ImprimeRelatfinanceiro: React.FC<ImprimeRelatfinanceiroProps> = ({
 
   // Formatação
   const fmtCurrency = (v: number) => 
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    v.toLocaleString('pt-BR', { style: 'moeda', moeda: 'BRL' });
   const fmtDate = (d: string) => 
     new Date(d).toLocaleDateString('pt-BR');
 

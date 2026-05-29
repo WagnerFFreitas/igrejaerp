@@ -3,234 +3,242 @@
  * FINANCEIRO.TS
  * ============================================================================
  *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Definições de tipos e interfaces usadas no projeto.
- *
- * ONDE É USADO?
- * -------------
- * Importado em vários locais para garantir tipos consistentes.
- *
- * COMO FUNCIONA?
- * --------------
- * Ajuda o sistema com uma funcionalidade específica.
+ * Tipos financeiros estendidos para Contas a Pagar/Receber.
+ * Nomenclatura PT-BR alinhada ao schema PostgreSQL.
  */
 
-// Tipos Financeiros Estendidos para Contas a Pagar/Receber
+import { Transacao } from '../tipos';
 
-import { Transaction } from '../types';
+// ============================================================================
+// EXTENSÃO DE TRANSAÇÃO
+// ============================================================================
 
 /**
- * Extensão da interface Transaction com campos avançados
+ * Extensão da interface Transacao com campos avançados
  */
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (financeiro).
- */
-
-export interface TransactionEnhanced extends Transaction {
+export interface TransacaoEstendida extends Transacao {
   // Vencimento
-  dueDate?: string;
-  
+  dataVencimento?: string;
+
   // Parcelas
-  installmentNumber?: number; // Ex: 1
-  totalInstallments?: number; // Ex: 12
-  parentId?: string; // ID do título pai (para parcelas)
-  
+  numeroParcela?: number;
+  totalParcelas?: number;
+  idOrigem?: string; // ID do título pai (para parcelas)
+
   // Juros e Multas
-  interestRate?: number; // Taxa de juros mensal (%)
-  interestValue?: number; // Valor dos juros calculado (R$)
-  penaltyRate?: number; // Multa por atraso (%)
-  penaltyValue?: number; // Valor da multa (R$)
-  
+  taxaJuros?: number;
+  valorJuros?: number;
+  taxaMulta?: number;
+  valorMulta?: number;
+
   // Descontos
-  discountRate?: number; // Desconto por antecipação (%)
-  discountValue?: number; // Valor do desconto (R$)
-  
+  taxaDesconto?: number;
+  valorDesconto?: number;
+
   // Baixas Parciais
-  paidAmount?: number; // Valor já pago (R$)
-  remainingAmount?: number; // Saldo restante (R$)
-  
+  valorPago?: number;
+  valorRestante?: number;
+
   // Recorrência
-  isRecurring?: boolean;
-  recurrencePattern?: 'MONTHLY' | 'WEEKLY' | 'YEARLY' | 'DAILY';
-  nextDueDate?: string;
-  
+  recorrente?: boolean;
+  padraoRecorrencia?: 'MONTHLY' | 'WEEKLY' | 'YEARLY' | 'DAILY';
+  proximoVencimento?: string;
+
   // Conciliação Bancária
-  bankTransactionId?: string;
-  conciliationDate?: string;
-  bankStatement?: string;
-  
+  idTransacaoBancaria?: string;
+  dataConciliacao?: string;
+  extratoBancario?: string;
+
   // Documentos Fiscais
-  documentNumber?: string;
-  documentSeries?: string;
-  documentType?: DocumentType;
-  
+  numeroDocumento?: string;
+  serieDocumento?: string;
+  tipoDocumento?: TipoDocumento;
+
   // Observações
-  notes?: string;
-  
+  observacoes?: string;
+
   // Categoria Financeira
-  financialCategory?: FinancialCategory;
+  categoriaFinanceira?: CategoriaFinanceira;
 }
 
-/**
- * Tipo de documento fiscal
- */
-export type DocumentType = 'NFE' | 'NFSE' | 'RECIBO' | 'BOLETO' | 'OUTRO';
+/** @deprecated Use TransacaoEstendida */
+export type TransactionEnhanced = TransacaoEstendida;
 
-/**
- * Categoria financeira da transação
- */
-export type FinancialCategory = 
-  | 'OPERATIONAL'      // Despesas operacionais
-  | 'PAYROLL'          // Folha de pagamento
-  | 'TAXES'            // Impostos e contribuições
-  | 'BENEFITS'         // Benefícios
-  | 'INCOME'           // Receitas
-  | 'TRANSFER'         // Transferências
-  | 'INVESTMENT'       // Investimentos
-  | 'LOAN'             // Empréstimos
-  | 'OTHER';           // Outros
+// ============================================================================
+// ENUMS
+// ============================================================================
 
-/**
- * Conciliação Bancária
- */
-export interface BankReconciliation {
+export type TipoDocumento = 'NFE' | 'NFSE' | 'RECIBO' | 'BOLETO' | 'OUTRO';
+/** @deprecated Use TipoDocumento */
+export type DocumentType = TipoDocumento;
+
+export type CategoriaFinanceira =
+  | 'OPERATIONAL'
+  | 'PAYROLL'
+  | 'TAXES'
+  | 'BENEFITS'
+  | 'INCOME'
+  | 'TRANSFER'
+  | 'INVESTMENT'
+  | 'LOAN'
+  | 'OTHER';
+/** @deprecated Use CategoriaFinanceira */
+export type FinancialCategory = CategoriaFinanceira;
+
+// ============================================================================
+// CONCILIAÇÃO BANCÁRIA
+// ============================================================================
+
+export interface ConciliacaoBancaria {
   id: string;
-  unitId: string;
-  accountId: string;
-  accountName: string;
-  statementDate: string;
-  openingBalance: number;
-  closingBalance: number;
-  transactions: ReconciliationTransaction[];
-  reconciledAt: string;
-  reconciledBy: string;
-  observations?: string;
+  idUnidade: string;
+  idConta: string;
+  nomeConta: string;
+  dataExtrato: string;
+  saldoInicial: number;
+  saldoFinal: number;
+  transacoes: TransacaoConciliacao[];
+  conciliadoEm: string;
+  conciliadoPor: string;
+  observacoes?: string;
 }
+/** @deprecated Use ConciliacaoBancaria */
+export type BankReconciliation = ConciliacaoBancaria;
 
-/**
- * Transação na conciliação bancária
- */
-export interface ReconciliationTransaction {
+export interface TransacaoConciliacao {
   id: string;
-  date: string;
-  description: string;
-  amount: number;
-  type: 'DEBIT' | 'CREDIT';
-  transactionId?: string; // Vínculo com Transaction do sistema
-  isMatched: boolean;
-  matchConfidence?: number; // 0-100 (confiança no match automático)
+  data: string;
+  descricao: string;
+  valor: number;
+  tipo: 'DEBIT' | 'CREDIT';
+  idTransacao?: string;
+  conciliado: boolean;
+  confiancaConciliacao?: number;
 }
+/** @deprecated Use TransacaoConciliacao */
+export type ReconciliationTransaction = TransacaoConciliacao;
 
-/**
- * Projeção de Fluxo de Caixa
- */
-export interface CashFlowProjection {
+// ============================================================================
+// FLUXO DE CAIXA
+// ============================================================================
+
+export interface ProjecaoFluxoCaixa {
   id: string;
-  unitId: string;
-  month: number;
-  year: number;
-  projectedIncome: number;
-  projectedExpense: number;
-  projectedBalance: number;
-  actualIncome?: number;
-  actualExpense?: number;
-  actualBalance?: number;
-  variance: number;
-  variancePercent: number;
-  observations?: string;
-  createdAt: string;
-  updatedAt: string;
+  idUnidade: string;
+  mes: number;
+  ano: number;
+  receitaPrevista: number;
+  despesaPrevista: number;
+  saldoPrevisto: number;
+  receitaRealizada?: number;
+  despesaRealizada?: number;
+  saldoRealizado?: number;
+  variacao: number;
+  variacaoPercentual: number;
+  observacoes?: string;
+  dataCriacao: string;
+  dataAtualizacao: string;
 }
+/** @deprecated Use ProjecaoFluxoCaixa */
+export type CashFlowProjection = ProjecaoFluxoCaixa;
 
-/**
- * Transação Recorrente
- */
-export interface RecurringTransaction {
+// ============================================================================
+// TRANSAÇÃO RECORRENTE
+// ============================================================================
+
+export interface TransacaoRecorrente {
   id: string;
-  unitId: string;
-  name: string;
-  template: RecurringTransactionTemplate;
-  frequency: 'MONTHLY' | 'WEEKLY' | 'YEARLY' | 'DAILY';
-  startDate: string;
-  endDate?: string;
-  nextDate: string;
-  isActive: boolean;
-  generatedTransactions: string[]; // IDs das transações geradas
-  lastGeneratedDate?: string;
-  createdAt: string;
-  createdBy: string;
+  idUnidade: string;
+  nome: string;
+  modelo: ModeloTransacaoRecorrente;
+  frequencia: 'MONTHLY' | 'WEEKLY' | 'YEARLY' | 'DAILY';
+  dataInicio: string;
+  dataFim?: string;
+  proximaData: string;
+  ativo: boolean;
+  transacoesGeradas: string[];
+  ultimaDataGerada?: string;
+  dataCriacao: string;
+  criadoPor: string;
 }
+/** @deprecated Use TransacaoRecorrente */
+export type RecurringTransaction = TransacaoRecorrente;
 
-/**
- * Template para transação recorrente
- */
-export interface RecurringTransactionTemplate {
-  description: string;
-  amount: number;
-  type: 'INCOME' | 'EXPENSE';
-  category: string;
-  costCenter: string;
-  accountId: string;
-  paymentMethod?: 'PIX' | 'CASH' | 'CREDIT_CARD' | 'BANK_TRANSFER';
-  providerName?: string;
-  operationNature: string;
-  projectId?: string;
+export interface ModeloTransacaoRecorrente {
+  descricao: string;
+  valor: number;
+  tipo: 'INCOME' | 'EXPENSE';
+  categoria: string;
+  centroCusto: string;
+  idConta: string;
+  formaPagamento?: 'PIX' | 'CASH' | 'CREDIT_CARD' | 'BANK_TRANSFER';
+  nomeFornecedor?: string;
+  naturezaOperacao: string;
+  idProjeto?: string;
 }
+/** @deprecated Use ModeloTransacaoRecorrente */
+export type RecurringTransactionTemplate = ModeloTransacaoRecorrente;
 
-/**
- * Centro de Custo
- */
-export interface CostCenter {
+// ============================================================================
+// CENTRO DE CUSTO
+// ============================================================================
+
+export interface CentroCusto {
   id: string;
-  code: string;
-  name: string;
-  department: string;
-  isActive: boolean;
-  budget?: number; // Orçamento mensal
-  actualExpense?: number; // Despesa realizada no mês
-  variance?: number; // Diferença (budget - actual)
+  codigo: string;
+  nome: string;
+  departamento: string;
+  ativo: boolean;
+  orcamento?: number;
+  despesaRealizada?: number;
+  variacao?: number;
 }
+/** @deprecated Use CentroCusto */
+export type CostCenter = CentroCusto;
 
-/**
- * Natureza de Operação
- */
-export interface OperationNature {
+// ============================================================================
+// NATUREZA DE OPERAÇÃO
+// ============================================================================
+
+export interface NaturezaOperacao {
   id: string;
-  code: string;
-  name: string;
-  description?: string;
-  accountingAccountCode?: string; // Vínculo com conta contábil
-  isFiscal: boolean;
+  codigo: string;
+  nome: string;
+  descricao?: string;
+  codigoContaContabil?: string;
+  fiscal: boolean;
 }
+/** @deprecated Use NaturezaOperacao */
+export type OperationNature = NaturezaOperacao;
 
-/**
- * Resumo Financeiro Mensal
- */
-export interface MonthlyFinancialSummary {
-  month: number;
-  year: number;
-  totalIncome: number;
-  totalExpense: number;
-  netResult: number;
-  pendingPayables: number;
-  pendingReceivables: number;
-  cashBalance: number;
-  projectionsVariance: number;
+// ============================================================================
+// RESUMO FINANCEIRO MENSAL
+// ============================================================================
+
+export interface ResumoFinanceiroMensal {
+  mes: number;
+  ano: number;
+  totalReceitas: number;
+  totalDespesas: number;
+  resultadoLiquido: number;
+  contasAPagar: number;
+  contasAReceber: number;
+  saldoCaixa: number;
+  variacaoProjecoes: number;
 }
+/** @deprecated Use ResumoFinanceiroMensal */
+export type MonthlyFinancialSummary = ResumoFinanceiroMensal;
 
-/**
- * Aging List (Análise de Vencimentos)
- */
+// ============================================================================
+// AGING LIST (terminologia contábil internacional — manter em inglês)
+// ============================================================================
+
 export interface AgingList {
   total: number;
-  notDue: number; // Ainda não venceu
-  days1_30: number; // 1-30 dias vencido
-  days31_60: number; // 31-60 dias vencido
-  days61_90: number; // 61-90 dias vencido
-  days91_plus: number; // Mais de 90 dias
-  writeOff: number; // Perdas prováveis
+  notDue: number;
+  days1_30: number;
+  days31_60: number;
+  days61_90: number;
+  days91_plus: number;
+  writeOff: number;
 }

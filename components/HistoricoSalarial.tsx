@@ -22,12 +22,12 @@ import {
   Plus, Edit2, Trash2, Download, Search, Filter, CheckCircle, 
   XCircle, Clock, AlertCircle, BarChart3, PieChart, Eye
 } from 'lucide-react';
-import { SalaryHistory, SalaryAdjustmentRequest, Payroll, UserAuth } from '../types';
-import SalaryHistoryService from '../services/salaryHistoryService';
+import { SalaryHistory, SalaryAdjustmentRequest, Payroll, UserAuth } from '../tipos';
+import HistoricoSalarialService from '../services/historicoSalarialService';
 
 interface HistoricoSalarialProps {
-  employees: Payroll[];
-  currentUnitId: string;
+  funcionarios: Payroll[];
+  currentIdUnidade: string;
   user?: UserAuth;
   selectedEmployee?: Payroll;
 }
@@ -40,8 +40,8 @@ interface HistoricoSalarialProps {
  */
 
 export default function HistoricoSalarial({
-  employees,
-  currentUnitId,
+  funcionarios,
+  currentIdUnidade,
   user,
   selectedEmployee
 }: HistoricoSalarialProps) {
@@ -60,8 +60,8 @@ export default function HistoricoSalarial({
       setIsLoading(true);
       try {
         const [history, requests] = await Promise.all([
-          SalaryHistoryService.getSalaryHistory(currentUnitId),
-          SalaryHistoryService.getAdjustmentRequests(currentUnitId)
+          HistoricoSalarialService.getSalaryHistory(currentIdUnidade),
+          HistoricoSalarialService.getAdjustmentRequests(currentIdUnidade)
         ]);
 
         setSalaryHistory(history);
@@ -74,7 +74,7 @@ export default function HistoricoSalarial({
     };
 
     loadData();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   const filteredHistory = salaryHistory.filter(history => {
     const matchesSearch = history.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,8 +118,8 @@ export default function HistoricoSalarial({
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+      style: 'moeda',
+      moeda: 'BRL'
     }).format(value);
   };
 

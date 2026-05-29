@@ -1,0 +1,442 @@
+# RELAÇÃO COMPLETA DO BANCO DE DADOS - ADJPA ERP
+# PADRÃO: snake_case (Português)
+
+## Tabela: unidades (units)
+- id_unidade (id)
+- nome_unidade
+- cnpj
+- endereco
+- bairro
+- cidade
+- estado
+- cep
+- pais (country)
+- telefone
+- email
+- website
+- nome_pastor (pastor_name)
+- telefone_pastor (pastor_phone)
+- sede
+- situacao (status)
+- criado (created_at)
+- atualizado (updated_at)
+- criador (criado_por) -> O ID do usuário que criou o registro (auditoria).
+
+---
+
+## Tabela: membros (membros)
+- id_membro (id)
+- id_unidade
+- nome
+- cpf
+- rg
+- email
+- telefone
+- whatsapp
+- data_nascimento
+- sexo
+- estado_civil
+- logradouro
+- bairro
+- cidade
+- estado
+- cep
+- data_conversao
+- data_batismo
+- data_membro
+- situacao (status)
+- funcao
+- ministerio
+- grupo_pequeno
+- dizimista
+- ofertante
+- valor_dizimo
+- observacoes
+- criado
+- atualizado
+- dados_perfil -> Campo JSON que guarda informações extras ou legadas ainda não colunizadas.
+- matricula
+- profissao
+- nome_conjuge
+- data_casamento
+- nome_pai
+- nome_mae
+- tipo_sanguineo
+- contato_emergencia
+- numero
+- complemento
+- local_conversao
+- igreja_batismo
+- pastor_batizador
+- batismo_espirito_santo
+- igreja_origem
+- curso_discipulado
+- escola_biblica
+- ministerio_principal
+- funcao_ministerio
+- outros_ministerios
+- cargo_eclesiastico
+- data_consagracao
+- ofertante_regular
+- participa_campanhas
+- banco
+- agencia_bancaria
+- conta_bancaria
+- chave_pix
+- necessidades_especiais
+- talentos
+- tags -> Usado para categorização flexível (ex: 'Líder', 'Visitante', 'Novo').
+- familia_id
+- avatar
+- grupo_celula (cell_group)
+- dons_espirituais
+- escolaridade
+- pcd (is_pcd)
+- tipo_deficiencia
+- celular
+- consentimento_lgpd (lgpd_consent)
+
+---
+
+## Tabela: funcionarios (employees)
+- id_funcionario (id)
+- id_unidade
+- nome
+- cpf
+- rg
+- ctps
+- ctps_serie
+- pis
+- data_nascimento (birth_date)
+- sexo
+- estado_civil
+- tipo_sanguineo (blood_type)
+- email
+- telefone
+- celular
+- contato_emergencia (emergency_contact)
+- naturalidade
+- escolaridade
+- raca_cor
+- nome_mae
+- nome_pai
+- deficiencia
+- deficiencia_obs
+- avatar
+- observacoes_saude
+- cep
+- endereco (logradouro)
+- numero
+- complemento
+- bairro
+- cidade
+- estado
+- pais (address_country)
+- matricula
+- cargo
+- funcao
+- departamento
+- cbo
+- data_admissao
+- data_demissao
+- tipo_contrato
+- regime_trabalho
+- sindicato
+- convencao_coletiva
+- salario_base
+- tipo_salario
+- forma_pagamento
+- dia_pagamento
+- jornada_trabalho
+- escala_trabalho
+- horario_entrada
+- horario_saida
+- inicio_intervalo
+- fim_intervalo
+- duracao_intervalo
+- segunda_a_sexta
+- sabado
+- trabalha_feriados
+- controla_intervalo
+- horas_extras_autorizadas
+- tipo_registro_ponto
+- tolerancia_ponto
+- codigo_horario
+- banco
+- codigo_banco
+- agencia
+- conta
+- tipo_conta
+- titular
+- chave_pix
+- vt_ativo
+- vt_valor_diario
+- vt_qtd_vales_dia
+- vale_transporte_total
+- va_ativo
+- va_operadora
+- vale_alimentacao
+- vr_ativo
+- vr_operadora
+- vale_refeicao
+- ps_ativo
+- ps_operadora
+- ps_tipo_plano
+- ps_carteirinha
+- plano_saude_colaborador
+- ps_dependentes_ativo
+- plano_saude_dependentes
+- po_ativo
+- po_operadora
+- po_carteirinha
+- plano_odontologico
+- auxilio_moradia
+- vale_farmacia
+- seguro_vida
+- auxilio_creche
+- auxilio_educacao
+- gympass_plano -> Plano de benefícios corporativos para academias.
+- titulo_eleitor
+- titulo_eleitor_zona
+- titulo_eleitor_secao
+- reservista
+- cnh_numero
+- cnh_categoria
+- cnh_vencimento
+- aso_data -> Data do Atestado de Saúde Ocupacional (exame admissional/periódico).
+- esocial_categoria
+- esocial_matricula
+- esocial_natureza_atividade
+- esocial_tipo_regime_prev
+- esocial_tipo_regime_trab
+- esocial_indicativo_admissao
+- esocial_tipo_jornada
+- esocial_descricao_jornada
+- esocial_contrato_parcial
+- esocial_teletrabalho
+- esocial_clausula_asseguratoria
+- esocial_sucessao_trab
+- esocial_tipo_admissao
+- esocial_cnpj_anterior
+- esocial_matricula_anterior
+- esocial_data_admissao_origem
+- situacao (is_active)
+- criado (created_at)
+- atualizado (updated_at)
+- criador (created_by)
+
+---
+
+## Tabela: dependentes_funcionarios (employee_dependents)
+- id_dependente (id)
+- id_funcionario
+- nome
+- data_nascimento
+- parentesco
+- cpf
+- estudante
+- dependencia_irrf
+- criado
+- atualizado
+
+---
+
+## Tabela: dependentes_membros (member_dependents)
+- id_dependente (id)
+- id_membro
+- nome
+- data_nascimento
+- parentesco
+- cpf
+- criado
+- atualizado
+
+---
+
+## Tabela: categorias (categories)
+- id_categoria (id)
+- id_unidade
+- categoria (nome_categoria)
+- tipo_categoria
+- id_categoria_pai (categoria_pai_id) -> Usado para hierarquia (subcategorias).
+- cor
+- icone
+- descricao
+- situacao (esta_ativa)
+- criado
+- atualizado
+
+---
+
+## Tabela: contas_bancarias (accounts)
+- id_conta (id)
+- id_unidade
+- nome_conta
+- tipo_conta
+- nome_banco
+- agencia (agency)
+- numero_conta
+- saldo_atual
+- moeda (currency)
+- situacao (esta_ativo)
+- criado
+- atualizado
+
+---
+
+## Tabela: transacoes (transactions)
+- id_transacao (id)
+- id_unidade
+- descricao
+- valor
+- tipo_transacao
+- id_conta
+- data_transacao
+- data_vencimento
+- data_pagamento
+- situacao (situacao)
+- forma_pagamento
+- categoria
+- centro_custo
+- natureza_operacao
+- nome_fornecedor
+- id_membro
+- conciliado
+- observacoes
+- criador (created_by)
+- criado
+- atualizado
+- data_competencia
+- id_projeto (projeto_id)
+- valor_pago
+- valor_restante
+- parcelado
+- numero_parcela
+- total_parcelas
+- id_transacao_origem
+- data_conciliacao
+- id_externo
+
+---
+
+## Tabela: logs_sistema (system_logs)
+- id_log (id)
+- id_unidade
+- id_usuario (usuario_id)
+- acao
+- tipo_recurso -> Nome da tabela afetada (ex: 'membros').
+- id_recurso -> O ID específico do registro alterado.
+- valores_anteriores -> Snapshot dos dados antes da alteração (JSONB).
+- valores_novos -> Snapshot dos dados após a alteração (JSONB).
+- endereco_ip
+- agente_usuario
+- criado
+
+---
+
+## Tabela: logs_auditoria (audit_logs)
+- id_auditoria (id)
+- id_unidade
+- id_usuario (usuario_id)
+- nome_usuario
+- acao
+- entidade
+- id_entidade
+- nome_entidade
+- data_acao
+- endereco_ip
+- detalhes (details)
+- sucesso (success)
+- hash
+- imutavel -> Garante que o log não foi adulterado.
+
+---
+
+## Tabela: inventario_contagem (inventory_counts)
+- id_contagem (id)
+- id_unidade
+- data_contagem
+- contagem_por -> Quem realizou a contagem física.
+- revisado_por
+- situacao (situacao)
+- total_ativos
+- total_esperado
+- total_encontrado
+- diferenca_total
+- percentual_conclusao
+- iniciado
+- concluido
+
+---
+
+## Tabela: inventario_itens (inventory_items)
+- id_item (id)
+- id_contagem (contagem_estoque_id)
+- id_ativo (ativo_id)
+- nome_ativo
+- categoria
+- quantidade_esperada
+- quantidade_contada
+- diferenca
+- condicao
+- localizacao (location)
+- observacoes
+- criado
+
+---
+
+## Tabela: folha_pagamento (payroll)
+- id_folha (id)
+- id_unidade
+- id_funcionario
+- mes (month)
+- ano (year)
+- data_referencia
+- salario_base
+- horas_extras_50
+- horas_extras_100
+- adicional_noturno
+- insalubridade
+- periculosidade
+- comissoes
+- gratificacoes
+- outros_proventos
+- inss
+- irrf
+- fgts
+- pensao_alimenticia
+- adiantamento
+- faltas
+- atrasos
+- outras_deducoes
+- total_proventos
+- total_deducoes
+- salario_liquido
+- inss_patronal
+- fgts_patronal
+- rat
+- terceiros
+- total_encargos
+- situacao (status)
+- processado_por (id_usuario)
+- data_processamento (processado)
+- observacoes (notes)
+- criado
+- atualizado
+
+---
+
+## Tabela: usuarios (users)
+- id_usuario (id)
+- email
+- hash_senha
+- nome_usuario
+- perfil (role)
+- id_unidade
+- id_funcionario
+- id_membro
+- situacao (esta_ativo)
+- ultimo_login
+- criado
+- atualizado
+- criador (criado_por)

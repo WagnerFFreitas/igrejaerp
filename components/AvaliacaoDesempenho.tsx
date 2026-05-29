@@ -25,11 +25,11 @@ import {
 import { 
   PerformanceEvaluation, CompetencyEvaluation, GoalEvaluation, 
   PDIPlan, EvaluationCycle, DevelopmentPlan, Payroll, UserAuth 
-} from '../types';
+} from '../tipos';
 
 interface AvaliacaoDesempenhoProps {
-  employees: Payroll[];
-  currentUnitId: string;
+  funcionarios: Payroll[];
+  currentIdUnidade: string;
   user?: UserAuth;
 }
 
@@ -41,8 +41,8 @@ interface AvaliacaoDesempenhoProps {
  */
 
 export default function AvaliacaoDesempenho({ 
-  employees, 
-  currentUnitId, 
+  funcionarios, 
+  currentIdUnidade, 
   user 
 }: AvaliacaoDesempenhoProps) {
   const [activeTab, setActiveTab] = useState<'evaluations' | 'cycles' | 'templates' | 'reports'>('evaluations');
@@ -58,7 +58,7 @@ export default function AvaliacaoDesempenho({
   useEffect(() => {
     setEvaluations([]);
     setCycles([]);
-  }, [currentUnitId, user]);
+  }, [currentIdUnidade, user]);
 
   const filteredEvaluations = evaluations.filter(evaluation => {
     const matchesSearch = evaluation.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,7 +97,7 @@ export default function AvaliacaoDesempenho({
       
       const reportData = {
         generatedAt: new Date().toISOString(),
-        unitId: currentUnitId,
+        idUnidade: currentIdUnidade,
         totalEvaluations: evaluations.length,
         averageScore: evaluations.reduce((sum, evaluation) => sum + evaluation.overallScore, 0) / evaluations.length,
         evaluationsByRating: {

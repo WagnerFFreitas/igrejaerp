@@ -17,7 +17,7 @@
  */
 
 import apiClient from '../src/services/apiService';
-import { PerformanceEvaluation, DevelopmentPlan } from '../types';
+import { PerformanceEvaluation, DevelopmentPlan } from '../tipos';
 
 /**
  * BLOCO PRINCIPAL

@@ -22,12 +22,12 @@ import {
   Clock, MapPin, Phone, Mail, Edit2, Trash2, AlertCircle,
   Repeat, CalendarDays, CalendarPlus
 } from 'lucide-react';
-import { ChurchEvent, VolunteerSchedule, Member } from '../types';
-import { dbService } from '../services/databaseService';
-import AuthService from '../src/services/authService';
+import { ChurchEvent, VolunteerSchedule, Member } from '../tipos';
+import { dbService } from '../services/bancoDadosService';
+import AutenticacaoService from '../src/services/autenticacaoService';
 
 interface EventosProps {
-  currentUnitId: string;
+  currentIdUnidade: string;
   members: Member[];
   user?: any;
 }
@@ -58,10 +58,10 @@ const ROLES = {
   'Casais': ['Líder', 'Assistente', 'Coordenador']
 };
 
-export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }) => {
-  const canWriteEvents = AuthService.hasPermission(user, 'events', 'write');
-  const canDeleteEvents = AuthService.hasPermission(user, 'events', 'delete');
-  const [events, setEvents] = useState<ChurchEvent[]>([]);
+export const Eventos: React.FC<EventosProps> = ({ currentIdUnidade, members, user }) => {
+  const canWriteEvents = AutenticacaoService.hasPermission(user, 'eventos_igreja', 'write');
+  const canDeleteEvents = AutenticacaoService.hasPermission(user, 'eventos_igreja', 'delete');
+  const [eventos_igreja, setEvents] = useState<ChurchEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
@@ -96,14 +96,14 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
   useEffect(() => {
     const loadEvents = async () => {
       try {
-        const eventsData = await dbService.getEvents(currentUnitId);
+        const eventsData = await dbService.getEvents(currentIdUnidade);
         setEvents(eventsData || []);
       } catch (error) {
         console.error('Erro ao carregar eventos:', error);
       }
     };
     loadEvents();
-  }, [currentUnitId]);
+  }, [currentIdUnidade]);
 
   // Função para gerar eventos recorrentes
   const generateRecurringEvents = (baseEvent: ChurchEvent): ChurchEvent[] => {
@@ -111,7 +111,7 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
       return [baseEvent];
     }
 
-    const events: ChurchEvent[] = [];
+    const eventos_igreja: ChurchEvent[] = [];
     const startDate = new Date(baseEvent.date);
     const endDate = baseEvent.recurrenceEndDate ? new Date(baseEvent.recurrenceEndDate) : new Date();
     endDate.setHours(23, 59, 59, 999); // Fim do dia
@@ -135,7 +135,7 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
         isGeneratedEvent: true
       };
 
-      events.push(newEvent);
+      eventos_igreja.push(newEvent);
 
       // Avançar para próxima ocorrência
       if (baseEvent.recurrencePattern === 'WEEKLY') {
@@ -145,7 +145,7 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
       }
     }
 
-    return events;
+    return eventos_igreja;
   };
 
   const handleSaveEvent = () => {
@@ -161,7 +161,7 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
     
     const baseEvent: ChurchEvent = {
       id: `evt-${Date.now()}`,
-      unitId: currentUnitId,
+      idUnidade: currentIdUnidade,
       title: form.title,
       description: form.description,
       date: form.date,
@@ -292,7 +292,7 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
 
       {/* Lista de Eventos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map(event => {
+        {eventos_igreja.map(event => {
           const stats = getScheduleStats(event);
           return (
             <div key={event.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -395,7 +395,7 @@ export const Eventos: React.FC<EventosProps> = ({ currentUnitId, members, user }
           );
         })}
         
-        {events.length === 0 && (
+        {eventos_igreja.length === 0 && (
           <div className="col-span-full">
             <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center">
               <Calendar size={48} className="mx-auto text-slate-300 mb-4" />

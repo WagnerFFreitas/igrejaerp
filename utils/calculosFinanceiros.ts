@@ -28,7 +28,7 @@
  */
 
 // Importa os tipos do TypeScript para saber a estrutura dos dados
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 /**
  * FORMATAR VALOR PARA MOEDA BRASILEIRA
@@ -63,8 +63,8 @@ export function formatCurrency(value: number): string {
   
   // Formata para Real Brasileiro
   const formatted = absoluteValue.toLocaleString('pt-BR', {
-    style: 'currency',      // Usa formato de moeda
-    currency: 'BRL',        // BRL = código do Real
+    style: 'moeda',      // Usa formato de moeda
+    moeda: 'BRL',        // BRL = código do Real
     minimumFractionDigits: 2,  // Sempre mostra 2 casas decimais
   });
   
@@ -472,11 +472,11 @@ export function getStatusTransacao(transaction: Transaction): 'PAGA' | 'VENCIDA'
  * Pega só transações de um período específico
  * 
  * EXEMPLO:
- * filtrarPorPeriodo(transactions, '2024-03-01', '2024-03-31')
+ * filtrarPorPeriodo(transacoes, '2024-03-01', '2024-03-31')
  * → Retorna só transações de março de 2024
  * 
  * PARÂMETROS:
- * - transactions: Transaction[] → Lista de transações
+ * - transacoes: Transaction[] → Lista de transações
  * - dataInicio: string → Primeiro dia do período
  * - dataFim: string → Último dia do período
  * 
@@ -484,7 +484,7 @@ export function getStatusTransacao(transaction: Transaction): 'PAGA' | 'VENCIDA'
  * - Transaction[] → Transações dentro do período
  */
 export function filtrarPorPeriodo(
-  transactions: Transaction[],
+  transacoes: Transaction[],
   dataInicio: string,
   dataFim: string
 ): Transaction[] {
@@ -493,7 +493,7 @@ export function filtrarPorPeriodo(
   const fim = new Date(dataFim);
   
   // Filtra transações
-  return transactions.filter(t => {
+  return transacoes.filter(t => {
     const dataTransacao = new Date(t.date || t.dueDate || '');
     
     // Está entre início e fim?
@@ -512,15 +512,15 @@ export function filtrarPorPeriodo(
  * somarValores([t1, t2, t3]) → Soma amount de todas
  * 
  * PARÂMETRO:
- * - transactions: Transaction[] → Lista de transações
+ * - transacoes: Transaction[] → Lista de transações
  * 
  * RETORNO:
  * - number → Soma total
  */
-export function somarValores(transactions: Transaction[]): number {
+export function somarValores(transacoes: Transaction[]): number {
   // reduce() é um método que "reduz" um array a um único valor
   // acc = acumulador, curr = item atual
-  return transactions.reduce((acc, transaction) => {
+  return transacoes.reduce((acc, transaction) => {
     return acc + transaction.amount;
   }, 0); // Começa do zero
 }

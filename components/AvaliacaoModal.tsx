@@ -250,7 +250,7 @@ export default function AvaliacaoModal({
       competencies: formData.competencies,
       goals: formData.goals,
       pdiPlan: formData.pdiPlan,
-      unitId: 'current-unit',
+      idUnidade: 'current-unit',
       createdAt: editingAvaliacao?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

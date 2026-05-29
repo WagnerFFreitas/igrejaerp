@@ -17,7 +17,7 @@
  */
 
 import React from 'react';
-import { Payroll, Unit } from '../types';
+import { Payroll, Unit } from '../tipos';
 
 interface TemplateCrachaFuncionarioProps {
   employee: Payroll;
@@ -34,9 +34,8 @@ interface TemplateCrachaFuncionarioProps {
 
 export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps> = ({ employee, unit, id }) => {
 
-  // Foto real do funcionário — fallback para avatar gerado pelo nome
-  const avatarUrl = employee.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.employeeName || 'F')}&background=003399&color=fff&bold=true&size=200`;
+  // Foto real do funcionário (apenas foto real, sem avatar automático)
+  const avatarUrl = employee.avatar || '';
 
   // Data de admissão formatada com segurança
   const admissaoFormatada = (() => {
@@ -74,7 +73,7 @@ export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps>
       {/* Marca d'água Fundo */}
       <img 
         src="img/fundo.png" 
-        className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none z-10" 
+        className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-eventos_igreja-none z-10" 
         style={{ filter: 'sepia(1) hue-rotate(40deg) saturate(5) brightness(1.1)' }}
         alt=""
         onError={(e) => (e.target as HTMLElement).style.display = 'none'}
@@ -109,10 +108,9 @@ export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps>
             <img 
               src={avatarUrl}
               className="w-full h-full object-cover" 
-              crossOrigin="anonymous"
               alt={employee.employeeName}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.employeeName || 'F')}&background=003399&color=fff&bold=true&size=200`;
+                (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
           </div>
@@ -123,7 +121,6 @@ export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps>
             src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(employee.id)}`}
             alt="QR Code"
             className="w-full h-full"
-            crossOrigin="anonymous"
           />
         </div>
 
@@ -143,7 +140,7 @@ export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps>
       {/* Marca d'água Fundo Verso */}
       <img 
         src="img/fundo.png" 
-        className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none z-10" 
+        className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-eventos_igreja-none z-10" 
         style={{ filter: 'sepia(1) hue-rotate(40deg) saturate(5) brightness(1.1)' }}
         alt=""
         onError={(e) => (e.target as HTMLElement).style.display = 'none'}
@@ -167,11 +164,11 @@ export const TemplateCrachaFuncionario: React.FC<TemplateCrachaFuncionarioProps>
       <div className="relative z-10 space-y-3 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">TIPO SANGUÍNEO:</p>
-          <p className="text-[8px] font-bold text-slate-800 bg-rose-50 px-1 rounded">{employee.blood_type || '---'}</p>
+          <p className="text-[8px] font-bold text-slate-800 bg-rose-50 px-1 rounded">{employee.tipo_sanguineo || '---'}</p>
         </div>
         <div>
           <p className="text-[6px] font-black text-slate-400 uppercase mb-0.5 tracking-widest">EMERGÊNCIA:</p>
-          <p className="text-[8px] font-bold text-slate-800">{employee.emergency_contact || '( ) _____-_____'}</p>
+          <p className="text-[8px] font-bold text-slate-800">{employee.contato_emergencia || '( ) _____-_____'}</p>
         </div>
       </div>
 

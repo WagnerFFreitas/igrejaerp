@@ -25,9 +25,9 @@
  * - Emite recibos
  */
 
-import { dbService } from './databaseService';
-import { Transaction } from '../types';
-import { accountService } from './accountService';
+import { dbService } from './bancoDadosService';
+import { Transaction } from '../tipos';
+import { accountService } from './contasService';
 import {
   calcularEncargosPorAtraso,
   gerarPropostaDeRenegociacao,
@@ -123,10 +123,10 @@ export class ReceivablesService {
    */
   async getReceivables(unitId?: string): Promise<ReceivableTransaction[]> {
     // Busca transações do banco
-    const transactions = await dbService.getTransactions(unitId);
+    const transacoes = await dbService.getTransactions(unitId);
     
     // Filtra só as que são recebimentos (type = INCOME)
-    const receivables = transactions.filter(t => t.type === 'INCOME');
+    const receivables = transacoes.filter(t => t.type === 'INCOME');
     
     // Converte para formato enhanced
     return receivables.map(t => ({

@@ -24,7 +24,7 @@
  * - Gera novas propostas de pagamento
  */
 
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 import { 
   calcularJurosSimples, 
   calcularMulta, 
@@ -139,20 +139,20 @@ export function verificarNivelAlerta(dueDate: string): 'OK' | 'WARNING' | 'CRITI
  * Lista todas as transações que precisam de atenção
  * 
  * PARÂMETROS:
- * - transactions: Transaction[] → Lista de transações
+ * - transacoes: Transaction[] → Lista de transações
  * - alertDays: number → Com quantos dias de antecedência alertar (padrão: 5)
  * 
  * RETORNO:
  * PaymentAlert[] → Lista de alertas ordenada por urgência
  */
 export function gerarAlertasDeVencimento(
-  transactions: Transaction[],
+  transacoes: Transaction[],
   alertDays: number = 5
 ): PaymentAlert[] {
   const alerts: PaymentAlert[] = [];
   
   // Filtra só as pendentes
-  const pendingTransactions = transactions.filter(t => t.status === 'PENDING');
+  const pendingTransactions = transacoes.filter(t => t.status === 'PENDING');
   
   pendingTransactions.forEach(transaction => {
     const dueDate = transaction.dueDate || transaction.date;
@@ -405,7 +405,7 @@ export function calcularValorLiquidoDeRecebimento(
  * Separa transações por quão perto estão do vencimento
  * 
  * PARÂMETROS:
- * - transactions: Transaction[] → Lista de transações
+ * - transacoes: Transaction[] → Lista de transações
  * - status: 'OVERDUE' | 'DUE_TODAY' | 'DUE_SOON' | 'FUTURE'
  * 
  * RETORNO:
@@ -418,13 +418,13 @@ export function calcularValorLiquidoDeRecebimento(
  * - FUTURE: Vence depois de 5 dias
  */
 export function filtrarPorStatusDeVencimento(
-  transactions: Transaction[],
+  transacoes: Transaction[],
   status: 'OVERDUE' | 'DUE_TODAY' | 'DUE_SOON' | 'FUTURE'
 ): Transaction[] {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);  // Zera horas para comparação justa
   
-  return transactions.filter(transaction => {
+  return transacoes.filter(transaction => {
     const dueDateStr = transaction.dueDate || transaction.date;
     const vencimento = new Date(dueDateStr);
     vencimento.setHours(0, 0, 0, 0);
@@ -459,7 +459,7 @@ export function filtrarPorStatusDeVencimento(
  * Agrupa valores por categoria de vencimento
  * 
  * PARÂMETROS:
- * - transactions: Transaction[] → Lista de transações
+ * - transacoes: Transaction[] → Lista de transações
  * 
  * RETORNO:
  * {
@@ -470,23 +470,23 @@ export function filtrarPorStatusDeVencimento(
  *   total: number        // Tudo somado
  * }
  */
-export function somarTotalPorStatus(transactions: Transaction[]): {
+export function somarTotalPorStatus(transacoes: Transaction[]): {
   overdue: number;
   dueToday: number;
   dueSoon: number;
   future: number;
   total: number;
 } {
-  const overdue = filtrarPorStatusDeVencimento(transactions, 'OVERDUE')
+  const overdue = filtrarPorStatusDeVencimento(transacoes, 'OVERDUE')
     .reduce((sum, t) => sum + t.amount, 0);
   
-  const dueToday = filtrarPorStatusDeVencimento(transactions, 'DUE_TODAY')
+  const dueToday = filtrarPorStatusDeVencimento(transacoes, 'DUE_TODAY')
     .reduce((sum, t) => sum + t.amount, 0);
   
-  const dueSoon = filtrarPorStatusDeVencimento(transactions, 'DUE_SOON')
+  const dueSoon = filtrarPorStatusDeVencimento(transacoes, 'DUE_SOON')
     .reduce((sum, t) => sum + t.amount, 0);
   
-  const future = filtrarPorStatusDeVencimento(transactions, 'FUTURE')
+  const future = filtrarPorStatusDeVencimento(transacoes, 'FUTURE')
     .reduce((sum, t) => sum + t.amount, 0);
   
   return {

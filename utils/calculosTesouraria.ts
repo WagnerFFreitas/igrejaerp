@@ -25,7 +25,7 @@
  * - Compara custos de diferentes operadoras
  */
 
-import { InstallmentSale, CardReconciliation } from '../types';
+import { InstallmentSale, CardReconciliation } from '../tipos';
 
 /**
  * DADOS DE UMA ÚNICA PARCELA
@@ -162,20 +162,20 @@ export function calculateCardReconciliation(
  * de R$ 50, R$ 30 e R$ 20, o rateio é proporcional.
  * 
  * @param totalFee - Taxa total a ratear
- * @param transactions - Valores das transações
+ * @param transacoes - Valores das transações
  * @returns Taxa rateada para cada transação
  */
 export function allocateFeeByTransaction(
   totalFee: number,
-  transactions: number[]
+  transacoes: number[]
 ): number[] {
-  const totalAmount = transactions.reduce((sum, val) => sum + val, 0);
+  const totalAmount = transacoes.reduce((sum, val) => sum + val, 0);
   
   if (totalAmount === 0) {
-    return transactions.map(() => 0);
+    return transacoes.map(() => 0);
   }
   
-  return transactions.map(value => {
+  return transacoes.map(value => {
     // Proporção do valor desta transação no total
     const proportion = value / totalAmount;
     

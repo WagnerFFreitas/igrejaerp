@@ -52,7 +52,7 @@
  * para idioma do sistema (JavaScript objects).
  */
 
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 /**
  * TRANSAÇÃO IMPORTADA DO BANCO
@@ -79,8 +79,8 @@ export interface BankStatement {
   accountNumber: string;       // Número da conta
   startDate: string;           // Início do período
   endDate: string;             // Fim do período
-  transactions: ImportedTransaction[];
-  currency: string;            // Moeda (ex: BRL)
+  transacoes: ImportedTransaction[];
+  moeda: string;            // Moeda (ex: BRL)
 }
 
 /**
@@ -133,16 +133,16 @@ export function parseOFX(ofxContent: string): OFXImportResult {
     // 3. Extrai informações do banco
     const bankId = extractTagValue(normalized, 'BANKID') || '000';
     const accountNumber = extractTagValue(normalized, 'ACCTID') || '';
-    const currency = extractTagValue(normalized, 'CURDEF') || 'BRL';
+    const moeda = extractTagValue(normalized, 'CURDEF') || 'BRL';
     
     // 4. Extrai período
     const dtStart = extractTagValue(normalized, 'DTSTART');
     const dtEnd = extractTagValue(normalized, 'DTEND');
     
     // 5. Extrai transações
-    const transactions = extractTransactions(normalized);
+    const transacoes = extractTransactions(normalized);
     
-    if (transactions.length === 0) {
+    if (transacoes.length === 0) {
       warnings.push('Nenhuma transação encontrada no extrato');
     }
     
@@ -154,8 +154,8 @@ export function parseOFX(ofxContent: string): OFXImportResult {
         accountNumber,
         startDate: formatOFXDate(dtStart),
         endDate: formatOFXDate(dtEnd),
-        transactions,
-        currency,
+        transacoes,
+        moeda,
       },
       warnings: warnings.length > 0 ? warnings : undefined,
     };
@@ -228,7 +228,7 @@ function extractTagValue(content: string, tagName: string): string {
  * Array de ImportedTransaction
  */
 function extractTransactions(content: string): ImportedTransaction[] {
-  const transactions: ImportedTransaction[] = [];
+  const transacoes: ImportedTransaction[] = [];
   
   // 1. Encontra todas as transações (cada <STMTTRN>)
   const transactionBlocks = content.split('<STMTTRN>');
@@ -263,7 +263,7 @@ function extractTransactions(content: string): ImportedTransaction[] {
     const date = formatOFXDate(dtPosted);
     
     // 5. Adiciona na lista
-    transactions.push({
+    transacoes.push({
       fitId: fitId || `GEN-${Date.now()}-${i}`,  // Gera ID se não tiver
       type: trnType.toUpperCase() === 'CREDIT' ? 'CREDIT' : 'DEBIT',
       amount: isNaN(amount) ? 0 : amount,
@@ -274,7 +274,7 @@ function extractTransactions(content: string): ImportedTransaction[] {
     });
   }
   
-  return transactions;
+  return transacoes;
 }
 
 /**

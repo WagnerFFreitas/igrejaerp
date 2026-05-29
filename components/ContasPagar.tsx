@@ -49,7 +49,7 @@ import {
 } from 'lucide-react';
 
 // Importa tipos TypeScript
-import { Transaction } from '../types';
+import { Transaction } from '../tipos';
 
 // Importa serviço que mexe com banco de dados
 import { transactionService } from '../services/transacoesService';
@@ -69,7 +69,7 @@ import {
  * É como se fosse os "parâmetros" de uma função.
  */
 interface ContasPagarProps {
-  currentUnitId: string;           // ID da unidade/filial atual
+  currentIdUnidade: string;           // ID da unidade/filial atual
   onTransactionAdded?: () => void; // Função opcional para avisar quando adicionar transação
 }
 
@@ -80,7 +80,7 @@ interface ContasPagarProps {
  * <ContasPagarProps> = Tipo das props que aceita
  */
 export const ContasPagar: React.FC<ContasPagarProps> = ({ 
-  currentUnitId, 
+  currentIdUnidade, 
   onTransactionAdded 
 }) => {
   
@@ -99,7 +99,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
    */
   
   // Lista de todas as transações carregadas do banco
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transacoes, setTransactions] = useState<Transaction[]>([]);
   
   // Termo de busca (o que usuário digitou no filtro)
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,7 +157,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
       setIsLoading(true);
       
       // Chama serviço para buscar transações da unidade
-      const loadedTransactions = await transactionService.getTransactions(currentUnitId);
+      const loadedTransactions = await transactionService.getTransactions(currentIdUnidade);
       
       // Guarda transações no estado
       setTransactions(loadedTransactions);
@@ -179,7 +179,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
    * 1. Por texto (busca)
    * 2. Por situacao (vencidas/a vencer/pagas)
    */
-  const filteredTransactions = transactions.filter(transaction => {
+  const filteredTransactions = transacoes.filter(transaction => {
     // Filtro por texto
     const matchesSearch = transaction.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.providerName?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -246,7 +246,7 @@ export const ContasPagar: React.FC<ContasPagarProps> = ({
         // MODO CRIAÇÃO: Salva nova transação
         await transactionService.saveTransaction({
           ...formData,
-          unitId: currentUnitId,  // Garante que tem ID da unidade
+          idUnidade: currentIdUnidade,  // Garante que tem ID da unidade
           createdAt: new Date().toISOString(),
         });
         alert('Transação criada com sucesso!');

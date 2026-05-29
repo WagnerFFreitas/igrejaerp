@@ -1,0 +1,25 @@
+Preencha este campos no formulário de membros e seja salvos no postgresql: 
+
+Escolaridade
+Dependentes / Composição Familiar
+Vínculo Familiar
+Data de Conversão
+Local de Conversão
+Igreja Sede
+Data de Batismo
+Data Consagração
+Outros Ministérios
+Data Membresia
+Dons Espirituais
+Mapa de Fidelidade (Dízimos - Últimos 12 Meses (inclua 4 meses de dízimos"
+
+
+remova do formulário de membro estes campos a qual não são referente ao cadastro de membros e sim de funcionários:
+
+E-mail Pessoal
+Dados Bancários (Banco, Agência, Conta, Chave PIX)
+
+
+como pode ver nas imagens não esta sendo exibido as informações que solicitei que completasse e tem também no formulário de membros existe:
+
+telefone, whatsapp e celular, sendo que o certo era para ter telefone (que se refere ao numero do telefone fixo), celular (que se refere ao numero do celular) e no caso whatsapp (era para ser a opção de marcar se o celular tem whatsapp)

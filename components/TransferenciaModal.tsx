@@ -16,10 +16,10 @@
 
 import React, { useState } from 'react';
 import { X, ArrowRight, DollarSign } from 'lucide-react';
-import { FinancialAccount } from '../types';
+import { FinancialAccount } from '../tipos';
 
 interface TransferenciaModalProps {
-  accounts: FinancialAccount[];
+  contas_bancarias: FinancialAccount[];
   fromAccountId?: string;
   toAccountId?: string;
   amount?: number;
@@ -29,7 +29,7 @@ interface TransferenciaModalProps {
 }
 
 export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
-  accounts,
+  contas_bancarias,
   fromAccountId,
   toAccountId,
   amount,
@@ -82,7 +82,7 @@ export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="">Selecione...</option>
-              {accounts.map((acc) => (
+              {contas_bancarias.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.name} - R$ {acc.currentBalance.toFixed(2)}
                 </option>
@@ -101,7 +101,7 @@ export const TransferenciaModal: React.FC<TransferenciaModalProps> = ({
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="">Selecione...</option>
-              {accounts.map((acc) => (
+              {contas_bancarias.map((acc) => (
                 <option key={acc.id} value={acc.id} disabled={acc.id === fromId}>
                   {acc.name} - R$ {acc.currentBalance.toFixed(2)}
                 </option>
