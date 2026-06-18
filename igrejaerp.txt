@@ -35,37 +35,19 @@ CREATE TYPE public.situacao_afastamento AS ENUM ('AGENDADO', 'ATIVO', 'CONCLUIDO
 CREATE TYPE public.tipo_afastamento AS ENUM ('FERIAS', 'MEDICO', 'MATERNIDADE', 'PATERNIDADE', 'MILITAR', 'CASAMENTO', 'LUTO', 'NAO_REMUNERADO');
 
 -- TABELAS CORE (NORMALIZADAS VIA 'pessoas')
-CREATE TABLE public.enderecos (
-    id_endereco uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
+CREATE TABLE public.unidades (
+    id_unidade uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
+    nome character varying(255) NOT NULL,
+    cnpj character varying(20) UNIQUE,
+    telefone character varying(20),
+    email character varying(255),
     logradouro character varying(255),
     numero character varying(20),
-    complemento character varying(100),
     bairro character varying(100),
     cidade character varying(100),
     estado character varying(2),
     cep character varying(15),
     pais character varying(100) DEFAULT 'Brasil',
-    criado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    atualizado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE public.contatos (
-    id_contato uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
-    tipo_entidade character varying(30) NOT NULL, -- 'PESSOA' ou 'UNIDADE'
-    id_entidade uuid NOT NULL,
-    tipo_contato character varying(30) NOT NULL, -- 'EMAIL', 'TELEFONE', 'CELULAR', 'WHATSAPP'
-    valor character varying(255) NOT NULL,
-    principal boolean DEFAULT false,
-    ativo boolean DEFAULT true,
-    criado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    atualizado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE public.unidades (
-    id_unidade uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
-    nome character varying(255) NOT NULL,
-    cnpj character varying(20) UNIQUE,
-    id_endereco uuid REFERENCES public.enderecos(id_endereco),
     situacao public.situacao_unidade DEFAULT 'ATIVO',
     ativo boolean DEFAULT true,
     criado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
@@ -81,7 +63,18 @@ CREATE TABLE public.pessoas (
     data_nascimento date,
     sexo character varying(20),
     estado_civil character varying(50),
-    id_endereco uuid REFERENCES public.enderecos(id_endereco),
+    email character varying(255),
+    telefone character varying(20),
+    celular character varying(20),
+    whatsapp boolean DEFAULT false, -- ✅ FLAG: TRUE = possui WhatsApp no celular
+    logradouro character varying(255),
+    numero character varying(20),
+    complemento character varying(100),
+    bairro character varying(100),
+    cidade character varying(100),
+    estado character varying(2),
+    cep character varying(15),
+    pais character varying(100) DEFAULT 'Brasil',
     tipo_sanguineo character varying(10),
     contato_emergencia character varying(255),
     pcd boolean DEFAULT false,
@@ -133,23 +126,14 @@ CREATE TABLE public.funcionarios (
     data_demissao date,
     regime_trabalho public.regime_trabalho DEFAULT 'CLT',
     salario_base numeric(10,2),
-    ativo boolean DEFAULT true,
-    criado_em timestamp with time zone DEFAULT now(),
-    atualizado_em timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE public.dados_bancarios_pessoa (
-    id_dado_bancario uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
-    id_pessoa uuid NOT NULL REFERENCES public.pessoas(id_pessoa) ON DELETE CASCADE,
     banco character varying(100),
     agencia character varying(20),
     conta character varying(50),
     tipo_conta character varying(20),
     chave_pix character varying(100),
-    principal boolean DEFAULT true,
     ativo boolean DEFAULT true,
-    criado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    atualizado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    criado_em timestamp with time zone DEFAULT now(),
+    atualizado_em timestamp with time zone DEFAULT now()
 );
 
 -- FINANCEIRO & CONTABILIDADE
@@ -189,25 +173,10 @@ CREATE TABLE public.plano_contas (
     esta_ativo boolean DEFAULT true
 );
 
-CREATE TABLE public.fornecedores (
-    id_fornecedor uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
-    id_unidade uuid REFERENCES public.unidades(id_unidade),
-    nome character varying(255) NOT NULL,
-    cnpj_cpf character varying(20),
-    tipo_pessoa character varying(10) DEFAULT 'JURIDICA', -- 'JURIDICA' ou 'FISICA'
-    email character varying(255),
-    telefone character varying(20),
-    observacoes text,
-    ativo boolean DEFAULT true,
-    criado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    atualizado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE public.transacoes (
     id_transacao uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
     id_unidade uuid REFERENCES public.unidades(id_unidade),
     id_pessoa uuid REFERENCES public.pessoas(id_pessoa),
-    id_fornecedor uuid REFERENCES public.fornecedores(id_fornecedor),
     descricao text NOT NULL,
     valor numeric(15,2) NOT NULL,
     tipo public.tipo_transacao NOT NULL,
@@ -218,7 +187,6 @@ CREATE TABLE public.transacoes (
     situacao public.situacao_transacao DEFAULT 'PENDENTE',
     forma_pagamento text,
     conciliado boolean DEFAULT false,
-    nome_fornecedor character varying(255),
     criado_por uuid REFERENCES public.usuarios(id_usuario),
     criado_em timestamp with time zone DEFAULT now(),
     atualizado_em timestamp with time zone DEFAULT now()
@@ -248,9 +216,6 @@ CREATE TABLE public.folha_pagamento (
     ano integer NOT NULL CHECK (ano >= 2020),
     data_referencia date NOT NULL,
     salario_base numeric(15,2) DEFAULT 0,
-    sindicato_taxa numeric(15,2) DEFAULT 0,
-    farmacia numeric(15,2) DEFAULT 0,
-    seguro_vida numeric(15,2) DEFAULT 0,
     inss numeric(15,2) DEFAULT 0,
     irrf numeric(15,2) DEFAULT 0,
     fgts numeric(15,2) DEFAULT 0,
@@ -258,6 +223,22 @@ CREATE TABLE public.folha_pagamento (
     situacao text DEFAULT 'PROCESSADO',
     criado_em timestamp with time zone DEFAULT now(),
     atualizado_em timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE public.calculos_folha (
+    id uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
+    id_funcionario uuid NOT NULL REFERENCES public.funcionarios(id_funcionario),
+    mes_competencia character varying(7) NOT NULL,
+    salario_bruto numeric(15,2) NOT NULL,
+    sindicato_taxa numeric(15,2) DEFAULT 0, -- ✅ Substitui "union " (palavra reservada + espaço)
+    farmacia numeric(15,2) DEFAULT 0,
+    seguro_vida numeric(15,2) DEFAULT 0,
+    inss numeric(15,2) NOT NULL,
+    irrf numeric(15,2) NOT NULL,
+    fgts numeric(15,2) NOT NULL,
+    salario_liquido numeric(15,2) NOT NULL,
+    criado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE public.periodos_folha (
@@ -356,42 +337,37 @@ CREATE TABLE public.escalas_voluntarios (
 );
 
 -- PERMISSÕES, AUDITORIA & LGPD
-CREATE TABLE public.app_permission_modules (
+CREATE TABLE public.modulos_permissao (
     id uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
     codigo character varying(100) NOT NULL UNIQUE,
     nome_modulo character varying(255) NOT NULL,
     categoria character varying(100) NOT NULL,
-    descricao text,
-    criado timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    atualizado timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    criado timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE public.app_role_permissions (
+CREATE TABLE public.permissoes_perfil (
     id uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
-    role character varying(50) NOT NULL,
-    codigo_modulo character varying(100) NOT NULL REFERENCES public.app_permission_modules(codigo) ON DELETE CASCADE,
+    perfil character varying(50) NOT NULL,
+    codigo_modulo character varying(100) NOT NULL REFERENCES public.modulos_permissao(codigo) ON DELETE CASCADE,
     ler boolean DEFAULT false,
     escrever boolean DEFAULT false,
     excluir boolean DEFAULT false,
     gerenciar boolean DEFAULT false,
-    administrador boolean DEFAULT false,
     criado timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    atualizado timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (role, codigo_modulo)
+    atualizado_em timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE public.app_user_permissions (
+CREATE TABLE public.logs_auditoria (
     id uuid DEFAULT public.uuid_generate_v4() PRIMARY KEY,
-    usuario_id uuid NOT NULL REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
-    codigo_modulo character varying(100) NOT NULL REFERENCES public.app_permission_modules(codigo) ON DELETE CASCADE,
-    ler boolean,
-    escrever boolean,
-    excluir boolean,
-    gerenciar boolean,
-    administrador boolean,
-    criado timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    atualizado timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (usuario_id, codigo_modulo)
+    id_unidade uuid REFERENCES public.unidades(id_unidade),
+    id_usuario uuid REFERENCES public.usuarios(id_usuario),
+    acao character varying(100) NOT NULL,
+    entidade character varying(100) NOT NULL,
+    id_entidade uuid,
+    data_acao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    endereco_ip inet,
+    detalhes jsonb,
+    sucesso boolean DEFAULT true
 );
 
 CREATE TABLE public.app_audit_logs (
@@ -442,10 +418,6 @@ CREATE TRIGGER trg_usuarios BEFORE UPDATE ON public.usuarios FOR EACH ROW EXECUT
 CREATE TRIGGER trg_membros BEFORE UPDATE ON public.membros FOR EACH ROW EXECUTE FUNCTION public.atualizar_timestamp();
 CREATE TRIGGER trg_funcionarios BEFORE UPDATE ON public.funcionarios FOR EACH ROW EXECUTE FUNCTION public.atualizar_timestamp();
 CREATE TRIGGER trg_transacoes BEFORE UPDATE ON public.transacoes FOR EACH ROW EXECUTE FUNCTION public.atualizar_timestamp();
-CREATE TRIGGER trg_enderecos BEFORE UPDATE ON public.enderecos FOR EACH ROW EXECUTE FUNCTION public.atualizar_timestamp();
-CREATE TRIGGER trg_contatos BEFORE UPDATE ON public.contatos FOR EACH ROW EXECUTE FUNCTION public.atualizar_timestamp();
-CREATE TRIGGER trg_dados_bancarios_pessoa BEFORE UPDATE ON public.dados_bancarios_pessoa FOR EACH ROW EXECUTE FUNCTION public.atualizar_timestamp();
-CREATE TRIGGER trg_fornecedores BEFORE UPDATE ON public.fornecedores FOR EACH ROW EXECUTE FUNCTION public.atualizar_timestamp();
 
 CREATE OR REPLACE FUNCTION public.validar_usuario_pessoa() RETURNS trigger AS $$
 BEGIN
@@ -469,40 +441,22 @@ CREATE TRIGGER trg_prevent_app_audit_logs_update BEFORE UPDATE ON public.app_aud
 -- VIEWS CONSOLIDADAS
 CREATE OR REPLACE VIEW public.funcionarios_ativos AS
 SELECT f.id_funcionario AS id, f.matricula, f.cargo, f.departamento, f.data_admissao,
-       p.nome, p.cpf,
-       ce.valor AS email,
-       ct.valor AS telefone,
-       cc.valor AS celular,
-       cw.valor AS whatsapp,
-       e.logradouro, e.bairro, e.cidade, e.estado, e.cep,
+       p.nome, p.cpf, p.email, p.telefone, p.celular, p.whatsapp,
+       p.logradouro, p.bairro, p.cidade, p.estado, p.cep,
        u.nome AS nome_unidade,
        CASE WHEN f.data_demissao IS NULL THEN 'ATIVO' ELSE 'INATIVO' END AS situacao_atual
 FROM public.funcionarios f
 JOIN public.pessoas p ON f.id_pessoa = p.id_pessoa
-LEFT JOIN public.enderecos e ON e.id_endereco = p.id_endereco
-LEFT JOIN public.contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
-LEFT JOIN public.contatos ct ON ct.id_entidade = p.id_pessoa AND ct.tipo_entidade = 'PESSOA' AND ct.tipo_contato = 'TELEFONE' AND ct.principal = true
-LEFT JOIN public.contatos cc ON cc.id_entidade = p.id_pessoa AND cc.tipo_entidade = 'PESSOA' AND cc.tipo_contato = 'CELULAR' AND cc.principal = true
-LEFT JOIN public.contatos cw ON cw.id_entidade = p.id_pessoa AND cw.tipo_entidade = 'PESSOA' AND cw.tipo_contato = 'WHATSAPP' AND cw.principal = true
 LEFT JOIN public.unidades u ON f.id_unidade = u.id_unidade
 WHERE f.ativo = true;
 
 CREATE OR REPLACE VIEW public.membros_ativos AS
 SELECT m.id, m.id_unidade, m.situacao AS situacao_membro, m.ministerio, m.dizimista, m.ofertante,
-       p.nome, p.cpf,
-       ce.valor AS email,
-       ct.valor AS telefone,
-       cc.valor AS celular,
-       cw.valor AS whatsapp,
-       e.logradouro, e.bairro, e.cidade, e.estado, e.cep,
+       p.nome, p.cpf, p.email, p.telefone, p.celular, p.whatsapp,
+       p.logradouro, p.bairro, p.cidade, p.estado, p.cep,
        u.nome AS nome_unidade
 FROM public.membros m
 JOIN public.pessoas p ON m.id_pessoa = p.id_pessoa
-LEFT JOIN public.enderecos e ON e.id_endereco = p.id_endereco
-LEFT JOIN public.contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
-LEFT JOIN public.contatos ct ON ct.id_entidade = p.id_pessoa AND ct.tipo_entidade = 'PESSOA' AND ct.tipo_contato = 'TELEFONE' AND ct.principal = true
-LEFT JOIN public.contatos cc ON cc.id_entidade = p.id_pessoa AND cc.tipo_entidade = 'PESSOA' AND cc.tipo_contato = 'CELULAR' AND cc.principal = true
-LEFT JOIN public.contatos cw ON cw.id_entidade = p.id_pessoa AND cw.tipo_entidade = 'PESSOA' AND cw.tipo_contato = 'WHATSAPP' AND cw.principal = true
 LEFT JOIN public.unidades u ON m.id_unidade = u.id_unidade
 WHERE m.situacao = 'ATIVO';
 
@@ -515,30 +469,6 @@ FROM public.unidades u
 LEFT JOIN public.transacoes t ON u.id_unidade = t.id_unidade
 GROUP BY u.id_unidade, u.nome;
 
-CREATE OR REPLACE VIEW public.logs_auditoria AS
-SELECT
-       id,
-       id_unidade,
-       usuario_id AS id_usuario,
-       acao,
-       entidade,
-       NULLIF(id_entidade, '')::uuid AS id_entidade,
-       data_evento AS data_acao,
-       NULLIF(ip, '')::inet AS endereco_ip,
-       detalhes,
-       sucesso
-FROM public.app_audit_logs
-WHERE (id_entidade IS NULL OR id_entidade = '' OR id_entidade ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
-  AND (ip IS NULL OR ip = '' OR ip ~ '^[0-9a-fA-F:.]+$');
-
-CREATE OR REPLACE VIEW public.modulos_permissao AS
-SELECT id, codigo, nome_modulo, categoria, criado
-FROM public.app_permission_modules;
-
-CREATE OR REPLACE VIEW public.permissoes_perfil AS
-SELECT id, role AS perfil, codigo_modulo, ler, escrever, excluir, gerenciar, criado, atualizado AS atualizado_em
-FROM public.app_role_permissions;
-
 -- ÍNDICES ESTRATÉGICOS
 CREATE INDEX idx_pessoas_cpf ON public.pessoas(cpf);
 CREATE INDEX idx_pessoas_email ON public.pessoas(email);
@@ -548,12 +478,9 @@ CREATE INDEX idx_membros_pessoa ON public.membros(id_pessoa);
 CREATE INDEX idx_funcionarios_pessoa ON public.funcionarios(id_pessoa);
 CREATE INDEX idx_transacoes_data ON public.transacoes(data_transacao);
 CREATE INDEX idx_transacoes_situacao ON public.transacoes(situacao);
-CREATE INDEX idx_app_audit_logs_data_evento ON public.app_audit_logs(data_evento DESC);
-CREATE INDEX idx_app_audit_logs_id_unidade ON public.app_audit_logs(id_unidade);
-CREATE INDEX idx_app_audit_logs_acao ON public.app_audit_logs(acao);
+CREATE INDEX idx_logs_auditoria_data ON public.logs_auditoria(data_acao);
 
 COMMENT ON SCHEMA public IS 'Schema principal IgrejaERP - Padronizado PT-BR, normalizado via pessoas, sem duplicidades, palavras reservadas corrigidas';
-COMMENT ON TABLE public.pessoas IS 'Fonte única de dados pessoais. Endereço em enderecos, contatos em contatos.';
-COMMENT ON TABLE public.enderecos IS 'Endereços normalizados. Usado por pessoas e unidade.';
-COMMENT ON TABLE public.contatos IS 'Contatos normalizados (email, telefone, celular, whatsapp). Usado por pessoas e unidades.';
-COMMENT ON COLUMN public.app_audit_logs IS 'Tabela de sistema imutável. Não traduzir prefixo app_ nem alterar estrutura sem aprovação de segurança.';
+COMMENT ON TABLE public.pessoas IS 'Fonte única de dados pessoais, contato e endereço. Membros, funcionários e usuários referenciam esta tabela.';
+COMMENT ON COLUMN public.pessoas.whatsapp IS 'FLAG booleana. TRUE = o número em "celular" possui WhatsApp ativo. Nunca armazena número.';
+COMMENT ON TABLE public.app_audit_logs IS 'Tabela de sistema imutável. Não traduzir prefixo app_ nem alterar estrutura sem aprovação de segurança.';

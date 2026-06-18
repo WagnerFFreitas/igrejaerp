@@ -12,12 +12,13 @@ import Database from '../database';
 
 export class LGPDController {
   static async getCurrentPolicy(req: Request, res: Response) {
-    const { idUnidade } = req.query;
+    const { idUnidade, unitId } = req.query;
+    const filtroUnidade = idUnidade || unitId;
     const db = Database.getInstance();
     try {
       const result = await db.query(
         'SELECT * FROM politicas_lgpd WHERE id_unidade = $1 AND esta_ativa = true ORDER BY criado DESC LIMIT 1',
-        [idUnidade]
+        [filtroUnidade]
       );
       if (result.rows.length === 0) {
         // Fallback para política padrão se não houver nenhuma ativa

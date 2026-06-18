@@ -23,11 +23,13 @@ const naoImplementado = (_req: any, res: any) =>
     },
   });
 
+const listaVazia = (_req: any, res: any) => res.json([]);
+
 // ─── AFASTAMENTOS ─────────────────────────────────────────────────────────────
 
-router.get('/leaves', async (req, res) => {
+const listarAfastamentos = async (req: any, res: any) => {
   try {
-    const { idUnidade, idFuncionario } = req.query;
+    const { idUnidade, unitId, idFuncionario, employeeId } = req.query;
     let query = `
       SELECT af.*, p.nome AS nome_funcionario
       FROM afastamentos_funcionarios af
@@ -38,8 +40,11 @@ router.get('/leaves', async (req, res) => {
     const params: any[] = [];
     let i = 1;
 
-    if (idUnidade)     { query += ` AND af.id_unidade = $${i++}`;     params.push(idUnidade); }
-    if (idFuncionario) { query += ` AND af.id_funcionario = $${i++}`; params.push(idFuncionario); }
+    const filtroUnidade = idUnidade || unitId;
+    const filtroFuncionario = idFuncionario || employeeId;
+
+    if (filtroUnidade)     { query += ` AND af.id_unidade = $${i++}`;     params.push(filtroUnidade); }
+    if (filtroFuncionario) { query += ` AND af.id_funcionario = $${i++}`; params.push(filtroFuncionario); }
     query += ' ORDER BY af.data_inicio DESC';
 
     const result = await db.query(query, params);
@@ -58,9 +63,9 @@ router.get('/leaves', async (req, res) => {
   } catch (e: any) {
     res.status(500).json({ error: { message: e.message } });
   }
-});
+};
 
-router.post('/leaves', async (req, res) => {
+const salvarAfastamento = async (req: any, res: any) => {
   try {
     const b = req.body;
     const tipo = TIPOS_AFASTAMENTO.includes((b.tipo || b.type || '').toUpperCase())
@@ -86,9 +91,9 @@ router.post('/leaves', async (req, res) => {
   } catch (e: any) {
     res.status(500).json({ error: { message: e.message } });
   }
-});
+};
 
-router.put('/leaves/:id', async (req, res) => {
+const atualizarAfastamento = async (req: any, res: any) => {
   try {
     const b = req.body;
     const situacao = SITUACOES_AFASTAMENTO.includes((b.situacao || b.status || '').toUpperCase())
@@ -112,9 +117,9 @@ router.put('/leaves/:id', async (req, res) => {
   } catch (e: any) {
     res.status(500).json({ error: { message: e.message } });
   }
-});
+};
 
-router.delete('/leaves/:id', async (req, res) => {
+const excluirAfastamento = async (req: any, res: any) => {
   try {
     await db.query(
       `UPDATE afastamentos_funcionarios SET situacao='CANCELADO', atualizado_em=CURRENT_TIMESTAMP WHERE id=$1`,
@@ -124,16 +129,26 @@ router.delete('/leaves/:id', async (req, res) => {
   } catch (e: any) {
     res.status(500).json({ error: { message: e.message } });
   }
-});
+};
+
+router.get('/', listarAfastamentos);
+router.post('/', salvarAfastamento);
+router.put('/:id', atualizarAfastamento);
+router.delete('/:id', excluirAfastamento);
+
+router.get('/leaves', listarAfastamentos);
+router.post('/leaves', salvarAfastamento);
+router.put('/leaves/:id', atualizarAfastamento);
+router.delete('/leaves/:id', excluirAfastamento);
 
 // ─── AVALIAÇÕES DE DESEMPENHO — não modeladas ainda ──────────────────────────
-router.get('/evaluations',      naoImplementado);
+router.get('/evaluations',      listaVazia);
 router.post('/evaluations',     naoImplementado);
 router.put('/evaluations/:id',  naoImplementado);
 router.delete('/evaluations/:id', naoImplementado);
 
 // ─── PDI — não modelado ainda ────────────────────────────────────────────────
-router.get('/pdi',      naoImplementado);
+router.get('/pdi',      listaVazia);
 router.post('/pdi',     naoImplementado);
 router.put('/pdi/:id',  naoImplementado);
 router.delete('/pdi/:id', naoImplementado);

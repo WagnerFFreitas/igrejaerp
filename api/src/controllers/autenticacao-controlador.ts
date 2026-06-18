@@ -87,11 +87,12 @@ const AUTH_USER_SELECT = `
     u.atualizado_em AS atualizado,
     p.nome AS nome_usuario,
     p.nome AS name,
-    p.email,
+    ce.valor AS email,
     p.id_unidade,
     un.nome AS unit_name
   FROM usuarios u
   JOIN pessoas p ON p.id_pessoa = u.id_pessoa
+  LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
   LEFT JOIN unidades un ON un.id_unidade = p.id_unidade
 `;
 
@@ -138,9 +139,9 @@ export class AuthController {
       const result = await db.query(`
         ${AUTH_USER_SELECT}
         WHERE (
-          LOWER(p.email) = LOWER($1) OR
+          LOWER(ce.valor) = LOWER($1) OR
           LOWER(u.login) = LOWER($1) OR
-          LOWER(SPLIT_PART(p.email, '@', 1)) = LOWER($2) OR
+          LOWER(SPLIT_PART(ce.valor, '@', 1)) = LOWER($2) OR
           p.nome ILIKE $2
         ) AND COALESCE(u.esta_ativo, true) = true
       `, [resolvedIdentifier, identifier]);
@@ -289,7 +290,8 @@ export class AuthController {
         `SELECT u.id_usuario
          FROM usuarios u
          JOIN pessoas p ON p.id_pessoa = u.id_pessoa
-         WHERE LOWER(p.email) = $1 OR LOWER(u.login) = $2`,
+         LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+         WHERE LOWER(ce.valor) = $1 OR LOWER(u.login) = $2`,
         [normalizedEmail, login]
       );
 
@@ -317,17 +319,26 @@ export class AuthController {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const pessoaResult = await db.query(
-        `INSERT INTO pessoas (id_unidade, nome, email, ativo)
-         VALUES ($1, $2, $3, true)
+        `INSERT INTO pessoas (id_unidade, nome, ativo)
+         VALUES ($1, $2, true)
          RETURNING id_pessoa`,
-        [idUnidade, name, normalizedEmail]
+        [idUnidade, name]
+      );
+
+      const idPessoa = pessoaResult.rows[0].id_pessoa;
+
+      // Criar contato de email
+      await db.query(
+        `INSERT INTO contatos (tipo_entidade, id_entidade, tipo_contato, valor, principal)
+         VALUES ('PESSOA', $1, 'EMAIL', $2, true)`,
+        [idPessoa, normalizedEmail]
       );
 
       const result = await db.query(`
         INSERT INTO usuarios (id_pessoa, login, senha_hash, perfil, esta_ativo)
         VALUES ($1, $2, $3, $4::perfil_usuario, true)
         RETURNING id_usuario
-      `, [pessoaResult.rows[0].id_pessoa, login, hashedPassword, dbPerfil]);
+      `, [idPessoa, login, hashedPassword, dbPerfil]);
 
       const userResult = await db.query(`${AUTH_USER_SELECT} WHERE u.id_usuario = $1`, [result.rows[0].id_usuario]);
 

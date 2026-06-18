@@ -1,0 +1,679 @@
+### RELAÇÃO COMPLETA DO BANCO DE DADOS (POSTGRESQL) ###
+
+#### 1. Unidades (Tabela: units) -> [unidade]
+- mudar "id" para "id_unidade" (uuid, primary key)
+- nome_unidade (text)
+- cnpj (text)
+- endereco (text)
+- bairro (text)
+- cidade (text)
+- estado (text)
+- cep (text)
+- mudar "country" para "pais" (text)
+- telefone (text)
+- email (text)
+- website (text)
+remove - pastor_name (text)
+remove - pastor_phone (text)
+- sede (boolean)
+- muda "status" para "estado" (text)
+- criado (timestamp)
+- atualizado (timestamp)
+
+- mudar "criado por" para "criador" (uuid) - o que isso faz?
+
+- endereco_linha1 (text) - igual endereço e bairro
+- endereco_linha2 (text) - igual cidade, estado e cep
+
+#### 2. Membros (Tabela: membros) -> [membros]
+- mudar "id" para "id_membro" (uuid, primary key)
+- id_unidade (uuid)
+- mudar "nome" para "membro" (text)
+- cpf (text)
+- rg (text)
+- email (text)
+- telefone (text)
+- celular  (text) - Usar este formato (dd) 99999-9999
+- whatsapp (text) - tem whatsapp?
+- data_nascimento (date)
+- sexo (text) - inbox (masculino / feminino)
+- estado_civil (text) - inbox (solteiro(a) / casado(a) / viúvo(a)
+- mudar "logradouro" para "endereco" (text)
+- bairro (text)
+- cidade (text)
+- estado (text)
+- cep (text)
+- incluir "pais" (text)
+- data_conversao (date)
+- data_batismo (text)
+- data_membro (date)
+- muda "status" para "situacao" (text)
+- funcao (text)
+- ministerio (text)
+- grupo_pequeno (text)
+- dizimista (boolean)
+- ofertante (boolean)
+- valor_dizimo (numeric)
+- observacoes (text)
+- criado (timestamp)
+- atualizado (timestamp)
+- dados_perfil (jsonb)
+- matricula (character varying) - e o mesmo que "id_membro" só que no formato M01/2026
+remove - profissao (character varying)
+- nome_conjuge (character varying)
+- data_casamento (date)
+- nome_pai (character varying)
+- nome_mae (character varying)
+- tipo_sanguineo (character varying) - inbox (O+, O-, etc)
+- contato_emergencia (character varying) - nome e telefone
+- numero (character varying)
+- complemento (character varying)
+- local_conversao (character varying)
+- igreja_batismo (character varying)
+- pastor_batizador (character varying)
+- batismo_espirito_santo (boolean)
+- igreja_origem (character varying)
+- curso_discipulado (character varying)
+- escola_biblica (character varying)
+- ministerio_principal (character varying)
+- funcao_ministerio (character varying)
+- outros_ministerios (ARRAY)
+- cargo_eclesiastico (character varying)
+- data_consagracao (date)
+- ofertante_regular (boolean)
+- participa_campanhas (boolean)
+remove - banco (character varying)
+remove - agencia_bancaria (character varying)
+remove - conta_bancaria (character varying)
+remove - chave_pix (character varying)
+- necessidades_especiais (text)
+- talentos (text)
+
+- tags (ARRAY) - em que isto e usado?
+
+- mudar "familia_id" para id_familia" (uuid)
+- mudar "avatar" para "foto" - foto do membro
+- mudar "cell_group" para "grupo_celular" (character varying)
+- dons_espirituais (character varying)
+- escolaridade (character varying)
+- muda "is_pcd" para " para "pcd" (boolean)
+- tipo_deficiencia (character varying)- inbox (fisica, auditiva, visual, etc
+remover - celular (character varying)
+- mudar "lgpd_consent" para "consentimento_volutario" (jsonb)
+- incluir a coluna da foto
+
+#### 3. Funcionários (Tabela: employees) -> [funcionarios]
+- mudar "id" para "id_funcionario" (uuid, primary key)
+- id_unidade (uuid)
+- mudar "nome" para "funcionario" (text)
+- cpf (text)
+- rg (text)
+- ctps (text)
+- ctps_serie (text)
+- pis (text)
+- mudar "birth_date" para "data_nascimento" (date)
+- sexo (text) - inbox (masculino / feminino)
+- estado_civil (text) - inbox (solteiro(a) / casado(a) / viúvo(a)
+- mudar "blood_type" (text) para "tipo sanguíneo" (character varying) - inbox (O+, O-, etc)
+- email (text)
+- telefone (text)
+- mudar "celular" para "celular_pessoal" (text) - Usar este formato (dd) 99999-9999
+- whatsapp (text) - tem whatsapp?
+- mudar " " para "contato_emergencia" (character varying) - nome e telefone
+- naturalidade (text)
+- escolaridade (text)
+- raca_cor (text)
+- nome_mae (text)
+- nome_pai (text)
+- mudar "deficiencia" (text) para "pcd" (boolean)
+- mudar "deficiencia_obs" (text) para "tipo_deficiencia" (character varying)- inbox (fisica, auditiva, visual, etc
+- mudar "avatar" para "foto" - foto do funcioanrio
+- observacoes_saude (text)
+- cep (text)
+- mudar "logradouro" para "endereco" (text)
+- numero (text)
+- complemento (text)
+- bairro (text)
+- cidade (text)
+- estado (text)
+- mudar "address_country" para "pais" (text)
+- matricula (character varying) - e o mesmo que "id_membro" só que no formato F01/2026
+- cargo (text)
+- funcao (text)
+- departamento (text)
+- cbo (text)
+- data_admissao (date)
+- data_demissao (date)
+- tipo_contrato (text)
+- regime_trabalho (text)
+- sindicato (text)
+- convencao_coletiva (text)
+- salario_base (numeric)
+- tipo_salario (text)
+- forma_pagamento (text)
+- dia_pagamento (text)
+- jornada_trabalho (text)
+- escala_trabalho (text)
+- horario_entrada (time)
+- horario_saida (time)
+- inicio_intervalo (time)
+- fim_intervalo (time)
+- duracao_intervalo (time)
+- segunda_a_sexta (text)
+- sabado (text)
+- trabalha_feriados (boolean)
+- controla_intervalo (boolean)
+- horas_extras_autorizadas (boolean)
+- tipo_registro_ponto (text)
+- tolerancia_ponto (text)
+
+- codigo_horario (text) - em que isto e usado?
+
+- banco (text) - o que e isso?
+
+- codigo_banco (text) - em que isto e usado?
+
+- agencia (text)
+- conta (text)
+- tipo_conta (text)
+- titular (text)
+- chave_pix (text)
+- vt_ativo (boolean) - VT e o mesmo que vale transporte
+- vt_valor_diario (numeric) - VT e o mesmo que vale transporte
+- vt_qtd_vales_dia (integer) - VT e o mesmo que vale transporte
+- vale_transporte_total (numeric)
+- va_ativo (boolean) - VA e o mesmo que vale alimentação
+- va_operadora (text) - VA e o mesmo que vale alimentação
+- vale_alimentacao (numeric)
+- vr_ativo (boolean) - VR o mesmo que vale refeição
+- vr_operadora (text) - VR o mesmo que vale refeição
+- vale_refeicao (numeric)
+- ps_ativo (boolean) - PS e o mesmo que plano de saúde
+- ps_operadora (text) - PS e o mesmo que plano de saúde
+- ps_tipo_plano (text) - PS e o mesmo que plano de saúde
+- ps_carteirinha (text) - PS e o mesmo que plano de saúde
+- plano_saude_colaborador (numeric)
+- ps_dependentes_ativo (boolean) -  PS e o mesmo que plano de saúde
+- plano_saude_dependentes (numeric)
+- po_ativo (boolean) - PO e o mesmo que plano odontológico
+- po_operadora (text) - PO e o mesmo que plano odontológico
+- po_carteirinha (text) - PO e o mesmo que plano odontológico
+- plano_odontologico (numeric)
+- auxilio_moradia (numeric)
+- vale_farmacia (numeric)
+- seguro_vida (numeric)
+- auxilio_creche (numeric)
+- auxilio_educacao (numeric)
+
+- gympass_plano (text) - o que e isso?
+
+- titulo_eleitor (text)
+- titulo_eleitor_zona (text)
+- titulo_eleitor_secao (text)
+- reservista (text)
+- cnh_numero (text)
+- cnh_categoria (text)
+- cnh_vencimento (date)
+
+- aso_data (date) - o que isso faz?
+
+- esocial_categoria (text)
+- esocial_matricula (text)
+- esocial_natureza_atividade (text)
+- esocial_tipo_regime_prev (text)
+- esocial_tipo_regime_trab (text)
+- esocial_indicativo_admissao (text)
+- esocial_tipo_jornada (text)
+- esocial_descricao_jornada (text)
+- esocial_contrato_parcial (boolean)
+- esocial_teletrabalho (boolean)
+- esocial_clausula_asseguratoria (boolean)
+- esocial_sucessao_trab (boolean)
+- esocial_tipo_admissao (text)
+- esocial_cnpj_anterior (text)
+- esocial_matricula_anterior (text)
+- esocial_data_admissao_origem (date)
+- ativo (boolean)
+- criado (timestamp)
+- atualizado (timestamp)
+
+- mudar "created_by" para "criador" (uuid) - o que isso faz?
+
+- dados_perfil (jsonb)
+
+#### 4. Transações Financeiras (Tabela: transactions) -> [transacoes]
+- mudar "id" para "id_transacao" (uuid, primary key)
+- id_unidade (uuid)
+- descricao (text)
+- valor (numeric)
+- tipo_transacao (text)
+- id_conta (uuid)
+- data_transacao (date)
+- data_vencimento (date)
+- data_pagamento (date)
+- situacao (text)
+- forma_pagamento (text)
+- categoria (text)
+- centro_custo (text)
+- natureza_operacao (text)
+- nome_fornecedor (text)
+- id_membro (uuid)
+- conciliado (boolean)
+- observacoes (text)
+
+- mudar "created_by" para "criador" (uuid) - o que isso faz?
+
+- criado (timestamp)
+- atualizado (timestamp)
+- data_competencia (date)
+- mudar "projeto_id" para "id_projeto" (uuid)
+- valor_pago (numeric)
+- valor_restante (numeric)
+- parcelado (boolean)
+- numero_parcela (integer)
+- total_parcelas (integer)
+- id_transacao_origem (uuid)
+- data_conciliacao (date)
+- id_externo (character varying)
+
+#### 5. Contas Bancárias (Tabela: financial_accounts) -> [contas_bancarias]
+- mudar "id" para "id_conta_bancaria"(uuid, primary key)
+- mudar "unit_id" para "id_unidade" (uuid)
+- mudar "nome" para "banco" (character varying) - nome do banco
+
+- tipo (USER-DEFINED) - em que isto e usado?
+
+- saldo_atual (numeric)
+- saldo_minimo (numeric)
+
+- situacao (USER-DEFINED) - em que isto e usado?
+
+- codigo_banco (character varying) - o que e isso?
+
+- numero_agencia (character varying)
+- numero_conta (character varying)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### 6. Conciliação Bancária (Tabela: bank_reconciliations) -> [conciliacao_bancaria]
+- mudar "id" para "id_conciliacao_bancaria" (uuid, primary key)
+- mudar "unit_id" para "id_unidade" (uuid)
+- mudar "conta_bancaria_id" para "id_conta_bancaria" (uuid)
+
+- nome_conta_bancaria (character varying) - o que e isso?
+
+- mudar "nome banco" para "banco" (character varying) - nome do banco
+- data_inicio (date)
+- data_final (date)
+- saldo_inicial (numeric)
+- saldo_final (numeric)
+- saldo_conciliado (numeric)
+- diferenca (numeric)
+- mudar "status" para "situacao" (character varying)
+- percentual_conciliacao (numeric)
+- total_transacoes_banco (integer)
+- total_transacoes_sistema (integer)
+- transacoes_conciliadas (integer)
+- transacoes_nao_conciliadas (integer)
+- divergencias (jsonb)
+- mudar "conciliado_por" para "conciliador" (character varying)
+- data_conciliacao (timestamp)
+- observacoes (text)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### 7. Folha de Pagamento - Cálculos (Tabela: payroll_calculations) -> [folha_pagamento]
+- mudar "id" para "id_folha_pagamento" (uuid, primary key)
+- id_funcionario (uuid)
+- mes_competencia (character varying)
+- salario_bruto (numeric)
+- salario_base (numeric)
+- horas_extras (numeric)
+- adicional_noturno (numeric)
+- insalubridade (numeric)
+- comissao (numeric)
+- bonificacoes (numeric)
+- salario_familia (numeric)
+- outros_proventos (numeric)
+- inss (numeric)
+- irrf (numeric)
+- fgts (numeric)
+
+- union (numeric) - o que e isso?
+
+- plano_saude (numeric)
+- plano_odontologico (numeric)
+- vale_alimentacao (numeric)
+- vale_refeicao (numeric)
+- mudar "transporte" para "vale transporte" (numeric)
+- mudar "pharmacy" para "vale farmácia" (numeric)
+- mudar "life_insurance" para "seguro_vida" (numeric)
+- adiantamento (numeric)
+- consignado (numeric)
+- coparticipacao (numeric)
+- faltas (numeric)
+- atrasos (numeric)
+
+- pensao_alimenticia (numeric) - não deveria esta também no cadastro do funcionário?
+
+- outras_deducoes (numeric)
+- total_proventos (numeric)
+- total_descontos (numeric)
+- salario_liquido (numeric)
+- custo_empregador (numeric)
+- base_inss (numeric)
+- aliquota_inss (numeric)
+- valor_inss (numeric)
+- base_irrf (numeric)
+- aliquota_irrf (numeric)
+- deducao_irrf (numeric)
+- valor_irrf (numeric)
+- base_fgts (numeric)
+- aliquota_fgts (numeric)
+- valor_fgts (numeric)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### 8. Períodos de Folha (Tabela: payroll_periods) -> [periodos_folha_pagamento]
+- mudar "id" para "id_periodo_folha_pagamento" (uuid, primary key)
+- id_unidade (uuid)
+- mes (integer)
+- ano (integer)
+- situacao (character varying)
+- data_inicio (date)
+- data_final (date)
+- processado (timestamp)
+- fechado (timestamp)
+- total_funcionarios (integer)
+- total_folha (numeric)
+- total_inss (numeric)
+- total_fgts (numeric)
+- total_irrf (numeric)
+- mudar "criado_por" para "criador" (uuid) - o que e isso?
+- observacoes (text)
+
+#### 9. Afastamentos (Tabela: employee_leaves) -> [afastamento_funcionario]
+- mudar "id" para "id_afastamento_funcionario" (uuid, primary key)
+- mudar "unit_id" para "id_unidade" (uuid)
+- id_funcionario (uuid)
+- mudar "nome_funcionário" para "funcionario" (character varying) - nome do funcionario 
+- tipo (character varying)
+- data_inicio (date)
+- data_final (date)
+- cid10 (character varying)
+- mudar "nome_medico" para "medico" (character varying) - nome do medico
+- crm (character varying)
+- situacao (character varying)
+- observacoes (text)
+- url_anexo (text)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### 10. Avaliações de Desempenho (Tabela: performance_evaluations) -> [avaliacao_funcionario]
+- mudar "id" para "id_avaliacao_funcionario" (uuid, primary key)
+- mudar "unit_id" para "id_unidade" (uuid)
+- id_funcionario (uuid)
+- mudar "nome_funcionario" para "funcionario" (character varying) - nome do funcionário
+- data_avaliacao (date)
+- tipo_avaliacao (character varying)
+- nota_geral (numeric)
+- conceito_geral (character varying)
+- competencias (jsonb)
+- metas (jsonb)
+- pontos_fortes (text)
+- melhorias (text)
+- plano_acao (text)
+- mudar "status" para "situacao" (character varying)
+- mudar "avaliado_por" para "avaliado" (character varying)
+- mudar "aprovado_por" para "aprovado" (character varying)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### 11. Patrimônio (Tabela: assets) -> [patrimonio]
+- mudar "id" para "id_patrimonio" (uuid, primary key)
+- mudar "unit_id" para "id_unidade" (uuid)
+- mudar "nome" para "patrimônio" (text) - nome do patrimonio
+- descricao (text)
+- categoria (text)
+- data_aquisicao (date)
+- valor_aquisicao (numeric)
+- valor_atual (numeric)
+- taxa_depreciacao (numeric)
+- localizacao (text)
+- condicao (text)
+- numero_ativo (text)
+- situacao (text)
+- vida_util_meses (integer)
+- metodo_depreciacao (text)
+- valor_contabil_atual (numeric)
+- depreciacao_acumulada (numeric)
+- funcionario_responsavel_id (uuid)
+- nota_fiscal_aquisicao (text)
+- numero_serie (text)
+- validade_garantia (date)
+- notas_manutencao (text)
+- criado (timestamp)
+- atualizado (timestamp)
+- cep (character varying)
+- mudar "logradouro" para "endereco" (text)
+- numero (character varying)
+- complemento (character varying)
+- bairro (character varying)
+- cidade (character varying)
+- estado (character varying)
+- incluir "pais" (character varying)
+
+#### 12. Logs de Auditoria (Tabela: app_audit_logs) -> [logs_auditoria]
+- mudar "id" para "id_logs_auditoria" (uuid, primary key)
+- id_unidade (uuid)
+- mudar "usuario_id" para "id_usuario" (uuid)
+- mudar "nome_usuario" para "usuario" (character varying) - nome do usuario
+- mudar "action" para "acao" (character varying)
+
+- entidade (character varying) - o que e isso?
+
+- id_entidade (character varying)
+
+- mudar "nome_entidade" para "entidade" (character varying) - esta repetido?
+
+- data_evento (timestamp)
+- ip (character varying)
+- agente_usuario (text)
+- details (jsonb)
+- mudar "success" para "sucesso" (boolean)
+- mensagem_erro (text)
+- hash_anterior (character varying)
+- hash (character varying)
+- imutavel (boolean)
+- mudar "created_at" para "criado" (timestamp)
+
+#### 13. Módulos de Permissão (Tabela: app_permission_modules) -> [modulo_permissiao]
+mudar [modulo_permissiao] para [modulo_permissao]
+
+- mudar "id" para "id_modulo_permissao" (uuid, primary key)
+
+- codigo (character varying) - o que e isso?
+- name (character varying) - o que e isso?
+
+- categoria (character varying)
+- description (text)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### 14. Permissões de Funções (Tabela: app_role_permissions) -> [permissiao_funcao]
+mudar [permissiao_funcao] para [permissao_funcao]
+
+- mudar "id" para "id_permissao_funcao" (uuid, primary key)
+
+- mudar "role" para "funcao" (character varying)
+
+- codigo_modulo (character varying) - o que e isso?
+
+- ler (boolean)
+- escrever (boolean)
+- excluir (boolean)
+- gerenciar (boolean)
+- criado (timestamp)
+- atualizado (timestamp)
+- administrador (boolean)
+
+#### 15. Permissões de Usuários (Tabela: app_user_permissions) -> [permissiao_usuario]
+
+- mudar "id" para "id_permissao_funcao" (uuid, primary key)
+- mudara "usuario_id" para "id_usuario" (uuid)
+
+- codigo_modulo (character varying) - o que e isso?
+
+- ler (boolean)
+- escrever (boolean)
+- excluir (boolean)
+
+- gerenciar (boolean) - o que e isso?
+
+- criado (timestamp)
+- atualizado (timestamp)
+- administrador (boolean)
+
+#### 16. Eventos da Igreja (Tabela: church_events) -> [eventos_igreja]
+
+- mudara "id" para "id_evento_igreja" (uuid, primary key)
+- mudar "unit_id" para id_unidade" (uuid)
+- titulo (character varying)
+- descricao (text)
+- data_evento (date)
+- hora_evento (time)
+- local_evento (character varying)
+- quantidade_presentes (integer)
+
+- type (USER-DEFINED) - em que isto e usado?
+ 
+- recorrente (boolean)
+
+- padrao_recorrencia (USER-DEFINED) - em que isto e usado?
+
+- data_fim_recorrencia (date)
+- evento_pai_id (uuid)
+- evento_gerado (boolean)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### 17. Contagens de Inventário (Tabela: inventory_counts) -> [contagens_inventario]
+
+- mudar "id" para "id_contagem_inventario" (uuid, primary key)
+- mudara "unit_id" para "id_unidade" (uuid)
+- data_contagem (date)
+
+- mudar "contagem_por" para "contagem" (character varying) - o que e isso?
+
+- mudar "revisado_por" para "revisado" (character varying) - nome da pessoa que revisou
+- situacao (character varying)
+- total_ativos (integer)
+- total_esperado (integer)
+- total_encontrado (integer)
+- diferenca_total (integer)
+- percentual_conclusao (numeric)
+- iniciado (timestamp)
+- concluido (timestamp)
+
+#### 18. Itens de Inventário (Tabela: inventory_items) -> [itens_inventario]
+
+- mudar "id" para "id_item_inventario" (uuid, primary key)
+- contagem_estoque_id (uuid)
+- mudar "ativo_id" para "id_ativo" (uuid)
+- mudar "nome_ativo" para "ativo" (character varying) - nome do ativo 
+
+- categoria (USER-DEFINED)  - em que isto e usado?
+
+- quantidade_esperada (integer)
+- quantidade_contada (integer)
+- diferenca (integer)
+- condicao (character varying)
+- mudar "location" para "localizacao" (character varying)
+- observacoes (text)
+- criado (timestamp)
+
+#### 19. Usuários (Tabela: users) -> [usuarios]
+
+- mudar "id" para "id_usuario" (uuid, primary key)
+- email (text)
+- hash_senha (text)
+- mudar "nome_usuario" para "usuario" (text) - nome do usuario
+- mudar "role" para "funcao"(text)
+- id_unidade" (uuid)
+- id_funcionario (uuid)
+- id_membro (uuid)
+- esta_ativo (boolean)
+- ultimo_login (timestamp)
+- criado (timestamp)
+- atualizado (timestamp)
+- mudar "criado por" para "criador" (uuid) - o que e isso?
+
+#### 20. Políticas LGPD (Tabela: lgpd_policies) -> [politicas_lgpd]
+
+- mudar "id" para "id_politicas_lgpd" (uuid, primary key)
+- mudar "unit_id" para "id_unidade" (uuid)
+- versao (character varying)
+- titulo (character varying)
+- conteudo (text)
+- esta_ativa (boolean)
+- obrigatorio (boolean)
+- criado (timestamp)
+- atualizado (timestamp)
+
+
+o que esta tabela faz? lgpd e so para funcioanarios
+#### 21. Logs de Consentimento LGPD (Tabela: lgpd_consent_logs) -> [logs_consentimento_lgpd]
+
+- mudar "id" para "id_log_consentimento_lgpd" (uuid, primary key)
+- id_membro (uuid)
+- id_funcionario (uuid)
+- mudar "politica_id" para "id_politica" (uuid)
+- tipo_consentimento (character varying)
+- granted (boolean)
+- "endereco_ip" (inet) - o endereço na rede
+- agente_usuario (text)
+- data_consentimento (timestamp)
+
+#### 22. Categorias (Tabela: categories) -> [categorias]
+
+- mudar "id" para "id_categoria" (uuid, primary key)
+- mudar "unit_id" para "id_unidade" (uuid)
+- mudara "nome_categoria" para "categoria" (text)
+- tipo_categoria (text)
+
+- categoria_pai_id (uuid) - o que e isso?
+
+- cor (text)
+- icone (text)
+- descricao (text)
+- esta_ativa (boolean)
+- criado (timestamp)
+- atualizado (timestamp)
+
+#### verificar se não existe tabela e colunas que contenham estes recursos
+OUTRAS TABELAS (SUPORTE E LEGADO)
+- dependentes_funcionarios (employee_dependents)
+- dependentes_membros (member_dependents)
+- dependentes_legado (dependentes)
+- contribuicoes_membros_legado (contribuicoes_membros)
+- escalas_voluntarios (volunteer_schedules)
+- depreciacoes_patrimonio (asset_depreciations)
+- transferencias_patrimonio (asset_transfers)
+- manutencoes_patrimonio (asset_maintenances)
+- movimentacoes_caixa (cash_movements)
+- ajustes_inventario (inventory_adjustments)
+- plano_contas (chart_of_accounts)
+- lancamentos_contabeis (accounting_entries)
+- saldos_contas (account_balances)
+- fechamentos_caixa (cash_closings)
+- configuracoes_impostos (tax_configs)
+- configuracoes_contabeis (accounting_configs)
+- fluxo_caixa_tesouraria (treasury_cash_flows)
+- previsoes_tesouraria (treasury_forecasts)
+- investimentos_tesouraria (treasury_investments)
+- emprestimos_tesouraria (treasury_loans)
+- alertas_tesouraria (treasury_alerts)
+- posicoes_financeiras_tesouraria (treasury_financial_positions)
+- transacoes_extrato_bancario (bank_statement_transactions)
+- planos_pdi (pdi_plans)
+- migracao_esquema (schema_migrations)

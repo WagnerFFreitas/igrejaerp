@@ -251,8 +251,10 @@ const mapMemberToApi = (member: any) => {
   // O frontend já está usando snake_case (Membro interface), 
   // então o mapeamento é quase uma identidade, mas garantimos que campos nulos sejam tratados.
   
+  const memberId = member.id_membro || member.id;
+
   const payload: any = {
-    id_membro: member.id_membro || member.id,
+    ...(isPersistedId(memberId) ? { id_membro: memberId } : {}),
     id_unidade: normalizeUnitId(member.id_unidade || member.unidadeId),
     id_pessoa: member.id_pessoa,
     
@@ -505,8 +507,9 @@ export const dbService = {
 
   async saveMember(member: any) {
     const payload = mapMemberToApi(member);
-    const saved = isPersistedId(member?.id)
-      ? await apiClient.put<any>(`/membros/${member.id}`, payload)
+    const memberId = member?.id_membro || member?.id;
+    const saved = isPersistedId(memberId)
+      ? await apiClient.put<any>(`/membros/${memberId}`, payload)
       : await apiClient.post<any>('/membros', payload);
     // Mapear a resposta da API para o formato esperado pelo frontend
     return mapMemberFromApi(saved);

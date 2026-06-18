@@ -559,6 +559,15 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
     setSearchTerm('');
   };
 
+  const resolveApiUnitId = () => {
+    const idUnidadeMap: Record<string, string> = {
+      'u-sede': '00000000-0000-0000-0000-000000000001',
+      'u-matriz': '00000000-0000-0000-0000-000000000001',
+    };
+    const unitId = currentIdUnidade || currentUnitId || effectiveUnitId;
+    return idUnidadeMap[unitId] || unitId;
+  };
+
   const handleSave = async () => {
     if (!canWriteMembers) {
       alert('Você não tem permissão para criar ou editar membros.');
@@ -570,6 +579,11 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
     if (!formData.nome) {
       console.log("❌ Nome obrigatório não preenchido");
       return alert("O nome é obrigatório.");
+    }
+
+    if (!formData.cpf) {
+      console.log("❌ CPF obrigatório não preenchido");
+      return alert("O CPF é obrigatório.");
     }
     
     console.log("⏳ Setando isLoading para true...");
@@ -585,7 +599,12 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
         ? (formData.matricula || editingMember.matricula) // Edição: mantém a original
         : (formData.matricula || getNextMemberMatricula()); // Novo: gera uma
       
-      let memberData = { ...formData, id_membro: memberId, matricula } as Membro;
+      let memberData = {
+        ...formData,
+        id_membro: memberId,
+        id_unidade: formData.id_unidade || resolveApiUnitId(),
+        matricula
+      } as Membro;
       
       console.log("👤 Dados do membro preparados:", { id: memberData.id_membro, name: memberData.nome, matricula: memberData.matricula });
 
@@ -617,7 +636,7 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
         });
         console.log("🔍 Auditoria: Atualização de membro registrada");
       } else {
-        await logAction('CREATE', 'Member', savedMember.id, memberData.nome, { 
+        await logAction('CREATE', 'Member', savedMember.id_membro, memberData.nome, { 
           action: `${user?.nome || 'Usuário'} cadastrou novo membro: ${memberData.nome}`
         });
         console.log("🔍 Auditoria: Criação de membro registrada");
@@ -651,6 +670,34 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
     } finally {
       console.log("🔄 Setando isLoading para false...");
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteMember = async (member: Membro) => {
+    if (!canWriteMembers) {
+      alert('Você não tem permissão para excluir membros.');
+      return;
+    }
+
+    const memberId = member.id_membro || (member as any).id;
+    if (!memberId) {
+      alert('Não foi possível identificar o membro para exclusão.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Excluir o membro ${member.nome}?`);
+    if (!confirmed) return;
+
+    try {
+      await dbService.deleteMember(memberId);
+      setMembers(prev => prev.filter(m => (m.id_membro || (m as any).id) !== memberId));
+      setSelectedMemberIds(prev => prev.filter(id => id !== memberId));
+      await logAction('DELETE', 'Member', memberId, member.nome, {
+        action: `${user?.nome || 'Usuário'} excluiu o cadastro do membro ${member.nome}`
+      });
+    } catch (error) {
+      console.error('Erro ao excluir membro:', error);
+      alert('Falha ao excluir membro. Tente novamente.');
     }
   };
 
@@ -828,7 +875,8 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
                 ...initialMemberForm,
                 nome: '',
                 matricula: generatedMatricula,
-                idUnidade: currentIdUnidade,
+                id_unidade: resolveApiUnitId(),
+                idUnidade: resolveApiUnitId(),
                 status: 'ACTIVE',
                 funcao: 'MEMBER',
                 endereco: {
@@ -1059,6 +1107,14 @@ export const Membros: React.FC<MembrosProps> = ({ members, currentUnitId, curren
                         setFormData(initialFormData); 
                         setIsModalOpen(true); 
                       }} disabled={!canWriteMembers} className="hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"><Edit2 size={16} /></button>
+                    <button
+                      onClick={() => handleDeleteMember(member)}
+                      disabled={!canWriteMembers}
+                      className="hover:text-rose-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Excluir"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </td>
               </tr>

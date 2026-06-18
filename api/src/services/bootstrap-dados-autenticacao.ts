@@ -80,17 +80,14 @@ async function ensureAdminUsers(): Promise<void> {
 async function ensureDefaultUnit(): Promise<void> {
   await db.query(
     `
-      INSERT INTO unidades (id_unidade, nome, cnpj, logradouro, cidade, estado, situacao, ativo, criado_em, atualizado_em)
-      VALUES ($1, $2, $3, $4, $5, $6, 'ATIVO', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO unidades (id_unidade, nome, cnpj, situacao, ativo, criado_em, atualizado_em)
+      VALUES ($1, $2, $3, 'ATIVO', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (id_unidade) DO NOTHING
     `,
     [
       ID_UNIDADE_PADRAO,
       'Igreja ADJPA Sede',
-      '00.000.000/0001-00',
-      'Endereço não informado',
-      'São Paulo',
-      'SP'
+      '00.000.000/0001-00'
     ]
   );
 }
@@ -111,10 +108,11 @@ async function upsertSystemUser(params: {
     esta_ativo: boolean;
   }>(
     `
-      SELECT u.id_usuario, u.id_pessoa, p.email, u.perfil, u.senha_hash, u.esta_ativo
+      SELECT u.id_usuario, u.id_pessoa, ce.valor AS email, u.perfil, u.senha_hash, u.esta_ativo
       FROM usuarios u
       JOIN pessoas p ON p.id_pessoa = u.id_pessoa
-      WHERE LOWER(p.email) = LOWER($1) OR LOWER(u.login) = LOWER($1)
+      LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+      WHERE LOWER(ce.valor) = LOWER($1) OR LOWER(u.login) = LOWER($1)
       LIMIT 1
     `,
     [params.email]
@@ -168,7 +166,9 @@ async function upsertSystemUser(params: {
 
 async function ensureSystemPerson(name: string, email: string): Promise<{ id_pessoa: string }> {
   const existingPessoa = await db.query<{ id_pessoa: string }>(
-    `SELECT id_pessoa FROM pessoas WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+    `SELECT p.id_pessoa FROM pessoas p
+     LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+     WHERE LOWER(ce.valor) = LOWER($1) LIMIT 1`,
     [email]
   );
 
@@ -186,10 +186,19 @@ async function ensureSystemPerson(name: string, email: string): Promise<{ id_pes
   }
 
   const created = await db.query<{ id_pessoa: string }>(
-    `INSERT INTO pessoas (id_unidade, nome, email, ativo)
-     VALUES ($1, $2, $3, true)
+    `INSERT INTO pessoas (id_unidade, nome, ativo)
+     VALUES ($1, $2, true)
      RETURNING id_pessoa`,
-    [ID_UNIDADE_PADRAO, name, email]
+    [ID_UNIDADE_PADRAO, name]
+  );
+
+  const idPessoa = created.rows[0].id_pessoa;
+
+  // Criar contato de email
+  await db.query(
+    `INSERT INTO contatos (tipo_entidade, id_entidade, tipo_contato, valor, principal)
+     VALUES ('PESSOA', $1, 'EMAIL', $2, true)`,
+    [idPessoa, email]
   );
 
   return created.rows[0];

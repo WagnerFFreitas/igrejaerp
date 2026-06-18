@@ -23,10 +23,14 @@ const PESSOAS_FIELDS = new Set([
   'data_nascimento',
   'sexo',
   'estado_civil',
-  'email',
-  'telefone',
-  'celular',
-  'whatsapp',
+  'tipo_sanguineo',
+  'contato_emergencia',
+  'pcd',
+  'tipo_deficiencia',
+  'ativo'
+]);
+
+const ENDERECO_FIELDS = new Set([
   'logradouro',
   'numero',
   'complemento',
@@ -34,12 +38,14 @@ const PESSOAS_FIELDS = new Set([
   'cidade',
   'estado',
   'cep',
-  'pais',
-  'tipo_sanguineo',
-  'contato_emergencia',
-  'pcd',
-  'tipo_deficiencia',
-  'ativo'
+  'pais'
+]);
+
+const CONTATO_FIELDS = new Set([
+  'email',
+  'telefone',
+  'celular',
+  'whatsapp'
 ]);
 
 const MEMBROS_FIELDS = new Set([
@@ -261,15 +267,22 @@ function buildPessoaInsert(body: Record<string, any>) {
   set('data_nascimento', toIsoDate(body.data_nascimento || body.dataNascimento));
   set('sexo', body.sexo);
   set('estado_civil', body.estado_civil || body.estadoCivil);
-  set('email', body.email);
-  set('telefone', body.telefone);
-  set('celular', body.celular);
-  const whatsappValue = body.whatsapp_ativo ?? body.whatsappAtivo ?? body.whatsapp_ativo;
-  const whatsappText = typeof body.whatsapp === 'string' ? body.whatsapp.trim() : '';
-  pessoa.whatsapp = boolFrom(whatsappValue, whatsappText.length > 0);
-  if (!pessoa.celular && whatsappText) {
-    pessoa.celular = whatsappText;
-  }
+  set('tipo_sanguineo', body.tipo_sanguineo || body.tipoSanguineo);
+  set('contato_emergencia', body.contato_emergencia || body.contatoEmergencia);
+  pessoa.pcd = boolFrom(body.pcd ?? body.is_pcd, false);
+  set('tipo_deficiencia', body.tipo_deficiencia || body.tipoDeficiencia);
+  pessoa.ativo = body.ativo === undefined ? true : boolFrom(body.ativo, true);
+
+  return pessoa;
+}
+
+function buildEnderecoInsert(body: Record<string, any>) {
+  const endereco: Record<string, any> = {};
+  const set = (key: string, value: any) => {
+    if (value === undefined) return;
+    endereco[key] = value === '' ? null : value;
+  };
+
   set('logradouro', body.logradouro);
   set('numero', body.numero);
   set('complemento', body.complemento);
@@ -278,13 +291,62 @@ function buildPessoaInsert(body: Record<string, any>) {
   set('estado', body.estado);
   set('cep', body.cep);
   set('pais', body.pais || 'Brasil');
-  set('tipo_sanguineo', body.tipo_sanguineo || body.tipoSanguineo);
-  set('contato_emergencia', body.contato_emergencia || body.contatoEmergencia);
-  pessoa.pcd = boolFrom(body.pcd ?? body.is_pcd, false);
-  set('tipo_deficiencia', body.tipo_deficiencia || body.tipoDeficiencia);
-  pessoa.ativo = body.ativo === undefined ? true : boolFrom(body.ativo, true);
 
-  return pessoa;
+  const hasData = Object.values(endereco).some(v => v !== null && v !== undefined);
+  return hasData ? endereco : null;
+}
+
+async function upsertContatos(
+  client: any,
+  tipoEntidade: string,
+  idEntidade: string,
+  body: Record<string, any>
+): Promise<void> {
+  const contatos: Array<{ tipo: string; valor: string | null }> = [];
+
+  if (body.email) contatos.push({ tipo: 'EMAIL', valor: body.email });
+  if (body.telefone) contatos.push({ tipo: 'TELEFONE', valor: body.telefone });
+  if (body.celular) contatos.push({ tipo: 'CELULAR', valor: body.celular });
+
+  const whatsappAtivo = boolFrom(body.whatsapp_ativo ?? body.whatsappAtivo, false);
+  const whatsappText = typeof body.whatsapp === 'string' ? body.whatsapp.trim() : '';
+  if (whatsappAtivo || whatsappText) {
+    contatos.push({ tipo: 'WHATSAPP', valor: whatsappText || body.celular || null });
+  }
+
+  // Remover contatos antigos
+  await client.query(
+    'DELETE FROM contatos WHERE tipo_entidade = $1 AND id_entidade = $2',
+    [tipoEntidade, idEntidade]
+  );
+
+  // Inserir novos contatos
+  for (let i = 0; i < contatos.length; i++) {
+    const c = contatos[i];
+    if (!c.valor) continue;
+    await client.query(
+      `INSERT INTO contatos (tipo_entidade, id_entidade, tipo_contato, valor, principal)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [tipoEntidade, idEntidade, c.tipo, c.valor, i === 0]
+    );
+  }
+}
+
+async function getContatos(client: any, tipoEntidade: string, idEntidade: string): Promise<Record<string, string>> {
+  const result = await client.query(
+    `SELECT tipo_contato, valor FROM contatos
+     WHERE tipo_entidade = $1 AND id_entidade = $2 AND ativo = true
+     ORDER BY principal DESC, criado_em ASC`,
+    [tipoEntidade, idEntidade]
+  );
+
+  const contatos: Record<string, string> = {};
+  for (const row of result.rows) {
+    if (!contatos[row.tipo_contato]) {
+      contatos[row.tipo_contato] = row.valor;
+    }
+  }
+  return contatos;
 }
 
 function buildMemberInsert(body: Record<string, any>, idPessoa: string, dadosPerfil: Record<string, any>) {
@@ -375,18 +437,19 @@ export class MembersController {
           p.data_nascimento,
           p.sexo,
           p.estado_civil,
-          p.email,
-          p.telefone,
-          p.celular,
-          p.whatsapp,
-          p.logradouro,
-          p.numero,
-          p.complemento,
-          p.bairro,
-          p.cidade,
-          p.estado,
-          p.cep,
-          p.pais,
+          ce.valor AS email,
+          ct.valor AS telefone,
+          cc.valor AS celular,
+          cw.valor AS whatsapp,
+          p.id_endereco,
+          e.logradouro,
+          e.numero,
+          e.complemento,
+          e.bairro,
+          e.cidade,
+          e.estado,
+          e.cep,
+          e.pais,
           p.tipo_sanguineo,
           p.contato_emergencia,
           p.pcd,
@@ -397,6 +460,11 @@ export class MembersController {
           u.nome AS unit_name
         FROM membros m
         JOIN pessoas p ON p.id_pessoa = m.id_pessoa
+        LEFT JOIN enderecos e ON e.id_endereco = p.id_endereco
+        LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+        LEFT JOIN contatos ct ON ct.id_entidade = p.id_pessoa AND ct.tipo_entidade = 'PESSOA' AND ct.tipo_contato = 'TELEFONE' AND ct.principal = true
+        LEFT JOIN contatos cc ON cc.id_entidade = p.id_pessoa AND cc.tipo_entidade = 'PESSOA' AND cc.tipo_contato = 'CELULAR' AND cc.principal = true
+        LEFT JOIN contatos cw ON cw.id_entidade = p.id_pessoa AND cw.tipo_entidade = 'PESSOA' AND cw.tipo_contato = 'WHATSAPP' AND cw.principal = true
         LEFT JOIN unidades u ON u.id_unidade = m.id_unidade
         WHERE 1=1
       `;
@@ -409,7 +477,7 @@ export class MembersController {
       }
 
       if (search) {
-        query += ` AND (p.nome ILIKE $${i++} OR p.cpf ILIKE $${i++} OR p.email ILIKE $${i++})`;
+        query += ` AND (p.nome ILIKE $${i++} OR p.cpf ILIKE $${i++} OR ce.valor ILIKE $${i++})`;
         params.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
@@ -429,6 +497,7 @@ export class MembersController {
         SELECT COUNT(*) AS total
         FROM membros m
         JOIN pessoas p ON p.id_pessoa = m.id_pessoa
+        LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
         WHERE 1=1
       `;
       const countParams: any[] = [];
@@ -440,7 +509,7 @@ export class MembersController {
       }
 
       if (search) {
-        countQuery += ` AND (p.nome ILIKE $${ci++} OR p.cpf ILIKE $${ci++} OR p.email ILIKE $${ci++})`;
+        countQuery += ` AND (p.nome ILIKE $${ci++} OR p.cpf ILIKE $${ci++} OR ce.valor ILIKE $${ci++})`;
         countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
@@ -480,18 +549,19 @@ export class MembersController {
             p.data_nascimento,
             p.sexo,
             p.estado_civil,
-            p.email,
-            p.telefone,
-            p.celular,
-            p.whatsapp,
-            p.logradouro,
-            p.numero,
-            p.complemento,
-            p.bairro,
-            p.cidade,
-            p.estado,
-            p.cep,
-            p.pais,
+            ce.valor AS email,
+            ct.valor AS telefone,
+            cc.valor AS celular,
+            cw.valor AS whatsapp,
+            p.id_endereco,
+            e.logradouro,
+            e.numero,
+            e.complemento,
+            e.bairro,
+            e.cidade,
+            e.estado,
+            e.cep,
+            e.pais,
             p.tipo_sanguineo,
             p.contato_emergencia,
             p.pcd,
@@ -500,6 +570,11 @@ export class MembersController {
             u.nome AS unit_name
           FROM membros m
           JOIN pessoas p ON p.id_pessoa = m.id_pessoa
+          LEFT JOIN enderecos e ON e.id_endereco = p.id_endereco
+          LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+          LEFT JOIN contatos ct ON ct.id_entidade = p.id_pessoa AND ct.tipo_entidade = 'PESSOA' AND ct.tipo_contato = 'TELEFONE' AND ct.principal = true
+          LEFT JOIN contatos cc ON cc.id_entidade = p.id_pessoa AND cc.tipo_entidade = 'PESSOA' AND cc.tipo_contato = 'CELULAR' AND cc.principal = true
+          LEFT JOIN contatos cw ON cw.id_entidade = p.id_pessoa AND cw.tipo_entidade = 'PESSOA' AND cw.tipo_contato = 'WHATSAPP' AND cw.principal = true
           LEFT JOIN unidades u ON u.id_unidade = m.id_unidade
           WHERE m.id = $1
         `,
@@ -535,20 +610,40 @@ export class MembersController {
         return res.status(409).json({ error: { message: 'CPF já cadastrado', status: 409 } });
       }
 
+      // Criar endereço se houver dados
+      let idEndereco = null;
+      const enderecoData = buildEnderecoInsert(body);
+      if (enderecoData) {
+        const enderecoResult = await db.query<{ id_endereco: string }>(
+          `INSERT INTO enderecos (logradouro, numero, complemento, bairro, cidade, estado, cep, pais)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id_endereco`,
+          [
+            enderecoData.logradouro || null,
+            enderecoData.numero || null,
+            enderecoData.complemento || null,
+            enderecoData.bairro || null,
+            enderecoData.cidade || null,
+            enderecoData.estado || null,
+            enderecoData.cep || null,
+            enderecoData.pais || 'Brasil'
+          ]
+        );
+        idEndereco = enderecoResult.rows[0].id_endereco;
+      }
+
       const personResult = await db.query<{
         id_pessoa: string;
         nome: string;
       }>(
         `
           INSERT INTO pessoas (
-            id_unidade, nome, cpf, rg, data_nascimento, sexo, estado_civil, email, telefone,
-            celular, whatsapp, logradouro, numero, complemento, bairro, cidade, estado, cep,
-            pais, tipo_sanguineo, contato_emergencia, pcd, tipo_deficiencia, ativo
+            id_unidade, nome, cpf, rg, data_nascimento, sexo, estado_civil,
+            id_endereco, tipo_sanguineo, contato_emergencia, pcd, tipo_deficiencia, ativo
           )
           VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9,
-            $10, $11, $12, $13, $14, $15, $16, $17, $18,
-            $19, $20, $21, $22, $23, $24
+            $1, $2, $3, $4, $5, $6, $7,
+            $8, $9, $10, $11, $12, $13
           )
           RETURNING id_pessoa, nome
         `,
@@ -560,18 +655,7 @@ export class MembersController {
           pessoaData.data_nascimento || null,
           pessoaData.sexo || null,
           pessoaData.estado_civil || null,
-          pessoaData.email || null,
-          pessoaData.telefone || null,
-          pessoaData.celular || null,
-          pessoaData.whatsapp,
-          pessoaData.logradouro || null,
-          pessoaData.numero || null,
-          pessoaData.complemento || null,
-          pessoaData.bairro || null,
-          pessoaData.cidade || null,
-          pessoaData.estado || null,
-          pessoaData.cep || null,
-          pessoaData.pais || 'Brasil',
+          idEndereco,
           pessoaData.tipo_sanguineo || null,
           pessoaData.contato_emergencia || null,
           pessoaData.pcd,
@@ -579,6 +663,11 @@ export class MembersController {
           pessoaData.ativo
         ]
       );
+
+      const idPessoa = personResult.rows[0].id_pessoa;
+
+      // Criar contatos
+      await upsertContatos(db, 'PESSOA', idPessoa, body);
 
       const perfilAtualizado = buildDadosPerfil(body, parseJsonObject(dados_perfil));
       if (lgpdConsent) {
@@ -588,7 +677,7 @@ export class MembersController {
         };
       }
 
-      const memberData = buildMemberInsert({ ...body, id_unidade: idUnidade }, personResult.rows[0].id_pessoa, perfilAtualizado);
+      const memberData = buildMemberInsert({ ...body, id_unidade: idUnidade }, idPessoa, perfilAtualizado);
 
       const memberResult = await db.query(
         `
@@ -633,18 +722,19 @@ export class MembersController {
             p.data_nascimento,
             p.sexo,
             p.estado_civil,
-            p.email,
-            p.telefone,
-            p.celular,
-            p.whatsapp,
-            p.logradouro,
-            p.numero,
-            p.complemento,
-            p.bairro,
-            p.cidade,
-            p.estado,
-            p.cep,
-            p.pais,
+            ce.valor AS email,
+            ct.valor AS telefone,
+            cc.valor AS celular,
+            cw.valor AS whatsapp,
+            p.id_endereco,
+            e.logradouro,
+            e.numero,
+            e.complemento,
+            e.bairro,
+            e.cidade,
+            e.estado,
+            e.cep,
+            e.pais,
             p.tipo_sanguineo,
             p.contato_emergencia,
             p.pcd,
@@ -653,6 +743,11 @@ export class MembersController {
             u.nome AS unit_name
           FROM membros m
           JOIN pessoas p ON p.id_pessoa = m.id_pessoa
+          LEFT JOIN enderecos e ON e.id_endereco = p.id_endereco
+          LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+          LEFT JOIN contatos ct ON ct.id_entidade = p.id_pessoa AND ct.tipo_entidade = 'PESSOA' AND ct.tipo_contato = 'TELEFONE' AND ct.principal = true
+          LEFT JOIN contatos cc ON cc.id_entidade = p.id_pessoa AND cc.tipo_entidade = 'PESSOA' AND cc.tipo_contato = 'CELULAR' AND cc.principal = true
+          LEFT JOIN contatos cw ON cw.id_entidade = p.id_pessoa AND cw.tipo_entidade = 'PESSOA' AND cw.tipo_contato = 'WHATSAPP' AND cw.principal = true
           LEFT JOIN unidades u ON u.id_unidade = m.id_unidade
           WHERE m.id = $1
         `,
@@ -673,9 +768,12 @@ export class MembersController {
 
       const current = await db.query(
         `
-          SELECT m.*, p.*
+          SELECT m.*, p.*, e.logradouro AS e_logradouro, e.numero AS e_numero,
+                 e.complemento AS e_complemento, e.bairro AS e_bairro, e.cidade AS e_cidade,
+                 e.estado AS e_estado, e.cep AS e_cep, e.pais AS e_pais
           FROM membros m
           JOIN pessoas p ON p.id_pessoa = m.id_pessoa
+          LEFT JOIN enderecos e ON e.id_endereco = p.id_endereco
           WHERE m.id = $1
         `,
         [id]
@@ -687,6 +785,7 @@ export class MembersController {
 
       const currentRow = current.rows[0];
       const idPessoa = currentRow.id_pessoa;
+      const idEnderecoAtual = currentRow.id_endereco;
       const nextUnitId = body.id_unidade || body.idUnidade || currentRow.id_unidade || null;
 
       if (!(await ensureUnitExists(nextUnitId))) {
@@ -716,6 +815,58 @@ export class MembersController {
         };
       }
 
+      // Atualizar ou criar endereço
+      const enderecoData = buildEnderecoInsert(body);
+      if (enderecoData) {
+        if (idEnderecoAtual) {
+          await db.query(
+            `UPDATE enderecos
+             SET logradouro = COALESCE($1, logradouro),
+                 numero = COALESCE($2, numero),
+                 complemento = COALESCE($3, complemento),
+                 bairro = COALESCE($4, bairro),
+                 cidade = COALESCE($5, cidade),
+                 estado = COALESCE($6, estado),
+                 cep = COALESCE($7, cep),
+                 pais = COALESCE($8, pais),
+                 atualizado_em = CURRENT_TIMESTAMP
+             WHERE id_endereco = $9`,
+            [
+              enderecoData.logradouro,
+              enderecoData.numero,
+              enderecoData.complemento,
+              enderecoData.bairro,
+              enderecoData.cidade,
+              enderecoData.estado,
+              enderecoData.cep,
+              enderecoData.pais,
+              idEnderecoAtual
+            ]
+          );
+        } else {
+          const inserted = await db.query<{ id_endereco: string }>(
+            `INSERT INTO enderecos (logradouro, numero, complemento, bairro, cidade, estado, cep, pais)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING id_endereco`,
+            [
+              enderecoData.logradouro || null,
+              enderecoData.numero || null,
+              enderecoData.complemento || null,
+              enderecoData.bairro || null,
+              enderecoData.cidade || null,
+              enderecoData.estado || null,
+              enderecoData.cep || null,
+              enderecoData.pais || 'Brasil'
+            ]
+          );
+          // Atualizar id_endereco na pessoa
+          await db.query(
+            'UPDATE pessoas SET id_endereco = $1 WHERE id_pessoa = $2',
+            [inserted.rows[0].id_endereco, idPessoa]
+          );
+        }
+      }
+
       await db.query(
         `
           UPDATE pessoas
@@ -727,23 +878,11 @@ export class MembersController {
             data_nascimento = $6,
             sexo = $7,
             estado_civil = $8,
-            email = $9,
-            telefone = $10,
-            celular = $11,
-            whatsapp = $12,
-            logradouro = $13,
-            numero = $14,
-            complemento = $15,
-            bairro = $16,
-            cidade = $17,
-            estado = $18,
-            cep = $19,
-            pais = $20,
-            tipo_sanguineo = $21,
-            contato_emergencia = $22,
-            pcd = $23,
-            tipo_deficiencia = $24,
-            ativo = $25,
+            tipo_sanguineo = $9,
+            contato_emergencia = $10,
+            pcd = $11,
+            tipo_deficiencia = $12,
+            ativo = $13,
             atualizado_em = CURRENT_TIMESTAMP
           WHERE id_pessoa = $1
         `,
@@ -756,18 +895,6 @@ export class MembersController {
           pessoaData.data_nascimento || null,
           pessoaData.sexo || null,
           pessoaData.estado_civil || null,
-          pessoaData.email || null,
-          pessoaData.telefone || null,
-          pessoaData.celular || null,
-          pessoaData.whatsapp,
-          pessoaData.logradouro || null,
-          pessoaData.numero || null,
-          pessoaData.complemento || null,
-          pessoaData.bairro || null,
-          pessoaData.cidade || null,
-          pessoaData.estado || null,
-          pessoaData.cep || null,
-          pessoaData.pais || 'Brasil',
           pessoaData.tipo_sanguineo || null,
           pessoaData.contato_emergencia || null,
           pessoaData.pcd,
@@ -775,6 +902,9 @@ export class MembersController {
           pessoaData.ativo
         ]
       );
+
+      // Atualizar contatos
+      await upsertContatos(db, 'PESSOA', idPessoa, body);
 
       await db.query(
         `
@@ -826,18 +956,19 @@ export class MembersController {
             p.data_nascimento,
             p.sexo,
             p.estado_civil,
-            p.email,
-            p.telefone,
-            p.celular,
-            p.whatsapp,
-            p.logradouro,
-            p.numero,
-            p.complemento,
-            p.bairro,
-            p.cidade,
-            p.estado,
-            p.cep,
-            p.pais,
+            ce.valor AS email,
+            ct.valor AS telefone,
+            cc.valor AS celular,
+            cw.valor AS whatsapp,
+            p.id_endereco,
+            e.logradouro,
+            e.numero,
+            e.complemento,
+            e.bairro,
+            e.cidade,
+            e.estado,
+            e.cep,
+            e.pais,
             p.tipo_sanguineo,
             p.contato_emergencia,
             p.pcd,
@@ -846,6 +977,11 @@ export class MembersController {
             u.nome AS unit_name
           FROM membros m
           JOIN pessoas p ON p.id_pessoa = m.id_pessoa
+          LEFT JOIN enderecos e ON e.id_endereco = p.id_endereco
+          LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+          LEFT JOIN contatos ct ON ct.id_entidade = p.id_pessoa AND ct.tipo_entidade = 'PESSOA' AND ct.tipo_contato = 'TELEFONE' AND ct.principal = true
+          LEFT JOIN contatos cc ON cc.id_entidade = p.id_pessoa AND cc.tipo_entidade = 'PESSOA' AND cc.tipo_contato = 'CELULAR' AND cc.principal = true
+          LEFT JOIN contatos cw ON cw.id_entidade = p.id_pessoa AND cw.tipo_entidade = 'PESSOA' AND cw.tipo_contato = 'WHATSAPP' AND cw.principal = true
           LEFT JOIN unidades u ON u.id_unidade = m.id_unidade
           WHERE m.id = $1
         `,

@@ -51,18 +51,6 @@ function buildPessoaData(body: Record<string, any>): Record<string, any> {
   set('data_nascimento',   toIsoDate(body.data_nascimento || body.data_nascimento || body.birthDate));
   set('sexo',              body.sexo);
   set('estado_civil',      body.estado_civil);
-  set('email',             body.email);
-  set('telefone',          body.telefone || body.phone);
-  set('celular',           body.celular || body.whatsapp || body.phone || body.telefone);
-  p.whatsapp = boolFrom(body.whatsapp_ativo ?? body.whatsappAtivo, false);
-  set('logradouro',        body.logradouro || body.address_street);
-  set('numero',            body.numero || body.address_number);
-  set('complemento',       body.complemento || body.address_complement);
-  set('bairro',            body.bairro || body.address_neighborhood);
-  set('cidade',            body.cidade || body.address_city);
-  set('estado',            body.estado || body.address_state);
-  set('cep',               body.cep || body.address_zip_code);
-  set('pais',              body.pais || body.pais || 'Brasil');
   set('tipo_sanguineo',    body.tipo_sanguineo || body.tipo_sanguineo || body.bloodType);
   set('contato_emergencia',body.contato_emergencia || body.contato_emergencia || body.emergencyContact);
   p.pcd = boolFrom(body.pcd ?? body.is_pcd, false);
@@ -70,6 +58,62 @@ function buildPessoaData(body: Record<string, any>): Record<string, any> {
   p.ativo = body.ativo === undefined ? true : boolFrom(body.ativo, true);
 
   return p;
+}
+
+async function upsertContatos(
+  client: any,
+  tipoEntidade: string,
+  idEntidade: string,
+  body: Record<string, any>
+): Promise<void> {
+  const contatos: Array<{ tipo: string; valor: string | null }> = [];
+
+  const email = body.email;
+  const telefone = body.telefone || body.phone;
+  const celular = body.celular || body.whatsapp || body.phone || body.telefone;
+
+  if (email) contatos.push({ tipo: 'EMAIL', valor: email });
+  if (telefone) contatos.push({ tipo: 'TELEFONE', valor: telefone });
+  if (celular) contatos.push({ tipo: 'CELULAR', valor: celular });
+
+  const whatsappAtivo = boolFrom(body.whatsapp_ativo ?? body.whatsappAtivo, false);
+  if (whatsappAtivo || body.whatsapp) {
+    contatos.push({ tipo: 'WHATSAPP', valor: celular || null });
+  }
+
+  // Remover contatos antigos
+  await client.query(
+    'DELETE FROM contatos WHERE tipo_entidade = $1 AND id_entidade = $2',
+    [tipoEntidade, idEntidade]
+  );
+
+  // Inserir novos contatos
+  for (let i = 0; i < contatos.length; i++) {
+    const c = contatos[i];
+    if (!c.valor) continue;
+    await client.query(
+      `INSERT INTO contatos (tipo_entidade, id_entidade, tipo_contato, valor, principal)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [tipoEntidade, idEntidade, c.tipo, c.valor, i === 0]
+    );
+  }
+}
+
+function buildEnderecoData(body: Record<string, any>): Record<string, any> | null {
+  const e: Record<string, any> = {};
+  const set = (k: string, v: any) => { if (v !== undefined) e[k] = v === '' ? null : v; };
+
+  set('logradouro',   body.logradouro || body.address_street);
+  set('numero',       body.numero || body.address_number);
+  set('complemento',  body.complemento || body.address_complement);
+  set('bairro',       body.bairro || body.address_neighborhood);
+  set('cidade',       body.cidade || body.address_city);
+  set('estado',       body.estado || body.address_state);
+  set('cep',          body.cep || body.address_zip_code);
+  set('pais',         body.pais || 'Brasil');
+
+  const hasData = Object.values(e).some(v => v !== null && v !== undefined);
+  return hasData ? e : null;
 }
 
 // Campos que pertencem à tabela `funcionarios`
@@ -86,13 +130,51 @@ function buildFuncionarioData(body: Record<string, any>, idPessoa: string): Reco
     regime_trabalho:['CLT', 'PRO_LABORE', 'ESTAGIO', 'AUTONOMO'].includes(body.regime_trabalho)
                       ? body.regime_trabalho : 'CLT',
     salario_base:   parseFloat(body.salario_base ?? body.salary ?? 0) || 0,
-    banco:          body.banco || null,
-    agencia:        body.agencia || null,
-    conta:          body.conta || null,
-    tipo_conta:     body.tipo_conta || null,
-    chave_pix:      body.chave_pix || null,
     ativo:          body.ativo === undefined ? true : boolFrom(body.ativo, true),
   };
+}
+
+async function upsertDadosBancarios(
+  client: any,
+  idPessoa: string,
+  body: Record<string, any>
+): Promise<void> {
+  const banco = body.banco || null;
+  const agencia = body.agencia || null;
+  const conta = body.conta || null;
+  const tipoConta = body.tipo_conta || null;
+  const chavePix = body.chave_pix || null;
+
+  const hasData = banco || agencia || conta || tipoConta || chavePix;
+  if (!hasData) return;
+
+  // Verificar se ja existe dados bancarios para esta pessoa
+  const existing = await client.query(
+    'SELECT id_dado_bancario FROM dados_bancarios_pessoa WHERE id_pessoa = $1 AND ativo = true LIMIT 1',
+    [idPessoa]
+  );
+
+  if (existing.rows.length > 0) {
+    // Atualizar existente
+    await client.query(
+      `UPDATE dados_bancarios_pessoa
+       SET banco = COALESCE($1, banco),
+           agencia = COALESCE($2, agencia),
+           conta = COALESCE($3, conta),
+           tipo_conta = COALESCE($4, tipo_conta),
+           chave_pix = COALESCE($5, chave_pix),
+           atualizado_em = CURRENT_TIMESTAMP
+       WHERE id_dado_bancario = $6`,
+      [banco, agencia, conta, tipoConta, chavePix, existing.rows[0].id_dado_bancario]
+    );
+  } else {
+    // Inserir novo
+    await client.query(
+      `INSERT INTO dados_bancarios_pessoa (id_pessoa, banco, agencia, conta, tipo_conta, chave_pix, principal)
+       VALUES ($1, $2, $3, $4, $5, $6, true)`,
+      [idPessoa, banco, agencia, conta, tipoConta, chavePix]
+    );
+  }
 }
 
 // Monta o objeto de resposta unificando `funcionarios` + `pessoas` + `unidades`
@@ -124,7 +206,7 @@ function mapRow(row: any) {
     is_pcd:          boolFrom(row.pcd, false),
     tipo_deficiencia: row.tipo_deficiencia || '',
 
-    // Endereço (de `pessoas`)
+    // Endereço (de `enderecos`)
     logradouro:      row.logradouro || '',
     numero:          row.numero || '',
     complemento:     row.complemento || '',
@@ -156,7 +238,7 @@ function mapRow(row: any) {
     salario_base:    parseFloat(row.salario_base) || 0,
     salary:          parseFloat(row.salario_base) || 0,
 
-    // Dados bancários (de `funcionarios`)
+    // Dados bancários (de `dados_bancarios_pessoa`)
     banco:           row.banco || '',
     agencia:         row.agencia || '',
     conta:           row.conta || '',
@@ -186,11 +268,11 @@ const BASE_QUERY = `
     f.data_demissao,
     f.regime_trabalho,
     f.salario_base,
-    f.banco,
-    f.agencia,
-    f.conta,
-    f.tipo_conta,
-    f.chave_pix,
+    db.banco,
+    db.agencia,
+    db.conta,
+    db.tipo_conta,
+    db.chave_pix,
     f.ativo,
     f.criado_em,
     f.atualizado_em,
@@ -200,18 +282,19 @@ const BASE_QUERY = `
     p.data_nascimento,
     p.sexo,
     p.estado_civil,
-    p.email,
-    p.telefone,
-    p.celular,
-    p.whatsapp,
-    p.logradouro,
-    p.numero,
-    p.complemento,
-    p.bairro,
-    p.cidade,
-    p.estado,
-    p.cep,
-    p.pais,
+    ce.valor AS email,
+    ct.valor AS telefone,
+    cc.valor AS celular,
+    cw.valor AS whatsapp,
+    p.id_endereco,
+    e.logradouro,
+    e.numero,
+    e.complemento,
+    e.bairro,
+    e.cidade,
+    e.estado,
+    e.cep,
+    e.pais,
     p.tipo_sanguineo,
     p.contato_emergencia,
     p.pcd,
@@ -219,6 +302,12 @@ const BASE_QUERY = `
     u.nome AS unit_name
   FROM funcionarios f
   JOIN pessoas p ON p.id_pessoa = f.id_pessoa
+  LEFT JOIN dados_bancarios_pessoa db ON db.id_pessoa = p.id_pessoa AND db.principal = true
+  LEFT JOIN enderecos e ON e.id_endereco = p.id_endereco
+  LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
+  LEFT JOIN contatos ct ON ct.id_entidade = p.id_pessoa AND ct.tipo_entidade = 'PESSOA' AND ct.tipo_contato = 'TELEFONE' AND ct.principal = true
+  LEFT JOIN contatos cc ON cc.id_entidade = p.id_pessoa AND cc.tipo_entidade = 'PESSOA' AND cc.tipo_contato = 'CELULAR' AND cc.principal = true
+  LEFT JOIN contatos cw ON cw.id_entidade = p.id_pessoa AND cw.tipo_entidade = 'PESSOA' AND cw.tipo_contato = 'WHATSAPP' AND cw.principal = true
   LEFT JOIN unidades u ON u.id_unidade = f.id_unidade
 `;
 
@@ -303,18 +392,38 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Criar endereço se houver dados
+    let idEndereco = null;
+    const enderecoData = buildEnderecoData(body);
+    if (enderecoData) {
+      const enderecoResult = await db.query<{ id_endereco: string }>(
+        `INSERT INTO enderecos (logradouro, numero, complemento, bairro, cidade, estado, cep, pais)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id_endereco`,
+        [
+          enderecoData.logradouro || null,
+          enderecoData.numero || null,
+          enderecoData.complemento || null,
+          enderecoData.bairro || null,
+          enderecoData.cidade || null,
+          enderecoData.estado || null,
+          enderecoData.cep || null,
+          enderecoData.pais || 'Brasil'
+        ]
+      );
+      idEndereco = enderecoResult.rows[0].id_endereco;
+    }
+
     // Inserir em `pessoas`
     const pessoaResult = await db.query<{ id_pessoa: string }>(
       `INSERT INTO pessoas (
         id_unidade, nome, cpf, rg, data_nascimento, sexo, estado_civil,
-        email, telefone, celular, whatsapp,
-        logradouro, numero, complemento, bairro, cidade, estado, cep, pais,
+        id_endereco,
         tipo_sanguineo, contato_emergencia, pcd, tipo_deficiencia, ativo
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,
-        $8,$9,$10,$11,
-        $12,$13,$14,$15,$16,$17,$18,$19,
-        $20,$21,$22,$23,$24
+        $8,
+        $9,$10,$11,$12,$13
       ) RETURNING id_pessoa`,
       [
         pessoaData.id_unidade,
@@ -324,18 +433,7 @@ router.post('/', async (req, res) => {
         pessoaData.data_nascimento || null,
         pessoaData.sexo || null,
         pessoaData.estado_civil || null,
-        pessoaData.email || null,
-        pessoaData.telefone || null,
-        pessoaData.celular || null,
-        pessoaData.whatsapp,
-        pessoaData.logradouro || null,
-        pessoaData.numero || null,
-        pessoaData.complemento || null,
-        pessoaData.bairro || null,
-        pessoaData.cidade || null,
-        pessoaData.estado || null,
-        pessoaData.cep || null,
-        pessoaData.pais || 'Brasil',
+        idEndereco,
         pessoaData.tipo_sanguineo || null,
         pessoaData.contato_emergencia || null,
         pessoaData.pcd,
@@ -345,18 +443,20 @@ router.post('/', async (req, res) => {
     );
 
     const idPessoa = pessoaResult.rows[0].id_pessoa;
+
+    // Criar contatos
+    await upsertContatos(db, 'PESSOA', idPessoa, body);
+
     const funcData = buildFuncionarioData(body, idPessoa);
 
     // Inserir em `funcionarios`
     await db.query(
       `INSERT INTO funcionarios (
         id_funcionario, id_pessoa, id_unidade, matricula, cargo, departamento,
-        data_admissao, data_demissao, regime_trabalho, salario_base,
-        banco, agencia, conta, tipo_conta, chave_pix, ativo
+        data_admissao, data_demissao, regime_trabalho, salario_base, ativo
       ) VALUES (
         $1,$2,$3,$4,$5,$6,
-        $7,$8,$9,$10,
-        $11,$12,$13,$14,$15,$16
+        $7,$8,$9,$10,$11
       )`,
       [
         funcData.id_funcionario,
@@ -369,14 +469,12 @@ router.post('/', async (req, res) => {
         funcData.data_demissao,
         funcData.regime_trabalho,
         funcData.salario_base,
-        funcData.banco,
-        funcData.agencia,
-        funcData.conta,
-        funcData.tipo_conta,
-        funcData.chave_pix,
         funcData.ativo,
       ]
     );
+
+    // Criar dados bancarios
+    await upsertDadosBancarios(db, idPessoa, body);
 
     // Retornar registro completo com JOIN
     const joined = await db.query(
@@ -435,15 +533,66 @@ router.put('/:id', async (req, res) => {
 
     const pessoaData = buildPessoaData({ ...pa, ...body, id_unidade: nextUnitId });
 
+    // Atualizar ou criar endereço
+    const idEnderecoAtual = pa.id_endereco;
+    const enderecoData = buildEnderecoData(body);
+    if (enderecoData) {
+      if (idEnderecoAtual) {
+        await db.query(
+          `UPDATE enderecos
+           SET logradouro = COALESCE($1, logradouro),
+               numero = COALESCE($2, numero),
+               complemento = COALESCE($3, complemento),
+               bairro = COALESCE($4, bairro),
+               cidade = COALESCE($5, cidade),
+               estado = COALESCE($6, estado),
+               cep = COALESCE($7, cep),
+               pais = COALESCE($8, pais),
+               atualizado_em = CURRENT_TIMESTAMP
+           WHERE id_endereco = $9`,
+          [
+            enderecoData.logradouro,
+            enderecoData.numero,
+            enderecoData.complemento,
+            enderecoData.bairro,
+            enderecoData.cidade,
+            enderecoData.estado,
+            enderecoData.cep,
+            enderecoData.pais,
+            idEnderecoAtual
+          ]
+        );
+      } else {
+        const inserted = await db.query<{ id_endereco: string }>(
+          `INSERT INTO enderecos (logradouro, numero, complemento, bairro, cidade, estado, cep, pais)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id_endereco`,
+          [
+            enderecoData.logradouro || null,
+            enderecoData.numero || null,
+            enderecoData.complemento || null,
+            enderecoData.bairro || null,
+            enderecoData.cidade || null,
+            enderecoData.estado || null,
+            enderecoData.cep || null,
+            enderecoData.pais || 'Brasil'
+          ]
+        );
+        // Atualizar id_endereco na pessoa
+        await db.query(
+          'UPDATE pessoas SET id_endereco = $1 WHERE id_pessoa = $2',
+          [inserted.rows[0].id_endereco, idPessoa]
+        );
+      }
+    }
+
     // Atualizar `pessoas`
     await db.query(
       `UPDATE pessoas SET
         id_unidade=$1, nome=$2, cpf=$3, rg=$4, data_nascimento=$5, sexo=$6, estado_civil=$7,
-        email=$8, telefone=$9, celular=$10, whatsapp=$11,
-        logradouro=$12, numero=$13, complemento=$14, bairro=$15, cidade=$16, estado=$17, cep=$18, pais=$19,
-        tipo_sanguineo=$20, contato_emergencia=$21, pcd=$22, tipo_deficiencia=$23, ativo=$24,
+        tipo_sanguineo=$8, contato_emergencia=$9, pcd=$10, tipo_deficiencia=$11, ativo=$12,
         atualizado_em=CURRENT_TIMESTAMP
-       WHERE id_pessoa=$25`,
+       WHERE id_pessoa=$13`,
       [
         pessoaData.id_unidade,
         pessoaData.nome,
@@ -452,18 +601,6 @@ router.put('/:id', async (req, res) => {
         pessoaData.data_nascimento || null,
         pessoaData.sexo || null,
         pessoaData.estado_civil || null,
-        pessoaData.email || null,
-        pessoaData.telefone || null,
-        pessoaData.celular || null,
-        pessoaData.whatsapp,
-        pessoaData.logradouro || null,
-        pessoaData.numero || null,
-        pessoaData.complemento || null,
-        pessoaData.bairro || null,
-        pessoaData.cidade || null,
-        pessoaData.estado || null,
-        pessoaData.cep || null,
-        pessoaData.pais || 'Brasil',
         pessoaData.tipo_sanguineo || null,
         pessoaData.contato_emergencia || null,
         pessoaData.pcd,
@@ -472,6 +609,9 @@ router.put('/:id', async (req, res) => {
         idPessoa,
       ]
     );
+
+    // Atualizar contatos
+    await upsertContatos(db, 'PESSOA', idPessoa, body);
 
     // Buscar dados atuais de funcionarios para merge
     const funcAtual = await db.query('SELECT * FROM funcionarios WHERE id_funcionario = $1', [id]);
@@ -484,9 +624,9 @@ router.put('/:id', async (req, res) => {
       `UPDATE funcionarios SET
         id_unidade=$1, matricula=$2, cargo=$3, departamento=$4,
         data_admissao=$5, data_demissao=$6, regime_trabalho=$7, salario_base=$8,
-        banco=$9, agencia=$10, conta=$11, tipo_conta=$12, chave_pix=$13, ativo=$14,
+        ativo=$9,
         atualizado_em=CURRENT_TIMESTAMP
-       WHERE id_funcionario=$15`,
+       WHERE id_funcionario=$10`,
       [
         funcData.id_unidade,
         funcData.matricula,
@@ -496,15 +636,13 @@ router.put('/:id', async (req, res) => {
         funcData.data_demissao,
         funcData.regime_trabalho,
         funcData.salario_base,
-        funcData.banco,
-        funcData.agencia,
-        funcData.conta,
-        funcData.tipo_conta,
-        funcData.chave_pix,
         funcData.ativo,
         id,
       ]
     );
+
+    // Atualizar dados bancarios
+    await upsertDadosBancarios(db, idPessoa, body);
 
     // Retornar registro atualizado
     const refreshed = await db.query(BASE_QUERY + ' WHERE f.id_funcionario = $1', [id]);

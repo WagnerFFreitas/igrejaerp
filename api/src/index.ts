@@ -26,6 +26,7 @@ import authRoutes from './routes/autenticacao';
 import memberRoutes from './routes/membros';
 import employeeRoutes from './routes/funcionarios';
 import transactionRoutes from './routes/transacoes';
+import supplierRoutes from './routes/fornecedores';
 import unitRoutes from './routes/unidades';
 import assetRoutes from './routes/patrimonios';
 import eventRoutes from './routes/eventos';
@@ -122,6 +123,7 @@ app.use(`${API_PREFIX}/afastamentos`,         rhRoutes);
 app.use(`${API_PREFIX}/unidades`,             unitRoutes);
 app.use(`${API_PREFIX}/contas-bancarias`,     accountRoutes);
 app.use(`${API_PREFIX}/transacoes`,           transactionRoutes);
+app.use(`${API_PREFIX}/fornecedores`,         supplierRoutes);
 app.use(`${API_PREFIX}/conciliacoes-bancarias`, reconciliationRoutes);
 app.use(`${API_PREFIX}/patrimonios`,          assetRoutes);
 app.use(`${API_PREFIX}/periodos-folha`,       payrollRoutes);
@@ -137,8 +139,7 @@ app.use(`${API_PREFIX}/tesouraria/alertas`,             treasuryAlertsRoutes);
 app.use(`${API_PREFIX}/tesouraria/posicoes-financeiras`, treasuryPositionsRoutes);
 
 // LGPD
-app.use(`${API_PREFIX}/lgpd/politicas`,       lgpdRoutes);
-app.use(`${API_PREFIX}/lgpd/consentimentos`,  lgpdRoutes);
+app.use(`${API_PREFIX}/lgpd`,                 lgpdRoutes);
 
 // Auditoria e Permissões
 app.use(`${API_PREFIX}/auditoria`,            auditRoutes);
