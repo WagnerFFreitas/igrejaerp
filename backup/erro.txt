@@ -1,0 +1,3 @@
+Erro ao criar o banco de dados do Firestore
+
+This API method requires billing to be enabled. Please enable billing on project igrejaerp by visiting https://console.developers.google.com/billing/enable?project=igrejaerp then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry

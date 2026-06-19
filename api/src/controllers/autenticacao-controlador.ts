@@ -1,46 +1,38 @@
 /**
  * ============================================================================
- * AUTHCONTROLLER.TS
+ * AUTHCONTROLLER.TS (REESCRITO PARA FIREBASE)
  * ============================================================================
  *
  * O QUE ESTE ARQUIVO FAZ?
  * ------------------------
- * Controller que processa requisições relacionadas a auth controller.
- *
- * ONDE É USADO?
- * -------------
- * Usado pelo servidor backend para processar requisições.
+ * Processa requisições de autenticação usando o Firebase Admin SDK.
  *
  * COMO FUNCIONA?
  * --------------
- * Executa lógica de backend e responde a chamadas externas.
+ * A autenticação agora segue o padrão do Firebase:
+ * 1.  **Login**: O cliente envia um ID Token gerado pelo Firebase Auth.
+ *     O backend verifica o token e busca os dados do usuário no Firestore.
+ * 2.  **Registro**: O backend cria um usuário no Firebase Auth e armazena
+ *     informações adicionais (perfil, etc.) em um documento no Firestore.
+ * 3.  **Verificação**: O token do cliente é verificado para validar a sessão.
  */
 
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import Database from '../database';
-import { getEffectivePermissions } from '../services/permissoes-servico';
-import { createAuditLog } from '../services/auditoria-servico';
+import { auth, db } from '../database';
+// ATENÇÃO: Estes serviços também precisam ser migrados para o Firestore.
+// import { getEffectivePermissions } from '../services/permissoes-servico';
+// import { createAuditLog } from '../services/auditoria-servico';
 
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (auth controller).
- */
-
-const db = Database.getInstance();
-
+// Mapeamentos de perfil/role mantidos da lógica original
 const PERFIL_TO_ROLE: Record<string, string> = {
   DESENVOLVEDOR: 'DEVELOPER',
   ADMIN: 'ADMIN',
   SECRETARIO: 'SECRETARY',
-  TESOUREIRO: 'TREASURER',
+  TESOUREIRO: 'TESOUREIRO',
   PASTOR: 'PASTOR',
   RH: 'RH',
   FINANCEIRO: 'FINANCEIRO',
-  MEMBRO: 'MEMBER',
+  MEMBER: 'MEMBER',
 };
 
 const ROLE_TO_PERFIL: Record<string, string> = {
@@ -54,389 +46,156 @@ const ROLE_TO_PERFIL: Record<string, string> = {
   MEMBER: 'MEMBRO',
 };
 
-function normalizePerfil(roleOrPerfil: string): string {
-  const value = String(roleOrPerfil || 'MEMBRO').toUpperCase();
-  return ROLE_TO_PERFIL[value] || value;
-}
+/**
+ * Constrói um objeto de usuário a partir dos dados do Firebase Auth e Firestore.
+ */
+async function buildUserPayload(userRecord: any, idUnidade?: string) {
+  const firestoreUserDoc = await db.collection('users').doc(userRecord.uid).get();
+  const firestoreUserData = firestoreUserDoc.exists ? firestoreUserDoc.data() : {};
 
-function mapAuthUser(row: any) {
-  const role = PERFIL_TO_ROLE[row.perfil] || row.perfil;
+  const perfil = firestoreUserData?.perfil || 'MEMBRO';
+  const role = PERFIL_TO_ROLE[perfil] || perfil;
+
+  // TODO: `getEffectivePermissions` precisa ser reescrito para Firestore.
+  // const permissions = await getEffectivePermissions(userRecord.uid, role);
+
   return {
-    ...row,
-    id: row.id_usuario,
-    idUnidade: row.id_unidade,
-    email: row.email || row.login,
+    id: userRecord.uid,
+    idUsuario: userRecord.uid,
+    idUnidade: firestoreUserData?.idUnidade || idUnidade,
+    email: userRecord.email,
+    name: userRecord.displayName || firestoreUserData?.name,
+    username: userRecord.email?.split('@')[0],
     role,
-    perfil: row.perfil,
-    username: row.login || row.email?.split('@')[0],
-    status: row.esta_ativo ? 'ACTIVE' : 'INACTIVE',
+    perfil,
+    status: userRecord.disabled ? 'INACTIVE' : 'ACTIVE',
+    // permissions,
+    unrestrictedAccess: role === 'DEVELOPER',
+    ...firestoreUserData,
   };
 }
 
-const AUTH_USER_SELECT = `
-  SELECT
-    u.id_usuario,
-    u.id_usuario AS id,
-    u.id_pessoa,
-    u.login,
-    u.senha_hash,
-    u.perfil,
-    u.esta_ativo,
-    u.ultimo_login,
-    u.criado_em AS criado,
-    u.atualizado_em AS atualizado,
-    p.nome AS nome_usuario,
-    p.nome AS name,
-    ce.valor AS email,
-    p.id_unidade,
-    un.nome AS unit_name
-  FROM usuarios u
-  JOIN pessoas p ON p.id_pessoa = u.id_pessoa
-  LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
-  LEFT JOIN unidades un ON un.id_unidade = p.id_unidade
-`;
-
 export class AuthController {
-  private async safeCreateAuditLog(payload: Parameters<typeof createAuditLog>[0]): Promise<void> {
-    try {
-      await createAuditLog(payload);
-    } catch (error) {
-      console.error('Falha ao gravar auditoria de autenticação:', error);
-    }
-  }
 
-  private getRequestIp(req: Request): string {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string' && forwarded.length > 0) {
-      return forwarded.split(',')[0].trim();
-    }
-
-    return req.ip || req.socket.remoteAddress || '127.0.0.1';
-  }
-
+  /**
+   * Recebe um ID Token do Firebase do cliente, verifica-o e retorna os dados do usuário.
+   */
   async login(req: Request, res: Response) {
     try {
-      const { email, username, password } = req.body;
-      const rawIdentifier = String(email || username || '').trim();
-      const identifier = rawIdentifier.toLowerCase();
+      const { idToken } = req.body;
 
-      const loginAliases: Record<string, string> = {
-        desenvolvedor: 'desenvolvedor@igrejaerp.com.br',
-        admin: 'admin@igrejaerp.com.br'
-      };
-
-      const resolvedIdentifier = loginAliases[identifier] || identifier;
-
-      if (!resolvedIdentifier || !password) {
+      if (!idToken) {
         return res.status(400).json({
-          error: {
-            message: 'Usuário/email e senha são obrigatórios',
-            status: 400
-          }
+          error: { message: 'ID Token é obrigatório', status: 400 },
         });
       }
 
-      const result = await db.query(`
-        ${AUTH_USER_SELECT}
-        WHERE (
-          LOWER(ce.valor) = LOWER($1) OR
-          LOWER(u.login) = LOWER($1) OR
-          LOWER(SPLIT_PART(ce.valor, '@', 1)) = LOWER($2) OR
-          p.nome ILIKE $2
-        ) AND COALESCE(u.esta_ativo, true) = true
-      `, [resolvedIdentifier, identifier]);
+      const decodedToken = await auth.verifyIdToken(idToken, true);
+      const userRecord = await auth.getUser(decodedToken.uid);
 
-      if (result.rows.length === 0) {
-        await this.safeCreateAuditLog({
-          idUnidade: '',
-          userId: '',
-          userName: rawIdentifier || 'desconhecido',
-          action: 'USER_LOGIN',
-          entidade: 'User',
-          entidadeName: rawIdentifier || 'desconhecido',
-          date: new Date().toISOString(),
-          ip: this.getRequestIp(req),
-          userAgent: req.headers['user-agent'],
-          success: false,
-          errorMessage: 'Usuário não encontrado'
-        });
-
-        return res.status(401).json({
-          error: {
-            message: 'Email ou senha inválidos',
-            status: 401
-          }
-        });
-      }
-
-      const user = result.rows[0];
-
-      // Verificar senha (considerando que já pode ter hash do Firebase)
-      let isPasswordValid = false;
+      // Atualiza o último login no Firestore
+      await db.collection('users').doc(userRecord.uid).update({ ultimo_login: new Date().toISOString() });
       
-      // Se a senha não está hasheada (formato antigo do Firebase)
-      if (password === user.senha_hash) {
-        isPasswordValid = true;
-        // Atualizar para hash bcrypt
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await db.query('UPDATE usuarios SET senha_hash = $1 WHERE id_usuario = $2', [hashedPassword, user.id_usuario]);
-      } else {
-        // Verificar com bcrypt
-        isPasswordValid = await bcrypt.compare(password, user.senha_hash);
-      }
-
-      if (!isPasswordValid) {
-        await this.safeCreateAuditLog({
-          idUnidade: user.id_unidade,
-          userId: user.id_usuario,
-          userName: user.nome_usuario,
-          action: 'USER_LOGIN',
-          entidade: 'User',
-          entidadeId: user.id_usuario,
-          entidadeName: user.nome_usuario,
-          date: new Date().toISOString(),
-          ip: this.getRequestIp(req),
-          userAgent: req.headers['user-agent'],
-          success: false,
-          errorMessage: 'Senha inválida'
-        });
-
-        return res.status(401).json({
-          error: {
-            message: 'Email ou senha inválidos',
-            status: 401
-          }
-        });
-      }
-
-      // Gerar token JWT - Corrigido
-      const tokenPayload = {
-        userId: user.id,
-        email: user.email,
-        role: PERFIL_TO_ROLE[user.perfil] || user.perfil,
-        idUnidade: user.id_unidade
-      };
-      
-      const token = jwt.sign(
-        tokenPayload,
-        process.env.JWT_SECRET || 'default-secret'
-      );
-      
-      // Definir expiração separadamente se necessário
-      const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
-
-      // Atualizar último login
-      await db.query('UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP WHERE id_usuario = $1', [user.id_usuario]);
-      await this.safeCreateAuditLog({
-        idUnidade: user.id_unidade,
-        userId: user.id_usuario,
-        userName: user.nome_usuario,
-        action: 'USER_LOGIN',
-        entidade: 'User',
-        entidadeId: user.id_usuario,
-        entidadeName: user.nome_usuario,
-        date: new Date().toISOString(),
-        ip: this.getRequestIp(req),
-        userAgent: req.headers['user-agent'],
-        success: true
-      });
-
-      // Retornar dados do usuário (sem senha)
-      const { senha_hash, hash_senha, ...userWithoutPassword } = user;
-      const mappedAuthUser = mapAuthUser(userWithoutPassword);
-      
-      const mappedUser = {
-        ...mappedAuthUser,
-        username: mappedAuthUser.username || identifier,
-        permissions: await getEffectivePermissions(mappedAuthUser.id, mappedAuthUser.role),
-        unrestrictedAccess: mappedAuthUser.role === 'DEVELOPER'
-      };
+      const userPayload = await buildUserPayload(userRecord);
 
       res.json({
-        user: mappedUser,
-        token,
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+        user: userPayload,
+        // O token agora é gerenciado pelo cliente (Firebase SDK)
+        // mas podemos retorná-lo para consistência, se necessário.
+        token: idToken, 
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no login:', error);
-      res.status(500).json({
+      res.status(401).json({
         error: {
-          message: 'Erro interno do servidor',
-          status: 500
-        }
+          message: 'Token inválido ou expirado',
+          status: 401,
+          details: error.message,
+        },
       });
     }
   }
 
+  /**
+   * Registra um novo usuário no Firebase Auth e cria um documento no Firestore.
+   */
   async register(req: Request, res: Response) {
     try {
-      const { name, username, email, password, role, perfil, idUnidade } = req.body;
+      const { name, email, password, role, perfil, idUnidade } = req.body;
       const normalizedEmail = String(email || '').trim().toLowerCase();
-      const login = String(username || normalizedEmail).trim().toLowerCase();
-      const dbPerfil = normalizePerfil(perfil || role);
+      const dbPerfil = ROLE_TO_PERFIL[String(role || perfil || '').toUpperCase()] || 'MEMBRO';
 
-      if (!name || !normalizedEmail || !password || !dbPerfil || !idUnidade) {
-        return res.status(400).json({
-          error: {
-            message: 'Todos os campos são obrigatórios',
-            status: 400
-          }
-        });
+      if (!name || !normalizedEmail || !password || !idUnidade) {
+        return res.status(400).json({ error: { message: 'Nome, email, senha e idUnidade são obrigatórios', status: 400 } });
       }
 
-      // Verificar se usuário já existe
-      const existingUser = await db.query(
-        `SELECT u.id_usuario
-         FROM usuarios u
-         JOIN pessoas p ON p.id_pessoa = u.id_pessoa
-         LEFT JOIN contatos ce ON ce.id_entidade = p.id_pessoa AND ce.tipo_entidade = 'PESSOA' AND ce.tipo_contato = 'EMAIL' AND ce.principal = true
-         WHERE LOWER(ce.valor) = $1 OR LOWER(u.login) = $2`,
-        [normalizedEmail, login]
-      );
+      // TODO: Verificar se a unidade existe no Firestore na coleção 'units'
 
-      if (existingUser.rows.length > 0) {
-        return res.status(409).json({
-          error: {
-            message: 'Email já cadastrado',
-            status: 409
-          }
-        });
-      }
+      const userRecord = await auth.createUser({
+        email: normalizedEmail,
+        password: password,
+        displayName: name,
+      });
 
-      // Verificar se unidade existe
-      const unitExists = await db.query('SELECT id_unidade FROM unidades WHERE id_unidade = $1', [idUnidade]);
-      if (unitExists.rows.length === 0) {
-        return res.status(400).json({
-          error: {
-            message: 'Unidade não encontrada',
-            status: 400
-          }
-        });
-      }
-
-      // Hash da senha
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const pessoaResult = await db.query(
-        `INSERT INTO pessoas (id_unidade, nome, ativo)
-         VALUES ($1, $2, true)
-         RETURNING id_pessoa`,
-        [idUnidade, name]
-      );
-
-      const idPessoa = pessoaResult.rows[0].id_pessoa;
-
-      // Criar contato de email
-      await db.query(
-        `INSERT INTO contatos (tipo_entidade, id_entidade, tipo_contato, valor, principal)
-         VALUES ('PESSOA', $1, 'EMAIL', $2, true)`,
-        [idPessoa, normalizedEmail]
-      );
-
-      const result = await db.query(`
-        INSERT INTO usuarios (id_pessoa, login, senha_hash, perfil, esta_ativo)
-        VALUES ($1, $2, $3, $4::perfil_usuario, true)
-        RETURNING id_usuario
-      `, [idPessoa, login, hashedPassword, dbPerfil]);
-
-      const userResult = await db.query(`${AUTH_USER_SELECT} WHERE u.id_usuario = $1`, [result.rows[0].id_usuario]);
-
-      const newUser = mapAuthUser(userResult.rows[0]);
-
-      // Gerar token
-      const tokenPayload = { 
-        userId: newUser.id, 
-        email: newUser.email, 
-        role: newUser.role,
-        idUnidade: newUser.idUnidade
+      const userData = {
+        name,
+        email: normalizedEmail,
+        idUnidade,
+        perfil: dbPerfil,
+        esta_ativo: true,
+        criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
       };
-      
-      const token = jwt.sign(
-        tokenPayload,
-        process.env.JWT_SECRET || 'default-secret'
-      );
 
-      res.status(201).json({
-        user: {
-          ...newUser,
-          permissions: await getEffectivePermissions(newUser.id, newUser.role),
-          unrestrictedAccess: newUser.role === 'DEVELOPER'
-        },
-        token,
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h'
-      });
+      await db.collection('users').doc(userRecord.uid).set(userData);
 
-    } catch (error) {
+      const userPayload = await buildUserPayload(userRecord, idUnidade);
+
+      res.status(201).json({ user: userPayload });
+
+    } catch (error: any) {
       console.error('Erro no registro:', error);
-      res.status(500).json({
-        error: {
-          message: 'Erro interno do servidor',
-          status: 500
-        }
-      });
+      let message = 'Erro interno do servidor';
+      let status = 500;
+      if (error.code === 'auth/email-already-exists') {
+        message = 'Email já cadastrado';
+        status = 409;
+      }
+      res.status(status).json({ error: { message, status } });
     }
   }
 
+  /**
+   * Verifica um ID Token do Firebase para validar a sessão do usuário.
+   */
   async verifyToken(req: Request, res: Response) {
     try {
       const token = req.headers.authorization?.replace('Bearer ', '');
-
       if (!token) {
-        return res.status(401).json({
-          error: {
-            message: 'Token não fornecido',
-            status: 401
-          }
-        });
+        return res.status(401).json({ error: { message: 'Token não fornecido', status: 401 } });
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
+      const decodedToken = await auth.verifyIdToken(token);
+      const userRecord = await auth.getUser(decodedToken.uid);
 
-      // Buscar usuário atualizado
-      const result = await db.query(`
-        ${AUTH_USER_SELECT}
-        WHERE u.id_usuario = $1 AND COALESCE(u.esta_ativo, true) = true
-      `, [decoded.userId]);
-
-      if (result.rows.length === 0) {
-        return res.status(401).json({
-          error: {
-            message: 'Usuário não encontrado ou inativo',
-            status: 401
-          }
-        });
+      if (userRecord.disabled) {
+        return res.status(401).json({ error: { message: 'Usuário desativado', status: 401 } });
       }
 
-      const { senha_hash, hash_senha, ...userWithoutPassword } = result.rows[0];
-      const mappedAuthUser = mapAuthUser(userWithoutPassword);
-      
-      const mappedUser = {
-        ...mappedAuthUser,
-        permissions: await getEffectivePermissions(mappedAuthUser.id, mappedAuthUser.role),
-        unrestrictedAccess: mappedAuthUser.role === 'DEVELOPER'
-      };
+      const userPayload = await buildUserPayload(userRecord);
 
-      res.json({
-        valid: true,
-        user: mappedUser
-      });
+      res.json({ valid: true, user: userPayload });
 
     } catch (error) {
       console.error('Erro na verificação do token:', error);
-      res.status(401).json({
-        error: {
-          message: 'Token inválido',
-          status: 401
-        }
-      });
+      res.status(401).json({ error: { message: 'Token inválido', status: 401 } });
     }
   }
 
-  async logout(req: Request, res: Response) {
-    // Em uma implementação mais robusta, poderíamos adicionar o token a uma blacklist
-    res.json({
-      message: 'Logout realizado com sucesso'
-    });
+  async logout(_req: Request, res: Response) {
+    // O logout real é tratado pelo SDK do cliente Firebase.
+    // Este endpoint pode ser usado para limpar cookies de sessão, se houver.
+    res.json({ message: 'Sessão do lado do servidor encerrada. Faça logout no cliente.' });
   }
 }

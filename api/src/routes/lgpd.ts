@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * LGPD.TS
+ * LGPD.TS (CORRIGIDO)
  * ============================================================================
  *
  * O QUE ESTE ARQUIVO FAZ?
@@ -8,7 +8,7 @@
  * Rotas de API para lgpd.
  *
  * ONDE É USADO?
- * -------------
+ * ------------
  * Usado pelo servidor backend para processar requisições.
  *
  * COMO FUNCIONA?
@@ -27,13 +27,14 @@ import { LGPDController } from '../controllers/lgpd-controlador';
  */
 
 const router = Router();
+const controller = new LGPDController();
 
 // Políticas LGPD
-router.get('/politicas', LGPDController.getCurrentPolicy);
-router.post('/politicas', LGPDController.savePolicy);
+router.get('/politicas', controller.getCurrentPolicy);
+router.post('/politicas', controller.savePolicy);
 
 // Consentimentos LGPD
-router.get('/consentimentos/:memberId', LGPDController.getMemberConsents);
-router.post('/consentimentos', LGPDController.saveConsent);
+router.get('/consentimentos/:memberId', controller.getMemberConsents);
+router.post('/consentimentos', controller.saveConsent);
 
 export default router;

@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-06-19T14:23:52.677Z",
+  "duration": 7614,
+  "collections": {
+    "units": 0,
+    "users": 0,
+    "members": 0,
+    "employees": 0,
+    "transactions": 0,
+    "assets": 0,
+    "church_events": 0,
+    "financial_accounts": 0,
+    "employee_leaves": 0,
+    "volunteer_schedules": 0,
+    "audit_logs": 0,
+    "tax_configs": 0,
+    "accounting_configs": 0
+  },
+  "totalDocuments": 0
+}

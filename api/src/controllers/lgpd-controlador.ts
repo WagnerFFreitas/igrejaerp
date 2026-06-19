@@ -1,101 +1,167 @@
 /**
  * ============================================================================
- * LGPDCONTROLLER.TS
+ * LGPD-CONTROLADOR.TS (CORRIGIDO)
  * ============================================================================
  *
- * Controller para LGPD alinhado ao schema PostgreSQL em português.
- * Tabelas: politicas_lgpd, logs_consentimento_lgpd
+ * Controller para LGPD, agora utilizando Firestore como banco de dados.
  */
 
 import { Request, Response } from 'express';
-import Database from '../database';
+import { db } from '../database';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export class LGPDController {
-  static async getCurrentPolicy(req: Request, res: Response) {
+
+  /**
+   * Busca a política de privacidade mais recente e ativa para uma unidade.
+   */
+  async getCurrentPolicy(req: Request, res: Response) {
     const { idUnidade, unitId } = req.query;
-    const filtroUnidade = idUnidade || unitId;
-    const db = Database.getInstance();
+    const filtroUnidade = idUnidade || unitId as string;
+
     try {
-      const result = await db.query(
-        'SELECT * FROM politicas_lgpd WHERE id_unidade = $1 AND esta_ativa = true ORDER BY criado DESC LIMIT 1',
-        [filtroUnidade]
-      );
-      if (result.rows.length === 0) {
-        // Fallback para política padrão se não houver nenhuma ativa
-        const fallback = await db.query(
-          'SELECT * FROM politicas_lgpd WHERE esta_ativa = true ORDER BY criado DESC LIMIT 1'
-        );
-        const row = fallback.rows[0];
-        if (!row) return res.json(null);
-        return res.json({
-          ...row,
-          isActive: row.esta_ativa,
-          effectiveDate: row.criado,
-        });
+      let query: FirebaseFirestore.Query = db.collection('lgpd_policies').where('esta_ativa', '==', true);
+
+      if (filtroUnidade) {
+        query = query.where('id_unidade', '==', filtroUnidade);
       }
-      const row = result.rows[0];
-      res.json({
-        ...row,
-        isActive: row.esta_ativa,
-        effectiveDate: row.criado,
-      });
+
+      const snapshot = await query.orderBy('criado_em', 'desc').limit(1).get();
+
+      if (snapshot.empty) {
+        // Fallback para política padrão se não houver específica da unidade
+        const fallbackSnapshot = await db.collection('lgpd_policies')
+            .where('esta_ativa', '==', true)
+            .where('id_unidade', '==', null) // Política global
+            .orderBy('criado_em', 'desc').limit(1).get();
+        
+        if (fallbackSnapshot.empty) {
+          return res.json(null); // Nenhuma política ativa encontrada
+        }
+        const doc = fallbackSnapshot.docs[0];
+        return res.json({ id: doc.id, ...doc.data() });
+      }
+      
+      const doc = snapshot.docs[0];
+      res.json({ id: doc.id, ...doc.data() });
+
     } catch (error: any) {
       console.error('Erro ao buscar política LGPD:', error);
       res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
     }
   }
 
-  static async getMemberConsents(req: Request, res: Response) {
-    const { memberId } = req.params;
-    const db = Database.getInstance();
+  /**
+   * Busca todos os consentimentos de um membro ou funcionário.
+   */
+  async getMemberConsents(req: Request, res: Response) {
+    const { memberId, employeeId } = req.query;
+    
+    if (!memberId && !employeeId) {
+        return res.status(400).json({ error: { message: 'ID do membro ou do funcionário é necessário' } });
+    }
+
     try {
-      const result = await db.query(
-        `SELECT c.*, p.versao AS policy_version, p.titulo AS policy_title
-         FROM logs_consentimento_lgpd c
-         JOIN politicas_lgpd p ON c.id_politica = p.id
-         WHERE c.id_membro = $1
-         ORDER BY c.data_consentimento DESC`,
-        [memberId]
-      );
-      res.json({ consents: result.rows });
+        let query: FirebaseFirestore.Query = db.collection('lgpd_consent_logs');
+
+        if (memberId) {
+            query = query.where('id_membro', '==', memberId as string);
+        } else if (employeeId) {
+            query = query.where('id_funcionario', '==', employeeId as string);
+        }
+
+        const snapshot = await query.orderBy('data_consentimento', 'desc').get();
+        const consents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        res.json({ consents });
+
     } catch (error: any) {
       console.error('Erro ao buscar consentimentos:', error);
       res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
     }
   }
 
-  static async saveConsent(req: Request, res: Response) {
-    const { memberId, employeeId, policyId, consentType, concedido } = req.body;
-    const db = Database.getInstance();
+  /**
+   * Salva um novo registro de consentimento.
+   */
+  async saveConsent(req: Request, res: Response) {
+    const { id_membro, id_funcionario, id_politica, tipo_consentimento, concedido } = req.body;
+
+    if (!id_politica || concedido === undefined) {
+        return res.status(400).json({ error: { message: 'ID da política e status do consentimento são obrigatórios' } });
+    }
+
     try {
-      const result = await db.query(
-        `INSERT INTO logs_consentimento_lgpd (id_membro, id_funcionario, id_politica, tipo_consentimento, concedido, ip_address, user_agent)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
-        [memberId, employeeId, policyId, consentType, concedido, req.ip, req.headers['user-agent']]
-      );
-      res.status(201).json(result.rows[0]);
+        // Busca a política para desnormalizar dados importantes (versão, título)
+        const policyDoc = await db.collection('lgpd_policies').doc(id_politica).get();
+        if (!policyDoc.exists) {
+            return res.status(404).json({ error: { message: 'Política não encontrada' } });
+        }
+        const policyData = policyDoc.data()!;
+
+        const consentData = {
+            id_membro: id_membro || null,
+            id_funcionario: id_funcionario || null,
+            id_politica,
+            versao_politica: policyData.versao,
+            titulo_politica: policyData.titulo,
+            tipo_consentimento: tipo_consentimento || 'geral',
+            concedido: !!concedido,
+            data_consentimento: FieldValue.serverTimestamp(),
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent'] || null
+        };
+
+        const docRef = await db.collection('lgpd_consent_logs').add(consentData);
+        res.status(201).json({ id: docRef.id, ...consentData });
+
     } catch (error: any) {
       console.error('Erro ao salvar consentimento:', error);
       res.status(500).json({ error: { message: 'Erro interno', details: error.message } });
     }
   }
 
-  static async savePolicy(req: Request, res: Response) {
-    const { idUnidade, titulo, conteudo, versao, dataVigencia } = req.body;
-    const db = Database.getInstance();
+  /**
+   * Cria uma nova política de privacidade.
+   */
+  async savePolicy(req: Request, res: Response) {
+    const { id_unidade, titulo, conteudo, versao } = req.body;
+
+    if (!titulo || !conteudo || !versao) {
+        return res.status(400).json({ error: { message: 'Título, conteúdo e versão são obrigatórios' } });
+    }
+
     try {
-      const result = await db.query(
-        `INSERT INTO politicas_lgpd (id_unidade, titulo, conteudo, versao, data_vigencia, esta_ativa)
-         VALUES ($1, $2, $3, $4, $5, true)
-         RETURNING *`,
-        [idUnidade, titulo, conteudo, versao, dataVigencia]
-      );
-      res.status(201).json({
-        ...result.rows[0],
-        isActive: result.rows[0].esta_ativa,
-        effectiveDate: result.rows[0].criado,
-      });
+      const policyData = {
+        id_unidade: id_unidade || null,
+        titulo,
+        conteudo,
+        versao,
+        esta_ativa: true,
+        criado_em: FieldValue.serverTimestamp(),
+        atualizado_em: FieldValue.serverTimestamp()
+      };
+
+      const docRef = await db.collection('lgpd_policies').add(policyData);
+
+      // Opcional: Desativar políticas antigas para a mesma unidade
+      if (id_unidade) {
+        const oldPoliciesSnapshot = await db.collection('lgpd_policies')
+          .where('id_unidade', '==', id_unidade)
+          .where('esta_ativa', '==', true)
+          .get();
+        
+        const batch = db.batch();
+        oldPoliciesSnapshot.docs.forEach(doc => {
+            if (doc.id !== docRef.id) { // Não desativa a que acabamos de criar
+                batch.update(doc.ref, { esta_ativa: false, atualizado_em: FieldValue.serverTimestamp() });
+            }
+        });
+        await batch.commit();
+      }
+
+      res.status(201).json({ id: docRef.id, ...policyData });
+
     } catch (error: any) {
       console.error('Erro ao salvar política LGPD:', error);
       res.status(500).json({ error: { message: 'Erro interno', details: error.message } });

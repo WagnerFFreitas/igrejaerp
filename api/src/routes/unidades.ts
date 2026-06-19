@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * UNITS.TS
+ * UNITS.TS (CORRIGIDO)
  * ============================================================================
  *
  * O QUE ESTE ARQUIVO FAZ?
@@ -27,9 +27,10 @@ import { UnitController } from '../controllers/unidades-controlador';
  */
 
 const router = Router();
+const controller = new UnitController();
 
-router.get('/', UnitController.getAll);
-router.get('/:id', UnitController.getById);
-router.put('/:id', UnitController.update);
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.put('/:id', controller.update);
 
 export default router;

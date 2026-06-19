@@ -1,38 +1,9 @@
-/**
- * ============================================================================
- * EXPORT-FIREBASE.TS
- * ============================================================================
- *
- * O QUE ESTE ARQUIVO FAZ?
- * ------------------------
- * Arquivo relacionado a export-firebase.
- *
- * ONDE É USADO?
- * -------------
- * Parte do projeto usada em runtime ou build.
- *
- * COMO FUNCIONA?
- * --------------
- * Ajuda o sistema com uma funcionalidade específica.
- */
-
 import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
 
-// Configuração do Firebase Admin (use suas credenciais)
-/**
- * BLOCO PRINCIPAL
- * ===============
- *
- * Define o bloco principal deste arquivo (export-firebase).
- */
-
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID || 'igrejaerp',
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
+// Carrega as credenciais do Firebase a partir do arquivo JSON
+const serviceAccount = require('../../serviceAccountKey.json');
 
 // Inicializar Firebase Admin
 if (!admin.apps.length) {
@@ -46,7 +17,7 @@ const db = admin.firestore();
 // Coleções para exportar
 const collections = [
   'units',
-  'users', 
+  'users',
   'members',
   'employees',
   'transactions',
@@ -68,7 +39,7 @@ async function exportCollection(collectionName: string) {
   
   try {
     const snapshot = await db.collection(collectionName).get();
-    const data = [];
+    const data: any[] = [];
     
     snapshot.forEach((doc) => {
       const docData = doc.data();
@@ -138,7 +109,7 @@ async function exportAllCollections() {
   try {
     // Exportar cada coleção
     for (const collection of collections) {
-      const data = await exportCollection(collection);
+      const data: any[] = await exportCollection(collection);
       exportSummary[collection] = data.length;
     }
     
@@ -177,7 +148,7 @@ async function exportRelatedData() {
   try {
     // Exportar dependentes de membros
     const membersSnapshot = await db.collection('members').get();
-    const allDependents = [];
+    const allDependents: any[] = [];
     
     for (const memberDoc of membersSnapshot.docs) {
       const dependentsSnapshot = await memberDoc.ref.collection('dependents').get();
@@ -199,7 +170,7 @@ async function exportRelatedData() {
     }
     
     // Exportar contribuições de membros
-    const allContributions = [];
+    const allContributions: any[] = [];
     for (const memberDoc of membersSnapshot.docs) {
       const contribSnapshot = await memberDoc.ref.collection('contributions').get();
       contribSnapshot.forEach((contribDoc) => {

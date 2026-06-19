@@ -29,17 +29,10 @@ import { MembersController } from '../controllers/membros-controlador';
 const router = Router();
 const membersController = new MembersController();
 
-// Endpoint de debug (teste de mapeamento)
-router.get('/debug/sanitize', membersController.debugSanitize);
-
 router.get('/', membersController.getAll);
 router.get('/:id', membersController.getById);
 router.post('/', membersController.create);
 router.put('/:id', membersController.update);
 router.delete('/:id', membersController.delete);
-
-// Sub-rotas para dependentes e contribuições
-router.post('/:id/dependentes', membersController.addDependent);
-router.post('/:id/contributions', membersController.addContribution);
 
 export default router;

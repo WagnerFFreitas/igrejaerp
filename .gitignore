@@ -1,62 +1,49 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-node_modules
-dist
-dist-ssr
+# Testing
+/coverage
+
+# Production
+/build
+/dist
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Misc
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.pem
 
-# Auto-generated entries
-# Dependencies
-node_modules/
+# Log files
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+logfile
 
-# Build outputs
-dist/
-build/
-*.log
-
-# Environment files
+# Environment variables
 .env
-.env.*
-!.env.example
+.env*.local
 
-# IDE files
+# Secrets
+serviceAccountKey.json
+api/serviceAccountKey.json
+
+# IDEs and editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS files
-.DS_Store
-Thumbs.db
-
 # Temporary files
 *.tmp
 *.temp
-.cache/
 
-# Sensitive files (auto-detected)
-# .env.example deve ser commitado (não contém segredos)
-.env.local.example
-node_modules
+# pgAdmin
+.pgadmin/
 
+# PGDATA
+api/.pgdata/
+
+#IDX
+.idx/
